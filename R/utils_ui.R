@@ -120,10 +120,11 @@ titulo_secao <- function(eyebrow, titulo, descricao = NULL) {
 #' @return Nada; envia a mensagem de atualização para o navegador.
 #' @noRd
 atualizar_seletor <- function(session, input_id, selecionado) {
-  # Enviando o valor como texto, formato usado pelas opções do slim select
-  session$sendInputMessage(
-    input_id,
-    list(selected = as.character(selecionado))
+  # Usando a função oficial do shinyWidgets para manter o slim select sincronizado
+  shinyWidgets::updateSlimSelect(
+    session = session,
+    inputId = input_id,
+    selected = as.character(selecionado)
   )
 }
 

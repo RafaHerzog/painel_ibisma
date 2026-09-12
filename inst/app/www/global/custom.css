@@ -361,7 +361,7 @@ input:focus-visible,
   min-height: 0;
   font-size: var(--fonte-muito-grande-size);
   font-weight: 700;
-  color: var(--cor-roxo-ibisma);
+  color: var(--cor-azul-medio);
   transition: border-color 0.2s ease;
 }
 
@@ -373,7 +373,7 @@ input:focus-visible,
 /* Reforçando a cor do controle em foco */
 .controles-inline .ss-main:focus {
   box-shadow: none;
-  border-bottom-color: var(--cor-roxo-ibisma);
+  border-bottom-color: var(--cor-azul-medio);
 }
 
 /* Ajustando o tamanho do texto das opções no controle em frase */
@@ -386,7 +386,7 @@ input:focus-visible,
 
 /* Definindo a aparência moderna dos seletores fora da frase */
 .ss-main {
-  --ss-primary-color: var(--cor-roxo-ibisma);
+  --ss-primary-color: var(--cor-azul-medio);
   --ss-bg-color: #FFFFFF;
   --ss-font-color: #0A1E3C;
   --ss-border-color: rgba(10, 30, 60, 0.16);
@@ -397,7 +397,8 @@ input:focus-visible,
   font-size: var(--fonte-media-size);
 }
 
-/* Arredondando e sombreando a lista de opções */
+/* Arredondando a lista de opções e alargando apenas o dropdown aberto */
+/* O width inline definido pelo plugin é sobrescrito com !important */
 .ss-content {
   border: 1px solid var(--cor-linha);
   border-radius: 12px;
@@ -405,6 +406,14 @@ input:focus-visible,
   font-family: 'Source Sans Pro', system-ui, sans-serif;
   font-size: var(--fonte-media-size);
   z-index: 2000;
+  width: max-content !important;
+  max-width: min(92vw, 30rem) !important;
+}
+
+/* Permitindo a quebra dos textos muito longos dentro da lista */
+.ss-content .ss-list .ss-option,
+.ss-content .ss-search input {
+  overflow-wrap: break-word;
 }
 
 /* Estilizando o campo de busca dentro da lista */
@@ -413,11 +422,11 @@ input:focus-visible,
   font-size: var(--fonte-media-size);
 }
 
-/* Dando destaque roxo à opção em foco na lista */
+/* Dando destaque em azul à opção em foco na lista */
 .ss-content .ss-list .ss-option:hover,
 .ss-content .ss-list .ss-option.ss-highlighted,
 .ss-content .ss-list .ss-option.ss-selected {
-  background-color: var(--cor-roxo-ibisma) !important;
+  background-color: var(--cor-azul-medio) !important;
   color: #FFFFFF !important;
 }
 

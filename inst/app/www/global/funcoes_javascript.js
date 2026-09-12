@@ -30,6 +30,40 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
   });
 });
 
+/* Reposicionando o dropdown do slim select quando ele sai da tela */
+(function () {
+  /* Movendo o dropdown para a esquerda o suficiente para caber na janela */
+  function ajustarDropdown(el) {
+    var margem = 8;
+    var retangulo = el.getBoundingClientRect();
+    var excesso = retangulo.right - (window.innerWidth - margem);
+    if (excesso > 0) {
+      var esquerda = parseFloat(el.style.left || "0") - excesso;
+      el.style.left = Math.max(margem, esquerda) + "px";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    /* Observando a classe de abertura que o plugin adiciona ao dropdown */
+    var observador = new MutationObserver(function (mutacoes) {
+      mutacoes.forEach(function (mutacao) {
+        var el = mutacao.target;
+        if (!(el instanceof Element)) return;
+        if (!el.classList.contains("ss-content")) return;
+        var aberto =
+          el.classList.contains("ss-open-below") ||
+          el.classList.contains("ss-open-above");
+        if (aberto) ajustarDropdown(el);
+      });
+    });
+    observador.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+      subtree: true
+    });
+  });
+})();
+
 /* Marcando na navbar a seção atualmente visível na página */
 (function () {
   var links = [];
