@@ -104,6 +104,8 @@ body, .content-wrapper, .main-header, .main-sidebar {
   --cor-fundo-bloco: #FAFBFD;
   --cor-roxo-ibisma: #4B1D73;
   --cor-azul-claro: #32A0FF;
+  --cor-azul-medio: #1E5AA0;
+  --altura-navbar: 4.75rem;
 }
 
 /* Reduzindo o número de destaque em telas médias */
@@ -136,13 +138,21 @@ body, .content-wrapper, .main-header, .main-sidebar {
 /* Ativando a rolagem suave entre as âncoras e compensando a navbar fixa */
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 84px;
+  scroll-padding-top: calc(var(--altura-navbar) + 0.75rem);
 }
 
 /* Reservando o espaço da navbar para as âncoras das seções */
 section[id],
 a[id] {
-  scroll-margin-top: 84px;
+  scroll-margin-top: calc(var(--altura-navbar) + 0.75rem);
+}
+
+/* Liberando a altura natural da página para a navbar acompanhar toda a rolagem */
+html.html-fill-container,
+body.html-fill-container,
+.bslib-page-fill {
+  height: auto !important;
+  min-height: 100vh;
 }
 
 /* Definindo a fonte e o comportamento base do painel */
@@ -164,16 +174,16 @@ body {
 
 /* ----------------------------------------------------------------- navbar */
 
-/* Barra de navegação branca, fixa no topo e com leve transparência */
+/* Barra de navegação azul escura, fixa no topo durante toda a rolagem */
 .navbar-ibisma {
   position: sticky;
   top: 0;
   z-index: 1030;
-  background-color: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--cor-linha);
-  padding-top: 0.65rem;
-  padding-bottom: 0.65rem;
+  background-color: #0A1E3C;
+  box-shadow: 0 4px 18px rgba(10, 30, 60, 0.25);
+  border-bottom: 2px solid #1E5AA0;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 
 /* Distribuindo marca e menu na mesma linha */
@@ -198,19 +208,32 @@ body {
   width: auto;
 }
 
-/* Destacando o nome do painel ao lado do logo */
-.navbar-brand__texto {
-  font-size: var(--fonte-muito-grande-size);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #0A1E3C;
+/* Empilhando o nome do painel e a descrição do índice */
+.navbar-brand__identidade {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
-/* Estilizando os links das âncoras */
+/* Destacando o nome do painel ao lado do logo */
+.navbar-brand__texto {
+  font-size: var(--fonte-titulos-size);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #FFFFFF;
+}
+
+/* Suavizando a descrição do índice abaixo do nome */
+.navbar-brand__descricao {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 400;
+}
+
+/* Estilizando os links das âncoras em branco */
 .navbar-ibisma .nav-link {
-  font-size: var(--fonte-muito-grande-size);
+  font-size: var(--fonte-subtitulos-sobre-size);
   font-weight: 600;
-  color: var(--cor-texto-suave);
+  color: rgba(255, 255, 255, 0.88);
   padding: 0.15rem 0.25rem;
   margin-left: 1.5rem;
   border-bottom: 2px solid transparent;
@@ -218,13 +241,23 @@ body {
 }
 
 .navbar-ibisma .nav-link:hover {
-  color: var(--cor-roxo-ibisma);
+  color: #FFFFFF;
+  border-bottom-color: rgba(50, 160, 255, 0.6);
 }
 
-/* Marcando visualmente a seção visível na navegação */
+/* Marcando a seção visível mantendo o indicador inferior da v4 */
 .navbar-ibisma .nav-link.active {
-  color: var(--cor-roxo-ibisma);
-  border-bottom-color: var(--cor-roxo-ibisma);
+  color: #FFFFFF;
+  border-bottom-color: var(--cor-azul-claro);
+}
+
+/* Ajustando o botão do menu móvel sobre o fundo escuro */
+.navbar-ibisma .navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.navbar-ibisma .navbar-toggler:focus {
+  box-shadow: 0 0 0 3px rgba(50, 160, 255, 0.4);
 }
 
 /* Dando visibilidade ao foco por teclado em todos os elementos interativos */
@@ -934,7 +967,10 @@ input:focus-visible,
     width: 100% !important;
   }
 
+  /* Mantendo o indicador inferior colado ao texto no menu colapsado */
   .navbar-ibisma .nav-link {
+    display: inline-block;
+    width: auto;
     margin-left: 0;
     padding: 0.5rem 0;
   }

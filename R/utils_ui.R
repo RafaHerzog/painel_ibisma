@@ -36,9 +36,9 @@ tema_ibisma <- function() {
 #' @return Elemento HTML da navbar com âncoras para as seções.
 #' @noRd
 navbar_ibisma <- function() {
-  # Montando uma navbar Bootstrap 5 com colapso automático em telas pequenas
+  # Montando uma navbar escura Bootstrap 5 com colapso automático em telas pequenas
   htmltools::tags$nav(
-    class = "navbar navbar-expand-md navbar-ibisma",
+    class = "navbar navbar-expand-md navbar-dark navbar-ibisma",
     `aria-label` = "Navegação principal",
     id = "navbar-ibisma",
     htmltools::tags$div(
@@ -53,7 +53,15 @@ navbar_ibisma <- function() {
           alt = "Observatório Obstétrico Brasileiro",
           class = "navbar-brand__logo"
         ),
-        htmltools::tags$span(class = "navbar-brand__texto", "IBISMA")
+        htmltools::tags$span(
+          class = "navbar-brand__identidade",
+          htmltools::tags$span(class = "navbar-brand__texto", TITULO_PAINEL),
+          # Mantendo a descrição do índice visível apenas quando houver espaço
+          htmltools::tags$span(
+            class = "navbar-brand__descricao d-none d-lg-block",
+            SUBTITULO_PAINEL
+          )
+        )
       ),
       # Criando o botão de menu para telas pequenas
       htmltools::tags$button(
