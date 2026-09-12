@@ -30,6 +30,60 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
   });
 });
 
+/* Inicializando as tooltips das pétalas do perfil municipal */
+(function () {
+  /* Executando a função imediatamente quando a página já estiver pronta */
+  function quandoPronto(fn) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", fn);
+    } else {
+      fn();
+    }
+  }
+
+  /* Ativando o tooltip do Bootstrap nas pétalas que ainda não o receberam */
+  function inicializarTooltipsPetalas() {
+    if (!window.bootstrap || !bootstrap.Tooltip) return;
+    var petalas = document.querySelectorAll(
+      '.grupo-petala[data-bs-toggle="tooltip"]'
+    );
+    petalas.forEach(function (el) {
+      if (el.dataset.tooltipIniciado) return;
+      el.dataset.tooltipIniciado = "sim";
+      new bootstrap.Tooltip(el, {
+        html: true,
+        placement: "top",
+        customClass: "tooltip-ibisma",
+        container: "body",
+        delay: { show: 80, hide: 40 }
+      });
+    });
+  }
+
+  quandoPronto(function () {
+    inicializarTooltipsPetalas();
+
+    /* Reinicializando sempre que o Shiny inserir novas pétalas na página */
+    var observador = new MutationObserver(function (mutacoes) {
+      for (var i = 0; i < mutacoes.length; i++) {
+        var adicionados = mutacoes[i].addedNodes;
+        for (var j = 0; j < adicionados.length; j++) {
+          var no = adicionados[j];
+          if (no.nodeType !== 1) continue;
+          var temPetala =
+            (no.matches && no.matches(".grupo-petala")) ||
+            (no.querySelector && no.querySelector(".grupo-petala"));
+          if (temPetala) {
+            inicializarTooltipsPetalas();
+            return;
+          }
+        }
+      }
+    });
+    observador.observe(document.body, { childList: true, subtree: true });
+  });
+})();
+
 /* Reposicionando o dropdown do slim select quando ele sai da tela */
 (function () {
   /* Movendo o dropdown para a esquerda o suficiente para caber na janela */

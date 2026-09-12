@@ -859,6 +859,129 @@ input:focus-visible,
   font-weight: 700;
 }
 
+/* ---------------------------------------------------- gráfico de pétalas */
+
+/* Centralizando o leque de pétalas dentro do bloco */
+.petalas {
+  width: 100%;
+  text-align: center;
+}
+
+/* Tornando o SVG das pétalas responsivo e com leve profundidade */
+.svg-petalas {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  overflow: visible;
+  filter: drop-shadow(0 4px 8px rgba(10, 30, 60, 0.05));
+}
+
+/* Destacando cada pétala sob o mouse ou foco de teclado */
+.grupo-petala {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+/* Removendo o contorno padrão e mantendo o destaque próprio do foco */
+.grupo-petala:focus,
+.grupo-petala:focus-visible {
+  outline: none;
+}
+
+.grupo-petala:hover,
+.grupo-petala:focus-visible {
+  opacity: 0.95;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* Aumentando o círculo do valor quando a pétala está em destaque */
+.circulo-nota {
+  transition: r 0.2s ease;
+}
+
+.grupo-petala:hover .circulo-nota,
+.grupo-petala:focus-visible .circulo-nota {
+  r: 16;
+}
+
+/* Explicando o ponto escuro da mediana abaixo do desenho */
+.petalas-mediana {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+}
+
+.petalas-mediana__ponto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #0A1E3C;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 0 0 1px rgba(10, 30, 60, 0.15);
+}
+
+/* Estilizando o cartão da tooltip das pétalas no padrão do painel */
+.tooltip.tooltip-ibisma .tooltip-inner {
+  background-color: #FFFFFF;
+  color: #0A1E3C;
+  border: 1px solid #E3E6EB;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(10, 30, 60, 0.18);
+  padding: 0.65rem 0.8rem;
+  font-family: 'Source Sans Pro', system-ui, sans-serif;
+  text-align: left;
+}
+
+/* Colorindo as setas da tooltip conforme a posição calculada */
+.tooltip.tooltip-ibisma .tooltip-arrow::before {
+  border-color: transparent;
+}
+
+.tooltip.tooltip-ibisma.bs-tooltip-top .tooltip-arrow::before {
+  border-top-color: #FFFFFF;
+}
+
+.tooltip.tooltip-ibisma.bs-tooltip-bottom .tooltip-arrow::before {
+  border-bottom-color: #FFFFFF;
+}
+
+.tooltip.tooltip-ibisma.bs-tooltip-start .tooltip-arrow::before {
+  border-left-color: #FFFFFF;
+}
+
+.tooltip.tooltip-ibisma.bs-tooltip-end .tooltip-arrow::before {
+  border-right-color: #FFFFFF;
+}
+
+/* Alinhando os textos internos do cartão da pétala */
+.tooltip-petala__titulo {
+  font-size: var(--fonte-media-size);
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.tooltip-petala__linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tooltip-petala__rotulo {
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tooltip-petala__valor {
+  font-size: var(--fonte-media-size);
+  font-weight: 700;
+}
+
 /* -------------------------------------------------------- estado vazio */
 
 /* Centralizando as mensagens de estado vazio */

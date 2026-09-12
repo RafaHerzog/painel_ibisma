@@ -1,7 +1,8 @@
 # =============================================================================
 #   FUNÇÕES AUXILIARES DE GRÁFICOS
 #   Monta os gráficos do painel com echarts4r (licença Apache 2.0):
-#   evolução temporal, flor dos blocos e diferenças entre municípios.
+#   evolução temporal e diferenças entre municípios. O leque de pétalas
+#   dos blocos fica em fct_petalas.R, em SVG.
 # =============================================================================
 
 # Definindo a família de fontes usada em todos os gráficos
@@ -21,6 +22,10 @@ CSS_TOOLTIP <- paste0(
 #' @return Objeto echarts4r com o estilo aplicado.
 #' @noRd
 estilo_echarts <- function(grafico, legendar = TRUE) {
+  # Enviando um ícone para cada item para não quebrar legendas com duas séries
+  itens_legenda <- length(grafico$x$opts$legend$data)
+  icones <- if (itens_legenda > 0) rep("roundRect", itens_legenda) else NULL
+
   grafico |>
     echarts4r::e_text_style(
       fontFamily = "Source Sans Pro, system-ui, sans-serif",
@@ -30,7 +35,7 @@ estilo_echarts <- function(grafico, legendar = TRUE) {
       show = legendar,
       top = 0,
       left = 0,
-      icon = "roundRect",
+      icons = icones,
       itemWidth = 14,
       itemHeight = 8,
       textStyle = list(color = COR_AZUL_ESCURO, fontSize = 12),
@@ -288,113 +293,6 @@ grafico_diferencas <- function(comparacao, nome_a, nome_b) {
     ) |>
     estilo_echarts(legendar = FALSE) |>
     echarts4r::e_grid(left = 150, right = 50, top = 10, bottom = 30)
-}
-
-#' Montando a flor dos seis blocos do IBISMA
-#'
-#' @param blocos Data frame com nome, valor, categoria, cor e posição de cada bloco.
-#' @param medianas Vetor com a mediana do Brasil por bloco (opcional).
-#' @return Objeto echarts4r pronto para renderização.
-#' @noRd
-grafico_flor <- function(blocos, medianas = NULL) {
-  # Mantendo os nomes como texto para que o echarts receba os rótulos corretos
-  blocos$nome <- as.character(blocos$nome)
-
-  # Acrescentando a mediana de referência quando ela for informada
-  if (!is.null(medianas)) {
-    blocos$mediana <- unname(medianas[as.character(blocos$nome)])
-  }
-
-  # Montando a tabela de apoio usada pelo tooltip em JavaScript
-  info <- stats::setNames(
-    lapply(seq_len(nrow(blocos)), function(i) {
-      list(
-        valor = formatar_numero(blocos$valor[i]),
-        categoria = as.character(blocos$categoria[i]),
-        posicao = rotulo_posicao(blocos$pos_nac[i], blocos$total_nac[i])
-      )
-    }),
-    as.character(blocos$nome)
-  )
-
-  # Criando o gráfico polar com uma pétala por bloco
-  flor <- blocos |>
-    echarts4r::e_charts(nome, reorder = FALSE) |>
-    echarts4r::e_polar() |>
-    echarts4r::e_angle_axis(
-      serie = nome,
-      startAngle = 90,
-      axisLabel = list(
-        color = COR_AZUL_ESCURO,
-        fontSize = 11,
-        fontFamily = "Source Sans Pro"
-      ),
-      axisLine = list(show = FALSE),
-      axisTick = list(show = FALSE),
-      splitLine = list(show = FALSE)
-    ) |>
-    echarts4r::e_radius_axis(
-      min = 0,
-      max = 100,
-      axisLabel = list(show = FALSE),
-      axisLine = list(show = FALSE),
-      axisTick = list(show = FALSE),
-      splitLine = list(show = FALSE)
-    ) |>
-    echarts4r::e_bar(
-      serie = valor,
-      name = "Valor",
-      legend = FALSE,
-      coord_system = "polar",
-      barWidth = "60%",
-      colorBy = "data",
-      itemStyle = list(borderRadius = 4),
-      label = list(show = FALSE)
-    ) |>
-    echarts4r::e_color(blocos$cor) |>
-    echarts4r::e_legend(
-      show = !is.null(medianas),
-      top = 0,
-      left = "center",
-      icon = "circle",
-      itemWidth = 8,
-      itemHeight = 8,
-      textStyle = list(color = COR_AZUL_ESCURO, fontSize = 11),
-      data = list("Mediana Brasil")
-    ) |>
-    tooltip_echarts(
-      trigger = "item",
-      formatter = paste0(
-        "function (p) {
-           var info = ", jsonlite::toJSON(info, auto_unbox = TRUE), ";
-           var d = info[p.name];
-           if (!d) return p.name;
-           return '<b>' + p.name + '</b><br/>' +
-                  'Valor: <b>' + d.valor + '</b><br/>' +
-                  'Categoria: ' + d.categoria + '<br/>' +
-                  'Ranking nacional: ' + d.posicao;
-         }"
-      )
-    )
-
-  # Sobrepondo os pontos com a mediana do Brasil em cada bloco
-  if (!is.null(medianas)) {
-    flor <- flor |>
-      echarts4r::e_scatter(
-        serie = mediana,
-        name = "Mediana Brasil",
-        coord_system = "polar",
-        symbolSize = 7,
-        silent = TRUE,
-        tooltip = list(show = FALSE),
-        itemStyle = list(
-          color = COR_AZUL_ESCURO,
-          borderColor = "#FFFFFF",
-          borderWidth = 1.5
-        )
-      )
-  }
-  flor
 }
 
 #' Montando um gráfico vazio com uma mensagem central

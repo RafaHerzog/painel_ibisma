@@ -172,13 +172,14 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
           class = "bloco-descricao",
           paste0(
             "Cada p\u00e9tala representa um bloco do IBISMA: quanto maior a p\u00e9tala, ",
-            "maior a inseguran\u00e7a naquele bloco. O ponto escuro marca a mediana do Brasil."
+            "maior a inseguran\u00e7a naquele bloco. Passe o mouse para ver o valor, ",
+            "a categoria e o ranking; o ponto escuro marca a mediana do Brasil."
           )
         )
       )
     })
 
-    # Inserindo a flor apenas quando houver dado para o ano selecionado
+    # Inserindo as pétalas apenas quando houver dado para o ano selecionado
     output$flor_area <- shiny::renderUI({
       if (is.null(resumo())) {
         return(htmltools::tagList(
@@ -191,15 +192,8 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       }
       htmltools::tagList(
         cabecalho_flor(),
-        echarts4r::echarts4rOutput(ns("flor"), height = "380px")
+        grafico_petalas(resumo()$blocos, medianas = medianas_blocos())
       )
-    })
-
-    # Montando a flor dos seis blocos do município
-    output$flor <- echarts4r::renderEcharts4r({
-      # Interrompendo quando o município não tem dado no ano escolhido
-      shiny::req(resumo())
-      grafico_flor(resumo()$blocos, medianas = medianas_blocos())
     })
 
     # Montando o resumo numérico ao lado da flor
