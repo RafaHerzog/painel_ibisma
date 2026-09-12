@@ -1,0 +1,39 @@
+Package: painel_ibisma_v4
+Title: Painel do Índice Brasileiro de Insegurança em Saúde Materna
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "firstname",
+           family = "lastname",
+           role = c("aut", "cre"),
+           email = "your@email.com")
+Description: Painel interativo do IBISMA - Índice Brasileiro de
+    Insegurança em Saúde Materna. Apresenta a distribuição territorial do
+    índice e de seus seis blocos, o ranking dos municípios e o perfil
+    municipal com evolução temporal e comparação entre municípios.
+License: What license is it under?
+Imports: 
+    config,
+    golem,
+    shiny,
+    bslib,
+    shinyWidgets,
+    htmltools,
+    htmlwidgets,
+    jsonlite,
+    leaflet,
+    sf,
+    tidyr,
+    reactable,
+    echarts4r,
+    waiter,
+    fontawesome
+Suggests: 
+    testthat (>= 3.0.0),
+    chromote,
+    callr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Depends: 
+    R (>= 3.5)
+Config/testthat/edition: 3

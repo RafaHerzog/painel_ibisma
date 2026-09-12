@@ -1,0 +1,221 @@
+# =============================================================================
+#   FUNÇÕES AUXILIARES DO MAPA
+#   Prepara a malha, os valores e os textos dos tooltips usados pelo leaflet,
+#   além de definir o estilo-base do mapa do painel.
+# =============================================================================
+
+# Guardando a malha em memória para não reler o arquivo a cada sessão
+.malha_cache <- new.env(parent = emptyenv())
+
+#' Carregando a malha municipal simplificada
+#'
+#' @return Objeto sf com os polígonos dos municípios brasileiros.
+#' @noRd
+carregar_malha_municipios <- function() {
+  # Lendo o arquivo apenas na primeira chamada e reutilizando depois
+  if (is.null(.malha_cache$municipios)) {
+    .malha_cache$municipios <- readRDS(
+      app_sys("app", "data", "malha_municipios.rds")
+    )
+  }
+  .malha_cache$municipios
+}
+
+#' Carregando a malha estadual simplificada
+#'
+#' @return Objeto sf com os polígonos das unidades da federação.
+#' @noRd
+carregar_malha_ufs <- function() {
+  # Lendo o arquivo apenas na primeira chamada e reutilizando depois
+  if (is.null(.malha_cache$ufs)) {
+    .malha_cache$ufs <- readRDS(
+      app_sys("app", "data", "malha_ufs.rds")
+    )
+  }
+  .malha_cache$ufs
+}
+
+#' Montando o texto HTML do tooltip de um município
+#'
+#' @param municipio Nome do município.
+#' @param sigla_uf Sigla da unidade da federação.
+#' @param valor Valor da medida exibida.
+#' @param categoria Categoria de vulnerabilidade.
+#' @param nome_medida Nome da medida exibida.
+#' @return Texto HTML pronto para o tooltip do leaflet.
+#' @noRd
+tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida) {
+  # Tratando municípios sem dado no ano selecionado, vetorizadamente
+  sem_dado <- is.na(valor)
+  valor_texto <- ifelse(sem_dado, "\u2014", formatar_numero(valor))
+  categoria_texto <- ifelse(sem_dado, "Sem dados", categoria)
+  cor_cat <- ifelse(sem_dado, COR_SEM_DADOS, cor_categoria(categoria))
+
+  # Montando o HTML do tooltip com o nome, o valor e a categoria
+  paste0(
+    '<div class="tooltip-mapa">',
+    '<div class="tooltip-mapa__titulo">', municipio, " <span>(", sigla_uf, ")</span></div>",
+    '<div class="tooltip-mapa__linha">',
+    '<span class="tooltip-mapa__rotulo">', nome_medida, "</span>",
+    '<span class="tooltip-mapa__valor">', valor_texto, "</span>",
+    "</div>",
+    '<div class="tooltip-mapa__categoria" style="--cor-cat:', cor_cat, '">',
+    categoria_texto,
+    "</div>",
+    "</div>"
+  )
+}
+
+#' Preparando os dados anuais que alimentam o mapa
+#'
+#' @param dados Lista retornada por preparar_dados().
+#' @param ano Ano de referência.
+#' @param medida Identificador da medida exibida.
+#' @return Data frame com categoria, cor e tooltip prontos para o mapa.
+#' @noRd
+dados_mapa <- function(dados, ano, medida) {
+  # Buscando os valores do ano e da medida selecionados
+  base <- valores_ano(dados, ano, medida)
+
+  # Montando a paleta da medida (roxa para o IBISMA, do bloco para os demais)
+  paleta <- stats::setNames(paleta_mapa(medida), CATEGORIAS)
+
+  # Definindo a cor de cada município conforme sua categoria
+  base$cor <- ifelse(
+    is.na(base$valor),
+    COR_SEM_DADOS,
+    unname(paleta[as.character(base$categoria)])
+  )
+
+  # Montando o texto HTML exibido ao passar o mouse
+  base$tooltip <- tooltip_municipio(
+    municipio = base$municipio,
+    sigla_uf = base$sigla_uf,
+    valor = base$valor,
+    categoria = as.character(base$categoria),
+    nome_medida = nome_medida(medida)[1]
+  )
+  base
+}
+
+#' Juntando a malha municipal aos valores do ano e da medida
+#'
+#' @param dados Lista retornada por preparar_dados().
+#' @param ano Ano de referência.
+#' @param medida Identificador da medida exibida.
+#' @return Objeto sf com geometria, cor e tooltip de cada município.
+#' @noRd
+malha_do_ano <- function(dados, ano, medida) {
+  # Buscando a malha e os valores preparados para o mapa
+  malha <- carregar_malha_municipios()
+  base <- dados_mapa(dados, ano, medida)
+
+  # Acrescentando cor e tooltip à malha, mantendo todos os municípios
+  malha_completa <- merge(
+    malha,
+    base[, c("codmunres", "cor", "tooltip")],
+    by = "codmunres",
+    all.x = TRUE,
+    sort = FALSE
+  )
+
+  # Garantindo a ordem original dos municípios após a junção
+  malha_completa <- malha_completa[match(malha$codmunres, malha_completa$codmunres), ]
+  row.names(malha_completa) <- NULL
+
+  # Criando o identificador em texto exigido pelo leaflet para indexar as camadas
+  malha_completa$codmunres_txt <- as.character(malha_completa$codmunres)
+  malha_completa
+}
+
+#' Criando o mapa-base do painel
+#'
+#' @return Objeto leaflet sem camadas de dados.
+#' @noRd
+mapa_base <- function() {
+  # Configurando um mapa limpo, sem tiles externos e com desenho em canvas
+  leaflet::leaflet(
+    options = leaflet::leafletOptions(
+      preferCanvas = TRUE,
+      attributionControl = FALSE,
+      minZoom = 3,
+      maxZoom = 10,
+      zoomControl = TRUE
+    )
+  ) |>
+    # Enquadrando o Brasil no carregamento inicial
+    leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6)
+}
+
+#' Desenhando os municípios no mapa
+#'
+#' @param mapa Objeto leaflet.
+#' @param base Objeto sf retornado por malha_do_ano().
+#' @return Objeto leaflet com a camada de municípios.
+#' @noRd
+desenhar_municipios <- function(mapa, base) {
+  # Usando o código do município como identificador de cada polígono
+  mapa |>
+    leaflet::addPolygons(
+      data = base,
+      layerId = ~codmunres_txt,
+      fillColor = ~cor,
+      fillOpacity = 0.88,
+      color = "#FFFFFF",
+      weight = 0.25,
+      opacity = 0.9,
+      smoothFactor = 1,
+      label = lapply(base$tooltip, htmltools::HTML),
+      labelOptions = leaflet::labelOptions(
+        direction = "auto",
+        sticky = TRUE,
+        opacity = 1,
+        className = "tooltip-ibisma"
+      ),
+      highlightOptions = leaflet::highlightOptions(
+        weight = 1.6,
+        color = COR_AZUL_ESCURO,
+        fillOpacity = 0.95,
+        bringToFront = TRUE
+      )
+    )
+}
+
+#' Desenhando os contornos das unidades da federação
+#'
+#' @param mapa Objeto leaflet.
+#' @return Objeto leaflet com a camada de contornos estaduais.
+#' @noRd
+desenhar_ufs <- function(mapa) {
+  # Sobrepondo os limites estaduais sem interferir na interação dos municípios
+  malha_ufs <- carregar_malha_ufs()
+  mapa |>
+    leaflet::addPolygons(
+      data = malha_ufs,
+      fill = FALSE,
+      color = "#FFFFFF",
+      weight = 1.1,
+      opacity = 0.95,
+      smoothFactor = 0,
+      options = leaflet::pathOptions(interactive = FALSE)
+    )
+}
+
+#' Enviando ao navegador a atualização de cores e tooltips do mapa
+#'
+#' @param session Sessão do Shiny.
+#' @param output_id Identificador do output do mapa.
+#' @param base Data frame retornado por dados_mapa().
+#' @return Nada; envia a mensagem para o JavaScript do painel.
+#' @noRd
+atualizar_municipios <- function(session, output_id, base) {
+  # Atualizando os polígonos já desenhados sem reenviar a geometria
+  session$sendCustomMessage(
+    "ibisma_mapa_atualiza",
+    list(
+      id = output_id,
+      cores = stats::setNames(base$cor, as.character(base$codmunres)),
+      labels = stats::setNames(base$tooltip, as.character(base$codmunres))
+    )
+  )
+}

@@ -1,0 +1,955 @@
+/* =============================================================================
+      TIPOGRAFIA E VARIÁVEIS GLOBAIS
+      Define as variáveis CSS de tamanho de fonte usadas em todo o painel,
+      com valores responsivos via media queries para diferentes resoluções.
+      Também declara as classes utilitárias de fonte (.fonte-grande, etc.)
+      e as cores e espaçamentos base do layout geral.
+   ============================================================================= */
+
+/* Cor do texto principal aplicada globalmente */
+body, .content-wrapper, .main-header, .main-sidebar {
+  color: #0A1E3C !important;
+}
+
+/* Fonte principal do painel: Source Sans Pro */
+@font-face {
+    font-family: 'Source Sans Pro';
+    font-style: italic;
+    font-weight: 400;
+    src: url(https://fonts.gstatic.com/s/sourcesanspro/v23/6xK1dSBYKcSV-LCoeQqfX1RYOo3qPZ7qsDJT9g.woff2) format('woff2');
+    unicode-range: U +0460 -052F, U +1C80 -1C8A, U +20B4, U +2DE0 -2DFF, U + A640-A69F, U + FE2E-FE2F;
+}
+
+/* Variáveis de escala tipográfica e do botão circular — base para telas ≥ 1920px */
+:root {
+  --tamanho-circle-btn: 8.75rem; /* 140px */
+  --fonte-titulo-home-size: 2.2rem;   /* 35.2px */
+  --fonte-destaque-caixas-size: 1.875rem;   /* 30px */
+  --fonte-titulos-size: 1.75rem;           /* 28px */
+  --fonte-subtitulos-size: 1.625rem;         /* 26px */
+  --fonte-titulos-sobre-size: 1.3125rem;   /* 21px */
+  --fonte-subtitulos-sobre-size: 1.2188rem; /* 19.5px */
+  --fonte-muito-grande-size: 1.125rem;     /* 18px */
+  --fonte-grande-size: 1rem;               /* 16px */
+  --fonte-semi-grande-size: 0.9375rem;     /* 15px */
+  --fonte-media-size: 0.875rem;            /* 14px */
+  --fonte-aviso-size: 0.8125rem;           /* 13px */
+  --fonte-pequena-size: 0.75rem;         /* 12px */
+}
+
+/* Redução proporcional da tipografia para telas até 1920px */
+@media (max-width: 1920px) {
+  :root {
+    --tamanho-circle-btn: 7.875rem;
+    --fonte-titulo-home-size: 1.98rem;     /* 31.68px */
+    --fonte-destaque-caixas-size: 1.6875rem;  /* 27px */
+    --fonte-titulos-size: 1.575rem;           /* 25.2px */
+    --fonte-subtitulos-size: 1.4625rem;         /* 23.4px */
+    --fonte-titulos-sobre-size: 1.1813rem;    /* 18.9px */
+    --fonte-subtitulos-sobre-size: 1.0938rem; /* 17.5px */
+    --fonte-muito-grande-size: 1.0125rem;     /* 16.2px */
+    --fonte-grande-size: 0.9rem;              /* 14.4px */
+    --fonte-semi-grande-size: 0.8438rem;      /* 13.5px */
+    --fonte-media-size: 0.7875rem;            /* 12.6px */
+    --fonte-aviso-size: 0.7313rem;            /* 11.7px */
+    --fonte-pequena-size: 0.675rem;          /* 10.8px */
+  }
+}
+
+/* Redução proporcional da tipografia para telas até 1280px */
+@media (max-width: 1280px) {
+  :root {
+    --tamanho-circle-btn: 7rem;
+    --fonte-titulo-home-size: 1.76rem;   /* 28.16px */
+    --fonte-destaque-caixas-size: 1.5rem;      /* 24px */
+    --fonte-titulos-size: 1.4rem;             /* 22.4px */
+    --fonte-subtitulos-size: 1.3rem;          /* 20.8px */
+    --fonte-titulos-sobre-size: 1.05rem;      /* 16.8px */
+    --fonte-subtitulos-sobre-size: 0.975rem;  /* 15.6px */
+    --fonte-muito-grande-size: 0.9rem;        /* 14.4px */
+    --fonte-grande-size: 0.8rem;              /* 12.8px */
+    --fonte-semi-grande-size: 0.75rem;        /* 12px */
+    --fonte-media-size: 0.7rem;               /* 11.2px */
+    --fonte-aviso-size: 0.65rem;              /* 10.4px */
+    --fonte-pequena-size: 0.6rem;            /* 9.6px */
+  }
+}
+
+/* Classes utilitárias de tamanho de fonte — consomem as variáveis acima */
+.fonte-titulo-home     { font-size: var(--fonte-titulo-home-size) !important; }
+.fonte-destaque-caixas  { font-size: var(--fonte-destaque-caixas-size) !important; }
+.fonte-titulos          { font-size: var(--fonte-titulos-size) !important; }
+.fonte-subtitulos        { font-size: var(--fonte-subtitulos-size) !important; }
+.fonte-titulos-sobre    { font-size: var(--fonte-titulos-sobre-size) !important; }
+.fonte-subtitulos-sobre { font-size: var(--fonte-subtitulos-sobre-size) !important; }
+.fonte-muito-grande     { font-size: var(--fonte-muito-grande-size) !important; }
+.fonte-grande           { font-size: var(--fonte-grande-size) !important; }
+.fonte-semi-grande      { font-size: var(--fonte-semi-grande-size) !important; }
+.fonte-media            { font-size: var(--fonte-media-size) !important; }
+
+/* =============================================================================
+     PAINEL IBISMA — IDENTIDADE E LAYOUT
+     Estilos próprios das seções do painel: navegação por âncoras, controles
+     em frase, blocos de conteúdo, mapa, ranking, perfil e rodapé.
+   ============================================================================= */
+
+/* Definindo variáveis adicionais de tipografia e espaçamento do painel */
+:root {
+  --fonte-numero-destaque-size: 3.25rem;
+  --espaco-secao: 4.5rem;
+  --cor-texto-suave: #5A6472;
+  --cor-linha: #ECEEF2;
+  --cor-fundo-bloco: #FAFBFD;
+  --cor-roxo-ibisma: #4B1D73;
+  --cor-azul-claro: #32A0FF;
+}
+
+/* Reduzindo o número de destaque em telas médias */
+@media (max-width: 1280px) {
+  :root {
+    --fonte-numero-destaque-size: 2.75rem;
+    --espaco-secao: 3.5rem;
+  }
+}
+
+/* Reduzindo ainda mais a tipografia e os espaços em telas pequenas */
+@media (max-width: 768px) {
+  :root {
+    --fonte-titulo-home-size: 1.55rem;
+    --fonte-titulos-size: 1.3rem;
+    --fonte-subtitulos-size: 1.2rem;
+    --fonte-titulos-sobre-size: 1rem;
+    --fonte-subtitulos-sobre-size: 0.95rem;
+    --fonte-muito-grande-size: 0.85rem;
+    --fonte-grande-size: 0.78rem;
+    --fonte-semi-grande-size: 0.74rem;
+    --fonte-media-size: 0.7rem;
+    --fonte-aviso-size: 0.66rem;
+    --fonte-pequena-size: 0.62rem;
+    --fonte-numero-destaque-size: 2.4rem;
+    --espaco-secao: 2.75rem;
+  }
+}
+
+/* Ativando a rolagem suave entre as âncoras e compensando a navbar fixa */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px;
+}
+
+/* Reservando o espaço da navbar para as âncoras das seções */
+section[id],
+a[id] {
+  scroll-margin-top: 84px;
+}
+
+/* Definindo a fonte e o comportamento base do painel */
+body {
+  font-family: 'Source Sans Pro', system-ui, -apple-system, sans-serif;
+  background-color: #FFFFFF;
+  color: #0A1E3C;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Limitando a largura do conteúdo e centralizando as seções */
+.painel-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+/* ----------------------------------------------------------------- navbar */
+
+/* Barra de navegação branca, fixa no topo e com leve transparência */
+.navbar-ibisma {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--cor-linha);
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+/* Distribuindo marca e menu na mesma linha */
+.navbar-ibisma .navbar-conteudo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Ajustando o logo da marca */
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0;
+  margin-right: auto;
+}
+
+.navbar-brand__logo {
+  height: 2.15rem;
+  width: auto;
+}
+
+/* Destacando o nome do painel ao lado do logo */
+.navbar-brand__texto {
+  font-size: var(--fonte-muito-grande-size);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #0A1E3C;
+}
+
+/* Estilizando os links das âncoras */
+.navbar-ibisma .nav-link {
+  font-size: var(--fonte-muito-grande-size);
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  padding: 0.15rem 0.25rem;
+  margin-left: 1.5rem;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.navbar-ibisma .nav-link:hover {
+  color: var(--cor-roxo-ibisma);
+}
+
+/* Marcando visualmente a seção visível na navegação */
+.navbar-ibisma .nav-link.active {
+  color: var(--cor-roxo-ibisma);
+  border-bottom-color: var(--cor-roxo-ibisma);
+}
+
+/* Dando visibilidade ao foco por teclado em todos os elementos interativos */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+.ss-main:focus-visible {
+  outline: 3px solid rgba(50, 160, 255, 0.55);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ------------------------------------------------------------- seções */
+
+/* Definindo o respiro vertical entre as seções da página */
+.secao-painel {
+  padding-top: var(--espaco-secao);
+  padding-bottom: var(--espaco-secao);
+}
+
+/* Criando uma separação sutil entre as seções */
+.secao-painel + .secao-painel {
+  border-top: 1px solid var(--cor-linha);
+}
+
+/* Alinhando o cabeçalho editorial das seções */
+.secao-cabecalho {
+  max-width: 62rem;
+  margin-bottom: 1.75rem;
+}
+
+/* Estilizando o rótulo curto acima do título */
+.secao-eyebrow {
+  display: inline-block;
+  font-size: var(--fonte-media-size);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cor-azul-claro);
+  margin-bottom: 0.4rem;
+}
+
+/* Estilizando o título principal de cada seção */
+.secao-titulo {
+  font-size: var(--fonte-titulo-home-size);
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 0.6rem 0;
+  color: #0A1E3C;
+}
+
+/* Estilizando o parágrafo de apoio das seções */
+.secao-descricao {
+  font-size: var(--fonte-muito-grande-size);
+  color: var(--cor-texto-suave);
+  max-width: 52rem;
+  margin: 0;
+}
+
+/* ------------------------------------------------- controles em frase */
+
+/* Montando a faixa de controles integrada à linguagem natural */
+.controles-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1.75rem;
+  background-color: #F4F8FF;
+  border-radius: 16px;
+}
+
+/* Alinhando cada controle da frase sem margens extras */
+.controles-inline .form-group,
+.controles-inline .shiny-input-container {
+  margin-bottom: 0;
+  width: auto !important;
+  max-width: 100%;
+}
+
+/* Estilizando os textos que ligam os controles */
+.controle-texto {
+  font-size: var(--fonte-muito-grande-size);
+  color: var(--cor-texto-suave);
+}
+
+/* Transformando o slim select em um controle sublinhado dentro da frase */
+.controles-inline .ss-main {
+  --ss-font-color: #0A1E3C;
+  --ss-bg-color: transparent;
+  --ss-border-color: transparent;
+  --ss-border-radius: 0;
+  --ss-focus-color: transparent;
+  --ss-spacing-s: 0.15rem;
+  --ss-spacing-m: 0.35rem;
+  --ss-spacing-l: 0.5rem;
+  border: none;
+  border-bottom: 2px solid rgba(50, 160, 255, 0.45);
+  padding: 0 0.25rem 0.05rem 0.25rem;
+  min-height: 0;
+  font-size: var(--fonte-muito-grande-size);
+  font-weight: 700;
+  color: var(--cor-roxo-ibisma);
+  transition: border-color 0.2s ease;
+}
+
+/* Realçando o controle sob o mouse */
+.controles-inline .ss-main:hover {
+  border-bottom-color: var(--cor-azul-claro);
+}
+
+/* Reforçando a cor do controle em foco */
+.controles-inline .ss-main:focus {
+  box-shadow: none;
+  border-bottom-color: var(--cor-roxo-ibisma);
+}
+
+/* Ajustando o tamanho do texto das opções no controle em frase */
+.controles-inline .ss-main .ss-values .ss-placeholder,
+.controles-inline .ss-main .ss-values .ss-single {
+  font-size: var(--fonte-muito-grande-size);
+}
+
+/* ---------------------------------------------------------- slim select */
+
+/* Definindo a aparência moderna dos seletores fora da frase */
+.ss-main {
+  --ss-primary-color: var(--cor-roxo-ibisma);
+  --ss-bg-color: #FFFFFF;
+  --ss-font-color: #0A1E3C;
+  --ss-border-color: rgba(10, 30, 60, 0.16);
+  --ss-border-radius: 10px;
+  --ss-focus-color: rgba(50, 160, 255, 0.35);
+  --ss-font-placeholder-color: var(--cor-texto-suave);
+  --ss-disabled-color: #F2F4F7;
+  font-size: var(--fonte-media-size);
+}
+
+/* Arredondando e sombreando a lista de opções */
+.ss-content {
+  border: 1px solid var(--cor-linha);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(10, 30, 60, 0.14);
+  font-family: 'Source Sans Pro', system-ui, sans-serif;
+  font-size: var(--fonte-media-size);
+  z-index: 2000;
+}
+
+/* Estilizando o campo de busca dentro da lista */
+.ss-content .ss-search input {
+  border-radius: 8px;
+  font-size: var(--fonte-media-size);
+}
+
+/* Dando destaque roxo à opção em foco na lista */
+.ss-content .ss-list .ss-option:hover,
+.ss-content .ss-list .ss-option.ss-highlighted,
+.ss-content .ss-list .ss-option.ss-selected {
+  background-color: var(--cor-roxo-ibisma) !important;
+  color: #FFFFFF !important;
+}
+
+/* -------------------------------------------------------------- blocos */
+
+/* Criando os blocos de conteúdo com fundo suave e cantos arredondados */
+.painel-bloco {
+  background-color: var(--cor-fundo-bloco);
+  border-radius: 18px;
+  padding: 1.35rem 1.5rem 1.5rem 1.5rem;
+  height: 100%;
+}
+
+/* Alinhando o cabeçalho interno dos blocos */
+.bloco-cabecalho {
+  margin-bottom: 0.9rem;
+}
+
+/* Colocando título e controles na mesma linha quando houver espaço */
+.bloco-cabecalho--linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+/* Removendo a margem dos controles dentro dos cabeçalhos */
+.bloco-cabecalho .controles-inline {
+  margin-bottom: 0;
+  padding: 0.4rem 0.75rem;
+  background-color: #FFFFFF;
+}
+
+/* Estilizando o título dos blocos */
+.bloco-titulo {
+  font-size: var(--fonte-titulos-sobre-size);
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: #0A1E3C;
+}
+
+/* Estilizando a descrição dos blocos */
+.bloco-descricao {
+  font-size: var(--fonte-media-size);
+  color: var(--cor-texto-suave);
+  margin: 0;
+  max-width: 46rem;
+}
+
+/* Estilizando as notas de rodapé dos blocos */
+.bloco-nota {
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+  margin: 0.75rem 0 0 0;
+}
+
+/* ---------------------------------------------------------------- mapa */
+
+/* Definindo a altura responsiva da área do mapa */
+.mapa-area {
+  height: clamp(420px, 60vh, 680px);
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: #EDF1F7;
+}
+
+/* Ajustando a altura do mapa em telas pequenas */
+@media (max-width: 768px) {
+  .mapa-area {
+    height: 58vh;
+    min-height: 340px;
+  }
+}
+
+/* Removendo o fundo cinza padrão do leaflet */
+.leaflet-container {
+  background: #EDF1F7;
+  font-family: 'Source Sans Pro', system-ui, sans-serif;
+}
+
+/* Estilizando o tooltip do mapa */
+.leaflet-tooltip.tooltip-ibisma {
+  background: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(10, 30, 60, 0.18);
+  padding: 0.7rem 0.85rem;
+  color: #0A1E3C;
+}
+
+/* Escondendo a seta do tooltip para um visual mais limpo */
+.leaflet-tooltip.tooltip-ibisma::before {
+  display: none;
+}
+
+/* Alinhando o título do tooltip */
+.tooltip-mapa__titulo {
+  font-size: var(--fonte-media-size);
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+/* Suavizando a sigla da UF no tooltip */
+.tooltip-mapa__titulo span {
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+}
+
+/* Alinhando rótulo e valor na mesma linha */
+.tooltip-mapa__linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Estilizando o rótulo da medida no tooltip */
+.tooltip-mapa__rotulo {
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Destacando o valor no tooltip */
+.tooltip-mapa__valor {
+  font-size: var(--fonte-subtitulos-sobre-size);
+  font-weight: 700;
+}
+
+/* Transformando a categoria em um selo colorido no tooltip */
+.tooltip-mapa__categoria {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--cor-cat);
+  color: #FFFFFF;
+  font-size: var(--fonte-pequena-size);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- legenda */
+
+/* Empilhando título e itens da legenda */
+.legenda-categorias {
+  margin-top: 0.9rem;
+}
+
+/* Estilizando o título da legenda */
+.legenda-titulo {
+  display: block;
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+  margin-bottom: 0.45rem;
+}
+
+/* Distribuindo os itens da legenda em linha com quebra */
+.legenda-itens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+}
+
+/* Alinhando cor e rótulo de cada item */
+.legenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Desenhando o quadrado de cor da legenda */
+.legenda-cor {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(10, 30, 60, 0.12);
+  flex: 0 0 auto;
+}
+
+/* Estilizando o texto da legenda */
+.legenda-rotulo {
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+}
+
+/* ---------------------------------------------------------- selo categoria */
+
+/* Criando o selo arredondado de categoria */
+.badge-categoria {
+  display: inline-block;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background-color: var(--cor-fundo);
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- ranking */
+
+/* Limitando a altura do bloco do ranking para acompanhar o mapa */
+.painel-bloco--ranking {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Suavizando a borda da tabela dentro do bloco */
+.painel-bloco--ranking .reactable {
+  font-size: var(--fonte-media-size);
+}
+
+/* Compactando a busca da tabela de ranking */
+.painel-bloco--ranking .rt-search {
+  margin-bottom: 0.75rem;
+  max-width: 320px;
+}
+
+/* Diminuindo o espaço dos controles de página do reactable */
+.painel-bloco--ranking .rt-pagination {
+  margin-top: 0.5rem;
+  font-size: var(--fonte-pequena-size);
+}
+
+/* ------------------------------------------------ perfil — cabeçalho */
+
+/* Empilhando o cabeçalho do perfil */
+.perfil-hero {
+  margin-bottom: 1.75rem;
+}
+
+/* Destacando o nome do município no perfil */
+.perfil-nome {
+  font-size: var(--fonte-titulo-home-size);
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+}
+
+/* Suavizando a sigla da UF ao lado do nome */
+.perfil-uf {
+  font-size: var(--fonte-titulos-size);
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  margin-left: 0.35rem;
+}
+
+/* Distribuindo as métricas territoriais em linha */
+.perfil-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.5rem;
+}
+
+/* Empilhando rótulo e valor de cada métrica */
+.metrica {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Estilizando o rótulo das métricas */
+.metrica-rotulo {
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+/* Estilizando o valor das métricas */
+.metrica-valor {
+  font-size: var(--fonte-muito-grande-size);
+  font-weight: 600;
+  color: #0A1E3C;
+}
+
+/* Estilizando detalhes opcionais das métricas */
+.metrica-detalhe {
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+}
+
+/* ---------------------------------------------- perfil — índice e blocos */
+
+/* Alinhando valor e selo do índice na mesma linha */
+.perfil-indice__linha {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Dando destaque ao número do IBISMA */
+.perfil-indice__valor {
+  font-size: var(--fonte-numero-destaque-size);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cor-roxo-ibisma);
+}
+
+/* Explicando o percentil logo abaixo do valor */
+.perfil-indice__frase {
+  font-size: var(--fonte-media-size);
+  color: var(--cor-texto-suave);
+  margin: 0 0 1.25rem 0;
+}
+
+/* Distribuindo os rankings em linha */
+.perfil-ranks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+/* Empilhando as linhas dos blocos */
+.perfil-blocos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Alinhando cor, nome, valor e categoria de cada bloco */
+.perfil-bloco-linha {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.25rem;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+/* Realçando a linha do bloco sob o mouse */
+.perfil-bloco-linha:hover {
+  background-color: #FFFFFF;
+}
+
+/* Desenhando o ponto colorido do bloco */
+.perfil-bloco-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Estilizando o nome do bloco */
+.perfil-bloco-nome {
+  font-size: var(--fonte-media-size);
+  font-weight: 600;
+  color: #0A1E3C;
+}
+
+/* Destacando o valor do bloco */
+.perfil-bloco-valor {
+  font-size: var(--fonte-media-size);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Suavizando a categoria do bloco */
+.perfil-bloco-cat {
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+/* --------------------------------------------------------- comparação */
+
+/* Limitando a largura do bloco de comparação */
+.painel-bloco--comparacao {
+  margin-top: 1.5rem;
+}
+
+/* Estilizando a tabela complementar de comparação */
+.tabela-comparacao {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: var(--fonte-media-size);
+}
+
+/* Desenhando as linhas da tabela de comparação */
+.tabela-comparacao th,
+.tabela-comparacao td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--cor-linha);
+  text-align: right;
+}
+
+/* Alinhando à esquerda a primeira coluna da tabela */
+.tabela-comparacao tbody th,
+.tabela-comparacao thead th:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+/* Destacando o cabeçalho da tabela */
+.tabela-comparacao thead th {
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+/* Colorindo as diferenças que indicam maior insegurança */
+.delta--pior {
+  color: #C2401C;
+  font-weight: 700;
+}
+
+/* Colorindo as diferenças que indicam menor insegurança */
+.delta--melhor {
+  color: #2E8B29;
+  font-weight: 700;
+}
+
+/* Mantendo neutras as diferenças iguais a zero */
+.delta--neutro {
+  color: var(--cor-texto-suave);
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------- estado vazio */
+
+/* Centralizando as mensagens de estado vazio */
+.estado-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--cor-texto-suave);
+}
+
+/* Aumentando o ícone do estado vazio */
+.estado-vazio__icone {
+  font-size: var(--fonte-titulos-size);
+  color: rgba(10, 30, 60, 0.25);
+}
+
+/* Ajustando o texto do estado vazio */
+.estado-vazio__texto {
+  font-size: var(--fonte-media-size);
+  margin: 0;
+  max-width: 32rem;
+}
+
+/* -------------------------------------------------------------- rodapé */
+
+/* Montando o rodapé escuro do painel */
+.rodape-painel {
+  margin-top: var(--espaco-secao);
+  background-color: #0A1E3C;
+  color: #FFFFFF;
+  padding: 2.5rem 0 2rem 0;
+}
+
+/* Organizando os blocos de logos do rodapé */
+.rodape-grade {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Empilhando título e logos de cada bloco */
+.rodape-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Estilizando os títulos do rodapé */
+.rodape-titulo {
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+
+/* Distribuindo os logos em linha */
+.rodape-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Colocando os logos sobre fundo branco para melhor leitura */
+.rodape-logo {
+  height: 34px;
+  width: auto;
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+}
+
+/* Estilizando a nota final do rodapé */
+.rodape-nota {
+  font-size: var(--fonte-aviso-size);
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 70rem;
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 1.25rem;
+}
+
+/* ---------------------------------------------------------- responsivo */
+
+/* Empilhando os controles em frases longas em telas pequenas */
+@media (max-width: 768px) {
+  .painel-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .controles-inline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .controles-inline .controle-texto {
+    margin-top: 0.5rem;
+  }
+
+  .controles-inline .form-group,
+  .controles-inline .shiny-input-container {
+    width: 100% !important;
+  }
+
+  .controles-inline .ss-main {
+    width: 100% !important;
+  }
+
+  .navbar-ibisma .nav-link {
+    margin-left: 0;
+    padding: 0.5rem 0;
+  }
+
+  .rodape-logo {
+    height: 28px;
+  }
+
+  .perfil-bloco-cat {
+    min-width: 0;
+  }
+}
+
+/* Desativando a rolagem suave para quem prefere menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
