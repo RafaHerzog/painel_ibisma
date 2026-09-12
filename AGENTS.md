@@ -51,9 +51,13 @@ habituadas com a codebase.
   `test-app.R` para verificações ad hoc — NÃO substitui `devtools::test()`.
 - Script reutilizável: `Rscript dev/headless_smoke.R [--port=4848]
   [--outdir=<dir>] [--wait-for=<seletor CSS>] [--shot=<nome.png>]
-  [--eval="<JS>"] [--width=1600] [--height=900]` — sobe o app em background,
-  abre no Chrome headless, espera o seletor, salva o screenshot, avalia o JS
-  (deve retornar STRING; o resultado vai ao console) e derruba o servidor.
+  [--eval="<JS>"] [--width=1600] [--height=900] [--scroll=<px>]
+  [--mouse=x,y] [--click=x,y]` — sobe o app em background, abre no Chrome
+  headless, espera o seletor, salva o screenshot, avalia o JS (deve retornar
+  STRING; o resultado vai ao console) e derruba o servidor. O `--eval` aceita
+  promises (ex.: IIFE assíncrona com `await`), `--mouse`/`--click` disparam
+  mouse real para validar hover e clique, e a captura sem `--full` registra
+  apenas a área visível (funciona em qualquer rolagem).
   Rodar com working directory na raiz do pacote.
 - Armadilhas (custo de uma sessão de debug cada):
   - `run_app()` NÃO aceita `port=` direto — a porta vai em

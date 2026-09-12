@@ -174,6 +174,37 @@ if (rolagem > 0) {
   Sys.sleep(1.5)
 }
 
+# Movendo o mouse de verdade para testar hovers quando as coordenadas forem dadas
+mouse <- pega_arg("mouse", "")
+if (nzchar(mouse)) {
+  xy <- as.numeric(strsplit(mouse, ",")[[1]])
+  sessao$Page$bringToFront()
+  # Fazendo um pequeno deslocamento para o navegador gerar o evento de movimento
+  sessao$Input$dispatchMouseEvent(type = "mouseMoved", x = xy[1] - 3, y = xy[2] - 3)
+  Sys.sleep(0.2)
+  sessao$Input$dispatchMouseEvent(type = "mouseMoved", x = xy[1], y = xy[2])
+  Sys.sleep(1.5)
+}
+
+# Clicando de verdade em um ponto da tela quando as coordenadas forem dadas
+click <- pega_arg("click", "")
+if (nzchar(click)) {
+  xy <- as.numeric(strsplit(click, ",")[[1]])
+  sessao$Page$bringToFront()
+  sessao$Input$dispatchMouseEvent(type = "mouseMoved", x = xy[1] - 3, y = xy[2] - 3)
+  sessao$Input$dispatchMouseEvent(type = "mouseMoved", x = xy[1], y = xy[2])
+  sessao$Input$dispatchMouseEvent(
+    type = "mousePressed", x = xy[1], y = xy[2],
+    button = "left", clickCount = 1
+  )
+  Sys.sleep(0.15)
+  sessao$Input$dispatchMouseEvent(
+    type = "mouseReleased", x = xy[1], y = xy[2],
+    button = "left", clickCount = 1
+  )
+  Sys.sleep(1.5)
+}
+
 # Salvando o screenshot da página inteira ou apenas da janela visível
 caminho_shot <- file.path(outdir, shot)
 if (tem_flag("full")) {
@@ -204,7 +235,10 @@ if (tem_flag("full")) {
     "(function () { var e = document.getElementById('ajuste-captura'); if (e) e.remove(); })()"
   )
 } else {
-  sessao$screenshot(filename = caminho_shot, selector = "html", wait_ = TRUE, delay = 0.5)
+  # Capturando apenas a área visível, o que funciona em qualquer rolagem
+  Sys.sleep(0.5)
+  dados_imagem <- sessao$Page$captureScreenshot()$data
+  writeBin(jsonlite::base64_dec(dados_imagem), caminho_shot)
   cat("SCREENSHOT:", caminho_shot, "\n")
 }
 
@@ -219,7 +253,12 @@ if (!identical(erros_js, "[]")) {
 
 # Avaliando o JavaScript opcional e imprimindo o valor retornado
 if (nzchar(js_eval)) {
-  resultado <- sessao$Runtime$evaluate(js_eval, returnByValue = TRUE)
+  # Avaliando também promises, o que permite testar interações com espera
+  resultado <- sessao$Runtime$evaluate(
+    js_eval,
+    returnByValue = TRUE,
+    awaitPromise = TRUE
+  )
   if (is.null(resultado$result$value) && !is.null(resultado$exceptionDetails)) {
     cat("ERRO NA AVALIACAO:", resultado$exceptionDetails$exception$description, "\n")
   } else {

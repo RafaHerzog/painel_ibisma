@@ -86,6 +86,8 @@ body, .content-wrapper, .main-header, .main-sidebar {
 .fonte-grande           { font-size: var(--fonte-grande-size) !important; }
 .fonte-semi-grande      { font-size: var(--fonte-semi-grande-size) !important; }
 .fonte-media            { font-size: var(--fonte-media-size) !important; }
+.fonte-aviso            { font-size: var(--fonte-aviso-size) !important; }
+.fonte-pequena          { font-size: var(--fonte-pequena-size) !important; }
 
 /* =============================================================================
      PAINEL IBISMA — IDENTIDADE E LAYOUT
