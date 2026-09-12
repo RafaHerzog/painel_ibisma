@@ -212,7 +212,7 @@ dev/headless_smoke.R         smoke test visual/headless parametrizável
 - Ranking com busca sem acentos (`normalize('NFD')`), paginação, seleção única e
   selos de categoria pré-renderizados em HTML vetorizado.
 - Estados vazios ilustrados (ícone + texto) para município sem dado no ano.
-- `waiter` cobre o primeiro carregamento e some quando o mapa fica pronto.
+- `waiter` cobria o primeiro carregamento (removido na Sessão 2 — ver adiante).
 - Acessibilidade: foco visível, `aria-*` na navbar/mapa, descrições nos gráficos
   (quando suportado) e contraste calculado para selos (`cor_texto_sobre`).
 
@@ -338,9 +338,9 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 1. **Níveis de análise:** apenas município habilitado. UF e região já existem nos
    dados; basta acrescentar linhas em `NIVEIS_ANALISE` e tratar agregação.
-2. **Seletores grandes:** `slimSelectInput` não possui `update*` no shinyWidgets;
-   a sincronização do perfil usa `session$sendInputMessage()` (funciona, mas é um
-   ponto a acompanhar em atualizações futuras do pacote).
+2. **Seletores grandes:** a sincronização do perfil usava
+   `session$sendInputMessage()`. Na Sessão 2 foi corrigida para a função oficial
+   `shinyWidgets::updateSlimSelect()` (que existe no pacote).
 3. **Primeiro carregamento do mapa** leva ~3–5 s por causa da serialização da
    geometria. Alternativas: TopoJSON, mais simplificação ou clustering.
 4. **Sem exportação** de dados/figuras e sem compartilhamento por URL.
@@ -360,3 +360,82 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   `R/fct_config.R`.
 - A seção única "Panorama" substitui as entradas separadas "Visão geral" e
   "Ranking" do pedido original, por decisão de UX documentada na seção 2.
+
+---
+
+# Sessão 2 — Correções e refinamentos (12/09/2026)
+
+- **Pacote:** `painel_ibisma_v4` (a v4 seguiu como base; a v3 foi consultada
+  apenas como referência visual dos componentes corrigidos).
+- **Objetivo:** corrigir problemas específicos e aproximar navbar, mapa e
+  gráfico de pétalas do que já havia sido melhor resolvido na v3, sem regredir
+  o restante.
+
+## 1. SlimSelect
+
+- `updateSlimSelect()` **existe** no shinyWidgets 0.9.1 — a limitação registrada
+  na Sessão 1 estava incorreta. `atualizar_seletor()` passou a usá-la no lugar
+  do `session$sendInputMessage()`.
+- A largura das opções passou a ser tratada apenas no dropdown aberto
+  (`width: max-content` com teto de `min(92vw, 30rem)`), sem alterar o input
+  fechado; um observador no JS reposiciona a lista quando ela ultrapassaria a
+  borda da janela.
+- O roxo foi removido dos seletores: valor exibido, foco e opção destacada usam
+  o azul médio `#1E5AA0` (hover continua no azul claro `#32A0FF`).
+
+## 2. Navbar
+
+- **Causa de desaparecer no scroll:** o `page_fillable()` criava
+  `.bslib-page-fill { height:100% }`, o que limitava o `position: sticky` à
+  viewport. O CSS libera a altura natural do documento (`height: auto` +
+  `min-height: 100vh`).
+- Visual: fundo `#0A1E3C`, IBISMA + descrição do índice (visível a partir de
+  `lg`), itens brancos. O indicador inferior da v4 foi mantido (sublinhado azul
+  claro) e, no menu colapsado, acompanha a largura do texto.
+
+## 3. Mapa
+
+- O zoom-out parou de encolher o mapa indefinidamente: `setMaxBounds` +
+  `maxBoundsViscosity = 1` (como na v3) e zoom mínimo calculado dinamicamente
+  para o enquadramento do Brasil conforme o contêiner (4 no desktop, 3 no
+  mobile), recalculado em resize.
+- A entrada "Sem dados" saiu da legenda (`com_sem_dados = FALSE`); cores e
+  tooltip de municípios sem dado seguem iguais.
+
+## 4. Busca do ranking
+
+- **Causa:** o `searchMethod` do reactable recebe objetos de linha e os valores
+  ficam em `linha.values`; o código lia `linha.municipio`, então nada casava.
+- Corrigido para `linha.values.municipio` / `linha.values.sigla_uf`, mantendo a
+  normalização de acentos e maiúsculas.
+
+## 5. Gráfico de pétalas
+
+- A flor polar do echarts4r foi substituída pelo leque SVG da v3
+  (`R/fct_petalas.R`), com guias, marcas de 25/50/75, círculo de valor e ponto
+  da mediana do Brasil.
+- Tooltip própria (Bootstrap 5, inicializada no JS) no padrão do painel, com
+  bloco, valor, ranking e selo de categoria; é reinicializada por
+  `MutationObserver` a cada redesenho.
+- `grafico_flor()` (echarts) removido e corrigido o `estilo_echarts()`, que
+  quebrava a legenda com duas séries por causa do casamento parcial
+  `icon` → `icons` do echarts4r.
+
+## 6. Remoção do waiter
+
+- `waiter` foi removido do app e das dependências por não funcionar bem.
+
+## 7. Testes e validação
+
+- `devtools::test()`: 74 asserções verdes (novos testes de limites do mapa,
+  legenda e pétalas).
+- O smoke headless foi ampliado (`--mouse`, `--click`, promises e captura por
+  viewport) e validou: navbar sticky/scrollspy, zoom mínimo em desktop e mobile,
+  busca (termo exato, parcial, com acento, troca de ano/indicador e ordenação),
+  tooltip real nas seis pétalas, dropdowns em 1600/720/390 px, cenário sem
+  dados (Borá/2023) e comparação entre municípios.
+- Evidências em `dev/smoke/sessao_correcoes/` (ignorado pelo git).
+
+> Observação de ambiente: o `rlang` 1.1.4 instalado ficou abaixo do exigido
+> pelo `testthat` 3.3.2; a suíte foi rodada com `rlang` 1.2.0 vindo de uma
+> biblioteca temporária. Recomenda-se atualizar o pacote com o R fechado.
