@@ -162,3 +162,54 @@ test_that("nome_municipio devolve nome e sigla", {
   expect_equal(nome_municipio(preparado_teste, 110002), "Dois (RO)")
   expect_equal(nome_municipio(preparado_teste, 999999), "Município")
 })
+
+test_that("mapa_base limita o zoom e o arrasto ao enquadramento do Brasil", {
+  mapa <- mapa_base()
+  opcoes <- mapa$x$options
+  expect_equal(opcoes$minZoom, 4)
+  expect_equal(opcoes$maxZoom, 10)
+  expect_equal(opcoes$maxBoundsViscosity, 1)
+  metodos <- vapply(
+    mapa$x$calls,
+    function(chamada) chamada$method,
+    character(1)
+  )
+  expect_true("setMaxBounds" %in% metodos)
+})
+
+test_that("legenda_categorias omite Sem dados por padrão", {
+  padrao <- as.character(legenda_categorias())
+  expect_false(grepl("Sem dados", padrao))
+  expect_true(grepl("Muito alto", padrao))
+
+  completo <- as.character(legenda_categorias(com_sem_dados = TRUE))
+  expect_true(grepl("Sem dados", completo))
+})
+
+test_that("grafico_petalas monta as seis pétalas com tooltip", {
+  blocos <- data.frame(
+    nome = BLOCOS$nome,
+    valor = c(10, 30, 50, 70, 90, 100),
+    categoria = c("Muito baixo", "Baixo", "Médio", "Alto", "Muito alto", "Muito alto"),
+    cor = BLOCOS$cor,
+    pos_nac = 1:6,
+    total_nac = rep(100, 6),
+    stringsAsFactors = FALSE
+  )
+  html <- as.character(grafico_petalas(blocos))
+  expect_true(grepl("svg-petalas", html))
+  expect_equal(
+    lengths(regmatches(html, gregexpr("grupo-petala", html))),
+    6
+  )
+  expect_true(grepl("tooltip-petala", html))
+  expect_true(grepl("Planejamento Reprodutivo", html))
+
+  medianas <- stats::setNames(rep(50, 6), BLOCOS$nome)
+  html_mediana <- as.character(grafico_petalas(blocos, medianas = medianas))
+  expect_equal(
+    lengths(regmatches(html_mediana, gregexpr("ponto-mediana", html_mediana))),
+    6
+  )
+  expect_true(grepl("Mediana Brasil", html_mediana))
+})
