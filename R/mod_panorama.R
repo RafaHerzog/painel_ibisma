@@ -329,6 +329,7 @@ mod_panorama_server <- function(id, dados, municipio) {
 }
 
 # Definindo a busca do reactable que ignora acentos e maiúsculas
+# O reactable entrega objetos de linha e os valores ficam em linha.values
 busca_sem_acento <- reactable::JS(
   "function (rows, colunas, busca) {
      var normalizar = function (texto) {
@@ -340,7 +341,8 @@ busca_sem_acento <- reactable::JS(
      var alvo = normalizar(busca).trim();
      if (alvo === '') return rows;
      return rows.filter(function (linha) {
-       var texto = normalizar([linha.municipio, linha.sigla_uf].join(' '));
+       var valores = linha.values || {};
+       var texto = normalizar([valores.municipio, valores.sigla_uf].join(' '));
        return texto.indexOf(alvo) !== -1;
      });
    }"
