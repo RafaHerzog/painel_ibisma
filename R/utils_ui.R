@@ -197,11 +197,11 @@ montar_selos <- function(categorias) {
 #'
 #' @param paleta Vetor nomeado com as cores das categorias.
 #' @param titulo Título curto da legenda.
-#' @param com_sem_dados Incluir a entrada "Sem dados".
+#' @param com_sem_dados Incluir a entrada "Sem dados" (desativado no painel).
 #' @return Elemento HTML com a legenda completa.
 #' @noRd
 legenda_categorias <- function(paleta = paleta_categorias(), titulo = NULL,
-                               com_sem_dados = TRUE) {
+                               com_sem_dados = FALSE) {
   # Montando um item de legenda para cada categoria
   itens <- lapply(names(paleta), function(nome) {
     htmltools::tags$span(

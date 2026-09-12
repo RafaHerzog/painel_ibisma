@@ -123,7 +123,18 @@ mod_panorama_server <- function(id, dados, municipio) {
                if (w && w.getMap) {
                  var mapa = w.getMap();
                  mapa.invalidateSize();
-                 mapa.fitBounds([[-34.5, -74.5], [6.5, -33.5]], {padding: [8, 8]});
+                 /* Enquadrando o Brasil e impedindo qualquer zoom menor */
+                 var brasil = L.latLngBounds([[-34.5, -74.5], [6.5, -33.5]]);
+                 var ajustar = function () {
+                   /* O cálculo do enquadramento é limitado pelo mínimo atual */
+                   mapa.setMinZoom(0);
+                   var zoomBrasil = mapa.getBoundsZoom(brasil, false, L.point(16, 16));
+                   mapa.setMinZoom(zoomBrasil);
+                   if (mapa.getZoom() < zoomBrasil) mapa.setZoom(zoomBrasil);
+                 };
+                 ajustar();
+                 mapa.fitBounds(brasil, {padding: [8, 8]});
+                 window.addEventListener('resize', ajustar);
                }
                Shiny.setInputValue('%s', Date.now(), {priority: 'event'});
              }",

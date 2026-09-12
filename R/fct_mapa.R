@@ -138,11 +138,18 @@ mapa_base <- function() {
     options = leaflet::leafletOptions(
       preferCanvas = TRUE,
       attributionControl = FALSE,
-      minZoom = 3,
+      # Limitando o zoom mínimo ao enquadramento que mostra o Brasil inteiro
+      minZoom = 4,
       maxZoom = 10,
+      maxBoundsViscosity = 1.0,
       zoomControl = TRUE
     )
   ) |>
+    # Impedindo que o usuário afaste ou arraste o mapa para fora do Brasil
+    leaflet::setMaxBounds(
+      lng1 = -75.0, lat1 = -34.5,
+      lng2 = -32.0, lat2 = 6.0
+    ) |>
     # Enquadrando o Brasil no carregamento inicial
     leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6)
 }
