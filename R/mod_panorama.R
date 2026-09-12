@@ -318,13 +318,6 @@ mod_panorama_server <- function(id, dados, municipio) {
         reactable::updateReactable("ranking", selected = linha, page = pagina)
       }
     }, ignoreInit = TRUE)
-
-    # ----- Carregamento -----
-
-    # Escondendo a tela de carregamento quando o mapa terminar de desenhar
-    shiny::observeEvent(input$mapa_pronto, {
-      waiter::waiter_hide()
-    }, once = TRUE)
   })
 }
 

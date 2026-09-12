@@ -76,8 +76,6 @@ golem_add_external_resources <- function() {
     # Carregando o estilo e o script do painel com versão baseada na data
     tags$link(rel = "stylesheet", href = recurso_com_versao("global/custom.css")),
     tags$script(src = recurso_com_versao("global/funcoes_javascript.js"), defer = NA),
-    # Incluindo o suporte à tela de carregamento do pacote waiter
-    waiter::useWaiter(),
     golem::activate_js()
   )
 }

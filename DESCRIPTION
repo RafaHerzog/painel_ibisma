@@ -25,7 +25,6 @@ Imports:
     tidyr,
     reactable,
     echarts4r,
-    waiter,
     fontawesome
 Suggests: 
     testthat (>= 3.0.0),

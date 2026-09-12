@@ -5,12 +5,6 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-  # Exibindo a tela de carregamento até o mapa ficar pronto
-  waiter::waiter_show(
-    html = waiter::spin_flower(),
-    color = "#FFFFFF"
-  )
-
   # Preparando a base do IBISMA uma única vez por processo
   dados <- dados_ibisma()
 
