@@ -28,7 +28,7 @@ mod_panorama_ui <- function(id) {
       class = "painel-container",
       # Cabeçalho editorial da seção
       titulo_secao(
-        eyebrow = "Vis\u00e3o geral e ranking",
+        eyebrow = "Visão geral",
         titulo = "Onde est\u00e1 a inseguran\u00e7a em sa\u00fade materna?",
         descricao = TEXTO_ESCALA
       ),

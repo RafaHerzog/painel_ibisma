@@ -98,7 +98,7 @@ body, .content-wrapper, .main-header, .main-sidebar {
 /* Definindo variáveis adicionais de tipografia e espaçamento do painel */
 :root {
   --fonte-numero-destaque-size: 3.25rem;
-  --espaco-secao: 4.5rem;
+  --espaco-secao: 2rem;
   --cor-texto-suave: #5A6472;
   --cor-linha: #ECEEF2;
   --cor-fundo-bloco: #FAFBFD;
