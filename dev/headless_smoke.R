@@ -8,6 +8,7 @@
 #   Uso (na raiz do pacote):
 #     Rscript dev/headless_smoke.R [--port=4848] [--outdir=dev/smoke]
 #       [--wait-for=".seletor"] [--shot=nome.png] [--eval="<JS>"]
+#       [--pre-eval="<JS>"] [--eval-file=arq.js] [--pre-eval-file=arq.js]
 #       [--width=1600] [--height=900] [--scroll=0] [--mobile]
 #
 #   O JavaScript passado em --eval deve retornar uma STRING; o valor é
@@ -172,6 +173,26 @@ if (!concluido) {
 if (rolagem > 0) {
   sessao$Runtime$evaluate(paste0("window.scrollTo(0, ", rolagem, ")"))
   Sys.sleep(1.5)
+}
+
+# Avaliando JavaScript antes do screenshot para preparar um estado específico
+js_pre <- pega_arg("pre-eval", "")
+arquivo_pre <- pega_arg("pre-eval-file", "")
+if (nzchar(arquivo_pre) && file.exists(arquivo_pre)) {
+  js_pre <- paste(readLines(arquivo_pre, warn = FALSE), collapse = "\n")
+}
+if (nzchar(js_pre)) {
+  resultado_pre <- sessao$Runtime$evaluate(
+    js_pre,
+    returnByValue = TRUE,
+    awaitPromise = TRUE
+  )
+  if (is.null(resultado_pre$result$value) && !is.null(resultado_pre$exceptionDetails)) {
+    cat("ERRO NA PRE-AVALIACAO:", resultado_pre$exceptionDetails$exception$description, "\n")
+  } else {
+    cat("PRE-AVALIACAO:", resultado_pre$result$value, "\n")
+  }
+  Sys.sleep(0.6)
 }
 
 # Movendo o mouse de verdade para testar hovers quando as coordenadas forem dadas

@@ -52,6 +52,9 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
       el.dataset.tooltipIniciado = "sim";
       new bootstrap.Tooltip(el, {
         html: true,
+        /* O conteúdo é gerado pelo servidor e depende dos estilos em linha
+           com as cores da dimensão; a sanitização os removeria */
+        sanitize: false,
         placement: "top",
         customClass: "tooltip-ibisma",
         container: "body",
@@ -114,6 +117,76 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
       attributes: true,
       attributeFilter: ["class"],
       subtree: true
+    });
+  });
+})();
+
+/* Posicionando as seções exatamente abaixo da navbar ao clicar nas âncoras */
+(function () {
+  var navbar = document.querySelector(".navbar-ibisma");
+  if (!navbar) return;
+
+  /* Gravando a altura real da navbar para o CSS compensar o scroll */
+  function medirNavbar() {
+    var altura = Math.round(navbar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--altura-navbar", altura + "px");
+  }
+
+  /* Respeitando quem prefere menos movimento na rolagem */
+  function comportamento() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth";
+  }
+
+  /* Rolando até a seção descontando a altura viva da navbar */
+  function rolarAte(secao) {
+    var altura = navbar.getBoundingClientRect().height;
+    var topo = secao.getBoundingClientRect().top + window.pageYOffset - altura;
+    window.scrollTo({ top: Math.max(topo, 0), behavior: comportamento() });
+  }
+
+  /* Medindo agora e acompanhando qualquer mudança de tamanho da barra */
+  medirNavbar();
+  if (window.ResizeObserver) {
+    new ResizeObserver(medirNavbar).observe(navbar);
+  }
+  window.addEventListener("resize", medirNavbar);
+
+  /* Corrigindo a posição quando a página abre já com uma âncora na URL */
+  window.addEventListener("load", function () {
+    medirNavbar();
+    var secao = location.hash && document.querySelector(location.hash);
+    if (secao) {
+      var altura = navbar.getBoundingClientRect().height;
+      var topo = secao.getBoundingClientRect().top + window.pageYOffset - altura;
+      window.scrollTo({ top: Math.max(topo, 0), behavior: "auto" });
+    }
+  });
+
+  /* Interceptando os cliques para fechar o menu antes de calcular a posição */
+  document.querySelectorAll('.navbar-ibisma a[href^="#"]').forEach(function (link) {
+    link.addEventListener("click", function (evento) {
+      var destino = link.getAttribute("href");
+      var secao = destino && document.querySelector(destino);
+      if (!secao) return;
+      evento.preventDefault();
+      var menu = document.getElementById("menu-ibisma");
+      var menuAberto = menu && menu.classList.contains("show");
+      var concluir = function () {
+        medirNavbar();
+        rolarAte(secao);
+        if (window.history && history.pushState) {
+          history.pushState(null, "", destino);
+        }
+      };
+      if (menuAberto) {
+        /* Aguardando a animação do menu para medir a altura já recolhida */
+        bootstrap.Collapse.getOrCreateInstance(menu).hide();
+        setTimeout(concluir, 380);
+      } else {
+        concluir();
+      }
     });
   });
 })();
