@@ -669,3 +669,77 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   instantânea (o `display: none` da coluna vazia).
 - Em telas muito estreitas a legenda quebra em até três linhas; a altura do
   canvas acompanha por media query.
+
+---
+
+# Sessão 5 — Métricas territoriais, tooltips de corte e placar (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** refinar o cabeçalho territorial do perfil (ordem, cortes e
+  tooltips condicionais), estabilizar o placar e igualar as colunas do modo
+  comparação.
+
+## 1. Métricas territoriais em grid
+
+- `.perfil-metricas` deixou de ser um `flex` com quebra e virou um grid de
+  quatro colunas `minmax(3rem/7rem, max-content)`, com `justify-content: start`
+  e respiro de 2,5 rem entre colunas.
+- Cada coluna tem limite máximo próprio (8/10/18/22 rem; 7,5/8/15/19 rem até
+  1280 px) e os campos ficam sempre em uma linha, com reticências quando o
+  texto passa do limite — sem quebrar a linha nem mudar a altura.
+- Até 768 px as informações passam a duas colunas por linha.
+- **Ordem corrigida:** Região, UF, Macrorregião de saúde e Região de saúde
+  (antes macrorregião e região de saúde estavam trocadas). O rótulo "Unidade
+  da federação" foi encurtado para "UF".
+- Os limites acompanham o conteúdo: "Região de saúde" (nomes de até ~50
+  caracteres na base) ficou com o maior limite e "Macrorregião de saúde" com o
+  menor, na base e na media query.
+- **Modo comparação:** `justify-content: space-between` distribui as quatro
+  colunas pela largura do palco quando a comparação está ativa; sem comparação
+  o alinhamento segue à esquerda.
+
+## 2. Tooltip condicional dos campos territoriais
+
+- `metrica_hero()` ganhou o argumento `tooltip`; quando ligado, rótulo e valor
+  expõem o texto completo em `data-tooltip-texto` e recebem a classe
+  `metrica-tooltip`.
+- No JavaScript a inicialização foi refatorada em `criarTooltip()` (rica, para
+  as pétalas, e simples, para os campos). A tooltip do campo territorial só é
+  criada quando o texto está de fato cortado (`scrollWidth > clientWidth`),
+  com `tabindex` para leitura por teclado; quando deixa de estar cortado, a
+  instância é destruída (`dispose`) e o `tabindex` removido.
+- A avaliação de corte é refeita em `resize` (agendada por
+  `requestAnimationFrame`), quando as fontes terminam de carregar
+  (`document.fonts.ready`) e a cada novo elemento inserido pelo Shiny
+  (`MutationObserver`).
+- O CSS do cartão da tooltip foi simplificado: fundo branco via
+  `--bs-tooltip-bg` (a seta herda a cor), opacidade 1 no `.show` e
+  `font-size` na medida padrão do painel; as regras manuais de seta por
+  posição foram removidas. O foco por teclado ganhou contorno visível.
+
+## 3. Placar do IBISMA
+
+- As laterais do placar usam `minmax(7.5rem, 1fr)`, reservando o mesmo espaço
+  para os rankings nacional e estadual mesmo quando posições e totais têm
+  quantidades de dígitos diferentes — o valor central não se desloca.
+- Rótulo e valor de cada ranking ficam em uma única linha, com reticências.
+- O ranking estadual deixou de repetir a UF no título: "Ranking na UF", sem
+  "(Amazonas)".
+
+## 4. Igualdade das colunas na comparação
+
+- Principal e comparado usam `flex-basis: calc(50% - 0.75rem)`, descontando
+  metade do respiro de 1,5 rem; antes a coluna comparada ficava com 50% e a
+  principal absorvia a diferença, deixando as duas com larguras diferentes.
+
+## 5. Testes e validação
+
+- `devtools::test()`: **150 asserções verdes** (novas: "Ranking na UF" sem a
+  UF e campos territoriais com `metrica-tooltip` / `data-tooltip-texto`).
+- Smoke headless com a comparação ativa (1600×950): nos dois palcos o
+  `justify-content` computado foi `space-between`, a ordem dos rótulos foi
+  `Região > UF > Macrorregião de saúde > Região de saúde` e as colunas
+  ocuparam a largura total (folga 0/0 nas bordas).
+- Nota de ambiente: a suíte rodou com `rlang` 1.2.0 de uma biblioteca
+  temporária, porque o `rlang` 1.1.4 instalado está abaixo do exigido pelo
+  `testthat` 3.3.2.
