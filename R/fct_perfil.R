@@ -8,21 +8,19 @@
 # Definindo o texto que explica as pétalas e é exibido uma vez acima dos palcos
 TEXTO_PETALAS <- paste(
   "Cada pétala representa um bloco do IBISMA: quanto maior a pétala,",
-  "maior a insegurança naquele bloco. O ponto escuro marca a mediana",
-  "do Brasil."
+  "maior a insegurança naquele bloco."
 )
 
 #' Montando o palco de um município
 #'
 #' @param municipio Linha do cadastro de municípios (nome, UF e território).
 #' @param resumo Lista retornada por resumo_municipio() ou NULL sem dado no ano.
-#' @param medianas Vetor com a mediana do Brasil por bloco (opcional).
 #' @param ano Ano de referência exibido no placar.
 #' @param comparado Indica se o palco é o do município de comparação.
 #' @param rotulo Rótulo de hierarquia exibido acima do nome (opcional).
 #' @return Elemento HTML com o palco completo.
 #' @noRd
-perfil_palco <- function(municipio, resumo, medianas = NULL, ano,
+perfil_palco <- function(municipio, resumo, ano,
                          comparado = FALSE, rotulo = NULL) {
   # Reunindo as classes do palco e marcando quando ele é o comparado
   classes <- c("painel-bloco", "painel-bloco--palco")
@@ -67,7 +65,7 @@ perfil_palco <- function(municipio, resumo, medianas = NULL, ano,
     htmltools::tagList(
       htmltools::tags$div(
         class = "perfil-palco__grafico",
-        grafico_petalas(resumo$blocos, medianas = medianas)
+        grafico_petalas(resumo$blocos)
       ),
       perfil_placar(resumo, ano)
     )

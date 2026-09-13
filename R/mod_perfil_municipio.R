@@ -135,17 +135,6 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       resumo_municipio(dados, municipio(), ano())
     })
 
-    # Calculando a mediana nacional de cada bloco como referência da flor
-    medianas_blocos <- shiny::reactive({
-      valores <- vapply(
-        BLOCOS$medida,
-        function(m) mediana_referencia(dados, m, ano())[["brasil"]],
-        numeric(1)
-      )
-      names(valores) <- BLOCOS$nome
-      valores
-    })
-
     # ----- Município de comparação -----
 
     # Descobrindo o município de comparação escolhido, se houver
@@ -183,7 +172,6 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       perfil_palco(
         municipio = info(),
         resumo = resumo(),
-        medianas = medianas_blocos(),
         ano = ano(),
         rotulo = if (tem_comparacao()) "Munic\u00edpio principal" else NULL
       )
@@ -195,7 +183,6 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       perfil_palco(
         municipio = info_comparacao(),
         resumo = resumo_comparacao(),
-        medianas = medianas_blocos(),
         ano = ano(),
         comparado = TRUE,
         rotulo = "Munic\u00edpio comparado"

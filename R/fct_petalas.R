@@ -1,7 +1,7 @@
 # =============================================================================
 #   GRÁFICO DE PÉTALAS DOS SEIS BLOCOS
 #   Constrói o leque de pétalas em SVG a partir da implementação da v3,
-#   mantendo os valores e a mediana do Brasil como referências no desenho.
+#   mantendo o valor de cada bloco em um disco fixo no fim da guia.
 # =============================================================================
 
 # Definindo os ângulos do leque simétrico em que as seis pétalas são distribuídas
@@ -12,18 +12,11 @@ PETALAS_CX <- 250
 PETALAS_CY <- 275
 PETALAS_RAIO <- 185
 
+# Definindo o comprimento do caminho base da pétala no sistema do viewBox
+PETALAS_COMPRIMENTO <- 170
+
 # Definindo a área visível do desenho, cortando as sobras de topo e laterais
 PETALAS_VIEWBOX <- "45 60 410 236"
-
-#' Calculando a distância de um ponto ao longo da guia da pétala
-#'
-#' @param percentual Valor de 0 a 100 que define a posição na guia.
-#' @return Distância em unidades do viewBox a partir do centro do leque.
-#' @noRd
-distancia_petala <- function(percentual) {
-  # Reservando um trecho inicial da guia para afastar o desenho do centro
-  30 + (percentual / 100) * (PETALAS_RAIO - 30)
-}
 
 #' Montando o conteúdo HTML do tooltip de uma pétala
 #'
@@ -61,55 +54,26 @@ tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
 #'
 #' @param i Índice do bloco.
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
-#' @param mediana Mediana do Brasil do bloco (opcional).
 #' @return Elemento HTML com o grupo SVG da pétala.
 #' @noRd
-petala_svg <- function(i, blocos, mediana = NULL) {
+petala_svg <- function(i, blocos) {
   # Extraindo os dados e calculando os fatores de escala da pétala
   nome <- as.character(blocos$nome[i])
   valor <- blocos$valor[i]
   if (is.na(valor)) valor <- 0
   cor <- blocos$cor[i]
   angulo <- ANGULOS_PETALAS[i]
-  escala_comp <- 0.22 + (valor / 100) * 0.78
-  escala_larg <- 0.65 + (valor / 100) * 0.35
+  # Escalando a pétala para a ponta percorrer a guia na escala do disco
+  escala <- (valor / 100) * (PETALAS_RAIO / PETALAS_COMPRIMENTO)
 
   # Convertendo o ângulo do leque em radianos para posicionar os elementos
   rad <- (angulo - 90) * (pi / 180)
-  fim_x <- round(PETALAS_CX + PETALAS_RAIO * cos(rad), 1)
-  fim_y <- round(PETALAS_CY + PETALAS_RAIO * sin(rad), 1)
-  marca <- distancia_petala(valor)
-  marca_x <- round(PETALAS_CX + marca * cos(rad), 1)
-  marca_y <- round(PETALAS_CY + marca * sin(rad), 1)
 
-  # Desenhando os três pontos de referência de 25%, 50% e 75% na guia
-  ticks <- lapply(c(25, 50, 75), function(pct) {
-    dist <- distancia_petala(pct)
-    htmltools::tags$circle(
-      cx = round(PETALAS_CX + dist * cos(rad), 1),
-      cy = round(PETALAS_CY + dist * sin(rad), 1),
-      r = 1.8,
-      fill = "#C4C9D2",
-      opacity = 0.8
-    )
-  })
+  # Mantendo o disco do valor no fim da guia, onde a escala indica 100
+  ponta_x <- round(PETALAS_CX + PETALAS_RAIO * cos(rad), 1)
+  ponta_y <- round(PETALAS_CY + PETALAS_RAIO * sin(rad), 1)
 
-  # Desenhando o ponto da mediana do Brasil quando ela for informada
-  mediana_ponto <- NULL
-  if (!is.null(mediana) && !is.na(mediana)) {
-    dist_mediana <- distancia_petala(mediana)
-    mediana_ponto <- htmltools::tags$circle(
-      cx = round(PETALAS_CX + dist_mediana * cos(rad), 1),
-      cy = round(PETALAS_CY + dist_mediana * sin(rad), 1),
-      r = 3.6,
-      fill = "#0A1E3C",
-      stroke = "#FFFFFF",
-      `stroke-width` = 1.5,
-      class = "ponto-mediana"
-    )
-  }
-
-  # Montando o grupo com guia, pétala, valor, mediana e tooltip
+  # Montando o grupo com guia, pétala, valor e tooltip
   htmltools::tags$g(
     class = "grupo-petala",
     `data-bs-toggle` = "tooltip",
@@ -123,32 +87,32 @@ petala_svg <- function(i, blocos, mediana = NULL) {
     htmltools::tags$line(
       x1 = PETALAS_CX,
       y1 = PETALAS_CY,
-      x2 = fim_x,
-      y2 = fim_y,
+      x2 = ponta_x,
+      y2 = ponta_y,
       stroke = "#E2E5EA",
       `stroke-width` = 1.5,
       `stroke-dasharray` = "2,3"
     ),
-    ticks,
-    mediana_ponto,
     # Forma da pétala rotacionada e escalada pelo valor do bloco
     htmltools::tags$path(
-      d = "M 0 0 C -26 -40, -28 -120, 0 -170 C 28 -120, 26 -40, 0 0 Z",
+      d = sprintf(
+        "M 0 0 C -26 -40, -28 -120, 0 -%s C 28 -120, 26 -40, 0 0 Z",
+        PETALAS_COMPRIMENTO
+      ),
       fill = cor,
       `fill-opacity` = 0.82,
       stroke = cor,
       `stroke-width` = 1.2,
       transform = sprintf(
-        "translate(%s, %s) rotate(%s) scale(%s, %s)",
-        PETALAS_CX, PETALAS_CY, angulo,
-        round(escala_larg, 3), round(escala_comp, 3)
+        "translate(%s, %s) rotate(%s) scale(%s)",
+        PETALAS_CX, PETALAS_CY, angulo, round(escala, 3)
       ),
       class = "forma-petala"
     ),
-    # Círculo com o valor em uma casa decimal no ápice da pétala
+    # Círculo com o valor em uma casa decimal no topo fixo da guia
     htmltools::tags$circle(
-      cx = marca_x,
-      cy = marca_y,
+      cx = ponta_x,
+      cy = ponta_y,
       r = 16,
       fill = cor,
       stroke = "#FFFFFF",
@@ -156,8 +120,8 @@ petala_svg <- function(i, blocos, mediana = NULL) {
       class = "circulo-nota"
     ),
     htmltools::tags$text(
-      x = marca_x,
-      y = marca_y + 3.4,
+      x = ponta_x,
+      y = ponta_y + 3.4,
       `text-anchor` = "middle",
       fill = cor_texto_sobre(cor),
       `font-size` = "9.5px",
@@ -171,10 +135,9 @@ petala_svg <- function(i, blocos, mediana = NULL) {
 #' Montando o gráfico de pétalas dos seis blocos do IBISMA
 #'
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
-#' @param medianas Vetor com a mediana do Brasil por bloco (opcional).
 #' @return Elemento HTML com o leque de pétalas e as legendas de apoio.
 #' @noRd
-grafico_petalas <- function(blocos, medianas = NULL) {
+grafico_petalas <- function(blocos) {
   # Garantindo que os nomes cheguem como texto
   blocos$nome <- as.character(blocos$nome)
   # Descobrindo a medida de cada pétala quando ela não vier pronta
@@ -188,12 +151,7 @@ grafico_petalas <- function(blocos, medianas = NULL) {
 
   # Montando cada pétala na ordem dos seis blocos do painel
   petalas <- lapply(seq_len(nrow(blocos)), function(i) {
-    mediana <- if (!is.null(medianas)) {
-      unname(medianas[as.character(blocos$nome[i])])
-    } else {
-      NULL
-    }
-    petala_svg(i, blocos, mediana)
+    petala_svg(i, blocos)
   })
 
   # Montando o disco central que sustenta o leque

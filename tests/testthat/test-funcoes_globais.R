@@ -322,21 +322,33 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
   expect_true(grepl(">100,0</text>", html, fixed = TRUE))
   expect_true(grepl(">10,0</text>", html, fixed = TRUE))
 
-  medianas <- stats::setNames(rep(50, 6), BLOCOS$nome)
-  html_mediana <- as.character(grafico_petalas(blocos, medianas = medianas))
-  expect_equal(
-    lengths(regmatches(html_mediana, gregexpr("ponto-mediana", html_mediana))),
-    6
-  )
-  # A lembrança textual da mediana saiu; o ponto permanece no desenho
-  expect_false(grepl("Mediana Brasil", html_mediana))
+  # Os discos de valor ficam sempre no fim da guia, e não na ponta da pétala
+  expect_false(grepl("ponto-mediana", html))
+  discos <- regmatches(
+    html,
+    gregexpr('cx="[0-9.]+" cy="[0-9.]+" r="16"', html)
+  )[[1]]
+  expect_length(discos, 6)
+  coordenadas <- do.call(rbind, lapply(discos, function(disco) {
+    as.numeric(regmatches(disco, gregexpr("[0-9.]+", disco))[[1]])[1:2]
+  }))
+  distancias <- sqrt((coordenadas[, 1] - 250)^2 + (coordenadas[, 2] - 275)^2)
+  expect_true(all(round(distancias) == 185))
+
+  # A ponta da pétala percorre a guia na mesma escala do disco
+  escalas <- as.numeric(sub(
+    ".*scale\\(([0-9.]+)\\)", "\\1",
+    regmatches(html, gregexpr("scale\\([0-9.]+\\)", html))[[1]]
+  ))
+  esperadas <- round((blocos$valor / 100) * (185 / 170), 3)
+  expect_equal(round(escalas, 3), esperadas)
 })
 
 test_that("perfil_palco monta identificação, pétalas e placar", {
   resumo <- resumo_municipio(preparado_teste, 110002, 2020)
   municipio <- preparado_teste$municipios[preparado_teste$municipios$codmunres == 110002, ]
   html <- as.character(perfil_palco(
-    municipio, resumo, medianas = NULL, ano = 2020,
+    municipio, resumo, ano = 2020,
     rotulo = "Município principal"
   ))
   expect_true(grepl("Dois, RO", html, fixed = TRUE))
@@ -353,7 +365,7 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
 
   # O palco do comparado usa a classe própria, sem o rótulo do principal
   html_b <- as.character(perfil_palco(
-    municipio, resumo, medianas = NULL, ano = 2020,
+    municipio, resumo, ano = 2020,
     comparado = TRUE, rotulo = "Município comparado"
   ))
   expect_true(grepl("painel-bloco--comparado", html_b, fixed = TRUE))

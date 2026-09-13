@@ -162,28 +162,6 @@ valores_ano <- function(dados, ano, medida) {
   tabela[tabela$medida == medida, ]
 }
 
-#' Calculando a mediana de referência do Brasil e da UF
-#'
-#' @param dados Lista retornada por preparar_dados().
-#' @param medida Identificador da medida.
-#' @param ano Ano de referência.
-#' @param uf Sigla da UF para a mediana estadual (opcional).
-#' @return Vetor nomeado com as medianas do Brasil e da UF.
-#' @noRd
-mediana_referencia <- function(dados, medida, ano, uf = NULL) {
-  # Filtrando os valores da medida no ano desejado
-  base <- dados$longo[dados$longo$ano == ano & dados$longo$medida == medida, ]
-
-  # Calculando a mediana nacional e, quando pedido, a estadual
-  brasil <- stats::median(base$valor, na.rm = TRUE)
-  mediana_uf <- if (!is.null(uf)) {
-    stats::median(base$valor[base$sigla_uf == uf], na.rm = TRUE)
-  } else {
-    NA_real_
-  }
-  c(brasil = brasil, uf = mediana_uf)
-}
-
 #' Montando o resumo completo de um município em um ano
 #'
 #' @param dados Lista retornada por preparar_dados().
