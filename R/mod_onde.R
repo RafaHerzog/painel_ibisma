@@ -1,16 +1,16 @@
 # =============================================================================
-#   MÓDULO PANORAMA
-#   Reúne a visão geral e o ranking em uma única experiência: os dois blocos
+#   MÓDULO ONDE?
+#   Reúne o mapa e o ranking em uma única experiência: os dois blocos
 #   compartilham os controles de medida, nível e ano, e a seleção de município
 #   circula entre o mapa, o ranking e o perfil.
 # =============================================================================
 
-#' Interface do módulo Panorama
+#' Interface do módulo Onde?
 #'
 #' @param id Identificador do módulo.
-#' @return Elemento HTML da seção Panorama.
+#' @return Elemento HTML da seção Onde?.
 #' @noRd
-mod_panorama_ui <- function(id) {
+mod_onde_ui <- function(id) {
   ns <- shiny::NS(id)
 
   # Montando as opções de medida com o prefixo "Bloco" para leitura natural
@@ -22,13 +22,13 @@ mod_panorama_ui <- function(id) {
   anos <- stats::setNames(anos_ordem, anos_ordem)
 
   htmltools::tags$section(
-    id = "panorama",
+    id = "onde",
     class = "secao-painel",
     htmltools::tags$div(
       class = "painel-container",
       # Cabeçalho editorial da seção
       titulo_secao(
-        eyebrow = "Visão geral",
+        eyebrow = "Onde?",
         titulo = "Onde est\u00e1 a inseguran\u00e7a em sa\u00fade materna?",
         descricao = TEXTO_ESCALA
       ),
@@ -94,14 +94,14 @@ mod_panorama_ui <- function(id) {
   )
 }
 
-#' Server do módulo Panorama
+#' Server do módulo Onde?
 #'
 #' @param id Identificador do módulo.
 #' @param dados Lista retornada por preparar_dados().
 #' @param municipio Reativo compartilhado com o município selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
 #' @noRd
-mod_panorama_server <- function(id, dados, municipio) {
+mod_onde_server <- function(id, dados, municipio) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 

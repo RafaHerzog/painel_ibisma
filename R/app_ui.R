@@ -22,8 +22,8 @@ app_ui <- function(request) {
       # Montando as seções do painel em página única
       htmltools::tags$main(
         class = "conteudo-painel",
-        mod_panorama_ui("panorama"),
-        mod_perfil_municipio_ui("perfil")
+        mod_onde_ui("onde"),
+        mod_como_ui("como")
       ),
       # Inserindo o rodapé institucional
       rodape_ibisma()

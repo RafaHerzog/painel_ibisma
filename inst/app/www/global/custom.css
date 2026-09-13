@@ -782,11 +782,11 @@ input:focus-visible,
 /* ---------------------------------------------- perfil — índice e blocos */
 
 /* Dando respiro vertical entre os blocos empilhados do perfil */
-.secao-perfil .painel-bloco {
+.secao-como .painel-bloco {
   margin-bottom: 1.5rem;
 }
 
-.secao-perfil .painel-bloco:last-child {
+.secao-como .painel-bloco:last-child {
   margin-bottom: 0;
 }
 

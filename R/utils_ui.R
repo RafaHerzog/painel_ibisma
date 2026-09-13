@@ -82,11 +82,11 @@ navbar_ibisma <- function() {
           class = "navbar-nav ms-auto",
           htmltools::tags$li(
             class = "nav-item",
-            htmltools::tags$a(class = "nav-link", href = "#panorama", "Panorama")
+            htmltools::tags$a(class = "nav-link", href = "#onde", "Onde?")
           ),
           htmltools::tags$li(
             class = "nav-item",
-            htmltools::tags$a(class = "nav-link", href = "#perfil", "Perfil dos municípios")
+            htmltools::tags$a(class = "nav-link", href = "#como", "Como?")
           )
         )
       )

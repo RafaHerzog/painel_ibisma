@@ -1,16 +1,16 @@
 # =============================================================================
-#   MÓDULO PERFIL DOS MUNICÍPIOS
+#   MÓDULO COMO?
 #   Permite explorar um município em detalhe: situação no ano escolhido,
 #   flor dos seis blocos e evolução temporal do IBISMA e dos blocos.
 #   Quando há comparação ativa, palcos e gráficos aparecem lado a lado.
 # =============================================================================
 
-#' Interface do módulo Perfil dos municípios
+#' Interface do módulo Como?
 #'
 #' @param id Identificador do módulo.
-#' @return Elemento HTML da seção de perfil.
+#' @return Elemento HTML da seção Como?.
 #' @noRd
-mod_perfil_municipio_ui <- function(id) {
+mod_como_ui <- function(id) {
   ns <- shiny::NS(id)
 
   # Montando as opções de municípios e de anos usadas nos controles
@@ -21,13 +21,13 @@ mod_perfil_municipio_ui <- function(id) {
   opcoes_comparacao <- c("Nenhum" = "nenhum", municipios)
 
   htmltools::tags$section(
-    id = "perfil",
-    class = "secao-painel secao-perfil",
+    id = "como",
+    class = "secao-painel secao-como",
     htmltools::tags$div(
       class = "painel-container",
       # Cabeçalho editorial da seção
       titulo_secao(
-        eyebrow = "Perfil dos munic\u00edpios",
+        eyebrow = "Como?",
         titulo = "Como a inseguran\u00e7a se apresenta no munic\u00edpio?",
         descricao = paste(
           "Escolha um munic\u00edpio para ver a situa\u00e7\u00e3o no ano selecionado",
@@ -95,14 +95,14 @@ mod_perfil_municipio_ui <- function(id) {
   )
 }
 
-#' Server do módulo Perfil dos municípios
+#' Server do módulo Como?
 #'
 #' @param id Identificador do módulo.
 #' @param dados Lista retornada por preparar_dados().
 #' @param municipio Reativo compartilhado com o município selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
 #' @noRd
-mod_perfil_municipio_server <- function(id, dados, municipio) {
+mod_como_server <- function(id, dados, municipio) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
