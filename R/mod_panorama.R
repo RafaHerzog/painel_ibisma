@@ -188,9 +188,8 @@ mod_panorama_server <- function(id, dados, municipio) {
 
     # Recriando a legenda sempre que a medida exibida mudar
     output$legenda <- shiny::renderUI({
-      paleta <- paleta_mapa(input$medida)
       legenda_categorias(
-        paleta = stats::setNames(paleta, CATEGORIAS),
+        paleta = paleta_medida(input$medida),
         titulo = "N\u00edvel de inseguran\u00e7a"
       )
     })
@@ -239,8 +238,8 @@ mod_panorama_server <- function(id, dados, municipio) {
         codmunres = tabela$codmunres,
         stringsAsFactors = FALSE
       )
-      # Montando os selos de categoria de uma vez, de forma vetorizada
-      exibicao$categoria_html <- montar_selos(exibicao$categoria)
+      # Montando os selos de categoria de uma vez, com a rampa da medida exibida
+      exibicao$categoria_html <- montar_selos(exibicao$categoria, input$medida)
 
       reactable::reactable(
         exibicao,
@@ -251,14 +250,13 @@ mod_panorama_server <- function(id, dados, municipio) {
           noData = "Nenhum munic\u00edpio encontrado",
           pagePrevious = "Anterior",
           pageNext = "Pr\u00f3xima",
-          pageInfo = "{rowStart}\u2013{rowEnd} de {rows} munic\u00edpios",
-          pageSizeOptions = "Mostrar {rows}"
+          pageInfo = "{rowStart}\u2013{rowEnd} de {rows} munic\u00edpios"
         ),
         defaultSorted = "posicao",
         defaultSortOrder = "asc",
+        # Fixando a quantidade de linhas para manter a altura do bloco previsível
         defaultPageSize = 12,
-        pageSizeOptions = c(12, 25, 50),
-        showPageSizeOptions = TRUE,
+        showPageSizeOptions = FALSE,
         showPageInfo = FALSE,
         highlight = TRUE,
         compact = TRUE,
@@ -346,12 +344,16 @@ busca_sem_acento <- reactable::JS(
 #' @return Objeto reactableTheme com as cores do projeto.
 #' @noRd
 tema_reactable <- function() {
+  # Derivando os tons suaves do roxo do IBISMA usados nos destaques da tabela
+  destaque <- misturar_cores(COR_IBISMA, "#FFFFFF", 0.90)
+  hover <- misturar_cores(COR_IBISMA, "#FFFFFF", 0.94)
+
   reactable::reactableTheme(
     color = COR_AZUL_ESCURO,
     backgroundColor = "#FFFFFF",
     borderColor = "#ECEEF2",
     stripedColor = "#F8F9FB",
-    highlightColor = "#F3EEFA",
+    highlightColor = hover,
     cellPadding = "8px 10px",
     style = list(fontFamily = "'Source Sans Pro', system-ui, sans-serif", fontSize = "0.8125rem"),
     headerStyle = list(
@@ -363,7 +365,10 @@ tema_reactable <- function() {
       letterSpacing = "0.04em",
       fontSize = "0.6875rem"
     ),
-    rowSelectedStyle = list(backgroundColor = "#EFE6F7", boxShadow = "inset 3px 0 0 0 #4B1D73"),
+    rowSelectedStyle = list(
+      backgroundColor = destaque,
+      boxShadow = paste0("inset 3px 0 0 0 ", COR_IBISMA)
+    ),
     searchInputStyle = list(
       backgroundColor = "#F8F9FB",
       border = "1px solid #DDE1E8",
@@ -371,7 +376,7 @@ tema_reactable <- function() {
       padding = "6px 10px",
       fontSize = "0.8125rem"
     ),
-    pageButtonHoverStyle = list(backgroundColor = "#F3EEFA"),
-    pageButtonActiveStyle = list(backgroundColor = "#4B1D73", color = "#FFFFFF")
+    pageButtonHoverStyle = list(backgroundColor = hover),
+    pageButtonActiveStyle = list(backgroundColor = COR_IBISMA, color = "#FFFFFF")
   )
 }
