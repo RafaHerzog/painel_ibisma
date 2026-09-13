@@ -42,14 +42,19 @@ carregar_malha_ufs <- function() {
 #' @param valor Valor da medida exibida.
 #' @param categoria Categoria de vulnerabilidade.
 #' @param nome_medida Nome da medida exibida.
+#' @param paleta Vetor nomeado com as cores das categorias da medida.
 #' @return Texto HTML pronto para o tooltip do leaflet.
 #' @noRd
-tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida) {
+tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida, paleta) {
   # Tratando municípios sem dado no ano selecionado, vetorizadamente
   sem_dado <- is.na(valor)
   valor_texto <- ifelse(sem_dado, "\u2014", formatar_numero(valor))
   categoria_texto <- ifelse(sem_dado, "Sem dados", categoria)
-  cor_cat <- ifelse(sem_dado, COR_SEM_DADOS, cor_categoria(categoria))
+  # Buscando a cor da categoria na paleta da medida exibida no mapa
+  cor_cat <- unname(paleta[categoria])
+  cor_cat <- ifelse(sem_dado | is.na(cor_cat), COR_SEM_DADOS, cor_cat)
+  # Escolhendo a cor de texto com melhor leitura sobre o selo da categoria
+  cor_texto <- cor_texto_sobre(cor_cat)
 
   # Montando o HTML do tooltip com o nome, o valor e a categoria
   paste0(
@@ -59,7 +64,7 @@ tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida
     '<span class="tooltip-mapa__rotulo">', nome_medida, "</span>",
     '<span class="tooltip-mapa__valor">', valor_texto, "</span>",
     "</div>",
-    '<div class="tooltip-mapa__categoria" style="--cor-cat:', cor_cat, '">',
+    '<div class="tooltip-mapa__categoria" style="--cor-cat:', cor_cat, ';color:', cor_texto, '">',
     categoria_texto,
     "</div>",
     "</div>"
@@ -78,7 +83,7 @@ dados_mapa <- function(dados, ano, medida) {
   base <- valores_ano(dados, ano, medida)
 
   # Montando a paleta da medida (roxa para o IBISMA, do bloco para os demais)
-  paleta <- stats::setNames(paleta_mapa(medida), CATEGORIAS)
+  paleta <- paleta_medida(medida)
 
   # Definindo a cor de cada município conforme sua categoria
   base$cor <- ifelse(
@@ -93,7 +98,8 @@ dados_mapa <- function(dados, ano, medida) {
     sigla_uf = base$sigla_uf,
     valor = base$valor,
     categoria = as.character(base$categoria),
-    nome_medida = nome_medida(medida)[1]
+    nome_medida = nome_medida(medida)[1],
+    paleta = paleta
   )
   base
 }

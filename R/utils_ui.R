@@ -144,7 +144,9 @@ seletor_inline <- function(input_id, choices, selected = NULL, largura = "auto")
     selected = selected,
     width = largura,
     search = TRUE,
-    placeholder = "Selecione"
+    placeholder = "Selecione",
+    # Traduzindo também o texto do campo de busca da lista
+    searchPlaceholder = "Buscar..."
   )
 }
 
@@ -181,11 +183,12 @@ badge_categoria <- function(categoria, cor = NULL) {
 #' Montando selos de categoria em HTML de forma vetorizada
 #'
 #' @param categorias Vetor de categorias.
+#' @param medida Identificador da medida que define a rampa de cores.
 #' @return Vetor de textos HTML com os selos coloridos.
 #' @noRd
-montar_selos <- function(categorias) {
+montar_selos <- function(categorias, medida = "indice_final") {
   # Calculando as cores de fundo e de texto de uma só vez
-  cores <- cor_categoria(categorias)
+  cores <- cor_categoria(categorias, medida)
   sprintf(
     '<span class="badge-categoria" style="--cor-fundo:%s;color:%s">%s</span>',
     cores,

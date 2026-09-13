@@ -17,11 +17,13 @@ COR_TEAL        <- "#00A6A6"
 COR_IBISMA <- "#4B1D73"
 
 # Definindo a paleta sequencial do IBISMA (do menos para o mais vulnerável)
+# O tom "Muito baixo" tem saturação suficiente para não se confundir com o fundo
+# do mapa nem com as bordas brancas dos municípios
 PALETA_IBISMA <- c(
-  "Muito baixo" = "#EFE6F7",
-  "Baixo"       = "#C9A8E4",
-  "Médio"       = "#9F6FD0",
-  "Alto"        = "#7239A8",
+  "Muito baixo" = "#D5C2E8",
+  "Baixo"       = "#B592D6",
+  "Médio"       = "#915EC4",
+  "Alto"        = "#6B35A3",
   "Muito alto"  = "#4B1D73"
 )
 
