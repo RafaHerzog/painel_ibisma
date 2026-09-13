@@ -103,11 +103,15 @@ test_that("formatadores usam a convenção brasileira", {
   expect_equal(formatar_numero(c(1.5, NA)), c("1,5", "Sem dados"))
   expect_equal(formatar_inteiro(5570), "5.570")
   expect_equal(rotulo_posicao(1234, 5570), "1.234º de 5.570")
+  # Todos os valores do painel são exibidos com uma casa decimal
+  expect_equal(formatar_numero(99.96), "100,0")
+  expect_equal(formatar_numero(0.04), "0,0")
 })
 
-test_that("frase_percentil limita o texto a 99%", {
-  expect_match(frase_percentil(99.96), "99%")
-  expect_match(frase_percentil(50), "50%")
+test_that("frase_percentil limita o texto a 99,9% com uma casa decimal", {
+  expect_match(frase_percentil(99.96), "99,9%")
+  expect_match(frase_percentil(100), "99,9%")
+  expect_match(frase_percentil(50), "50,0%")
   expect_match(frase_percentil(NA), "Sem dado")
 })
 
@@ -186,6 +190,60 @@ test_that("legenda_categorias omite Sem dados por padrão", {
   expect_true(grepl("Sem dados", completo))
 })
 
+test_that("paleta_medida concentra a rampa usada por mapa, selos e tooltips", {
+  # O IBISMA mantém a paleta roxa e cada bloco usa a própria rampa
+  expect_equal(paleta_medida("indice_final"), PALETA_IBISMA)
+  for (m in BLOCOS$medida) {
+    rampa <- paleta_medida(m)
+    expect_length(rampa, 5)
+    expect_equal(names(rampa), CATEGORIAS)
+    expect_equal(length(unique(rampa)), 5)
+    # A categoria central deve ser a cor de identificação do bloco
+    expect_equal(unname(rampa[3]), cor_medida(m))
+  }
+  # A cor mais clara não pode se confundir com o cinza de "Sem dados"
+  expect_false(any(paleta_medida("bloco1") == COR_SEM_DADOS))
+})
+
+test_that("cor_categoria e montar_selos respeitam a medida informada", {
+  cor_bloco <- cor_categoria("Muito alto", "bloco3")
+  expect_equal(cor_bloco, unname(paleta_medida("bloco3")["Muito alto"]))
+  expect_false(identical(cor_bloco, cor_categoria("Muito alto")))
+  selos <- montar_selos(c("Muito baixo", "Muito alto"), "bloco3")
+  expect_true(grepl(cor_bloco, selos[2], fixed = TRUE))
+})
+
+test_that("tooltip do mapa usa a cor da medida exibida", {
+  # A chip do IBISMA usa a paleta roxa
+  base_indice <- dados_mapa(preparado_teste, 2020, "indice_final")
+  cor_indice <- cor_categoria("Muito alto")
+  expect_true(any(grepl(paste0("--cor-cat:", cor_indice), base_indice$tooltip, fixed = TRUE)))
+
+  # A chip de um bloco usa a rampa daquele bloco
+  base_bloco <- dados_mapa(preparado_teste, 2020, "bloco3")
+  cor_bloco <- cor_categoria("Muito alto", "bloco3")
+  expect_true(any(grepl(paste0("--cor-cat:", cor_bloco), base_bloco$tooltip, fixed = TRUE)))
+  expect_false(any(grepl(paste0("--cor-cat:", cor_indice), base_bloco$tooltip, fixed = TRUE)))
+})
+
+test_that("tooltip da pétala carrega a cor da dimensão", {
+  blocos <- data.frame(
+    medida = BLOCOS$medida,
+    nome = BLOCOS$nome,
+    valor = c(10, 30, 50, 70, 90, 100),
+    categoria = c("Muito baixo", "Baixo", "Médio", "Alto", "Muito alto", "Muito alto"),
+    cor = BLOCOS$cor,
+    pos_nac = 1:6,
+    total_nac = rep(100, 6),
+    stringsAsFactors = FALSE
+  )
+  html <- as.character(grafico_petalas(blocos))
+  expect_true(grepl("tooltip-petala__marca", html, fixed = TRUE))
+  expect_true(grepl(paste0("--cor-medida:", cor_medida("bloco3")), html, fixed = TRUE))
+  expect_true(grepl(paste0("--cor-fundo:", cor_categoria("Médio", "bloco3")), html, fixed = TRUE))
+  expect_true(grepl("petalas-legenda", html, fixed = TRUE))
+})
+
 test_that("grafico_petalas monta as seis pétalas com tooltip", {
   blocos <- data.frame(
     nome = BLOCOS$nome,
@@ -204,6 +262,9 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
   )
   expect_true(grepl("tooltip-petala", html))
   expect_true(grepl("Planejamento Reprodutivo", html))
+  # Os valores dentro das pétalas usam sempre uma casa decimal
+  expect_true(grepl(">100,0</text>", html, fixed = TRUE))
+  expect_true(grepl(">10,0</text>", html, fixed = TRUE))
 
   medianas <- stats::setNames(rep(50, 6), BLOCOS$nome)
   html_mediana <- as.character(grafico_petalas(blocos, medianas = medianas))
@@ -211,5 +272,6 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
     lengths(regmatches(html_mediana, gregexpr("ponto-mediana", html_mediana))),
     6
   )
-  expect_true(grepl("Mediana Brasil", html_mediana))
+  # A lembrança textual da mediana saiu; o ponto permanece no desenho
+  expect_false(grepl("Mediana Brasil", html_mediana))
 })

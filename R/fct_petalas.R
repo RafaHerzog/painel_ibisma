@@ -12,6 +12,9 @@ PETALAS_CX <- 250
 PETALAS_CY <- 275
 PETALAS_RAIO <- 185
 
+# Definindo a área visível do desenho, cortando as sobras de topo e laterais
+PETALAS_VIEWBOX <- "45 60 410 236"
+
 #' Calculando a distância de um ponto ao longo da guia da pétala
 #'
 #' @param percentual Valor de 0 a 100 que define a posição na guia.
@@ -29,13 +32,17 @@ distancia_petala <- function(percentual) {
 #' @param categoria Categoria de vulnerabilidade do bloco.
 #' @param pos_nac Posição do município no ranking nacional.
 #' @param total_nac Total de municípios ranqueados.
+#' @param medida Identificador do bloco que define a cor da dimensão.
 #' @return Texto HTML pronto para o tooltip do Bootstrap.
 #' @noRd
-tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac) {
+tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
   # Montando o cartão com nome, valor, ranking e selo de categoria
+  # O marcador ao lado do nome e o selo usam a rampa de cor da dimensão
   paste0(
-    '<div class="tooltip-petala">',
-    '<div class="tooltip-petala__titulo">', nome, "</div>",
+    '<div class="tooltip-petala" style="--cor-medida:', cor_medida(medida), ';">',
+    '<div class="tooltip-petala__titulo">',
+    '<span class="tooltip-petala__marca"></span>', nome,
+    "</div>",
     '<div class="tooltip-petala__linha">',
     '<span class="tooltip-petala__rotulo">Valor</span>',
     '<span class="tooltip-petala__valor">', formatar_numero(valor), "</span>",
@@ -45,7 +52,7 @@ tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac) {
     '<span class="tooltip-petala__valor">',
     rotulo_posicao(pos_nac, total_nac),
     "</span></div>",
-    badge_categoria(categoria),
+    badge_categoria(categoria, cor = cor_categoria(categoria, medida)),
     "</div>"
   )
 }
@@ -110,7 +117,7 @@ petala_svg <- function(i, blocos, mediana = NULL) {
     tabindex = "0",
     title = tooltip_petala(
       nome, blocos$valor[i], blocos$categoria[i],
-      blocos$pos_nac[i], blocos$total_nac[i]
+      blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i]
     ),
     # Linha guia pontilhada que sustenta a escala da pétala
     htmltools::tags$line(
@@ -138,11 +145,11 @@ petala_svg <- function(i, blocos, mediana = NULL) {
       ),
       class = "forma-petala"
     ),
-    # Círculo com o valor arredondado no ápice da pétala
+    # Círculo com o valor em uma casa decimal no ápice da pétala
     htmltools::tags$circle(
       cx = marca_x,
       cy = marca_y,
-      r = 14,
+      r = 16,
       fill = cor,
       stroke = "#FFFFFF",
       `stroke-width` = 2,
@@ -150,13 +157,13 @@ petala_svg <- function(i, blocos, mediana = NULL) {
     ),
     htmltools::tags$text(
       x = marca_x,
-      y = marca_y + 4.5,
+      y = marca_y + 3.4,
       `text-anchor` = "middle",
       fill = cor_texto_sobre(cor),
-      `font-size` = "10.5px",
+      `font-size` = "9.5px",
       `font-weight` = "700",
       `font-family` = "Source Sans Pro, system-ui, sans-serif",
-      round(valor)
+      formatar_numero(valor)
     )
   )
 }
@@ -165,12 +172,17 @@ petala_svg <- function(i, blocos, mediana = NULL) {
 #'
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
 #' @param medianas Vetor com a mediana do Brasil por bloco (opcional).
-#' @return Elemento HTML com o leque de pétalas e a lembrança da mediana.
+#' @return Elemento HTML com o leque de pétalas e as legendas de apoio.
 #' @noRd
 grafico_petalas <- function(blocos, medianas = NULL) {
-  # Garantindo que os nomes cheguem como texto e que a cor seja preenchida
+  # Garantindo que os nomes cheguem como texto
   blocos$nome <- as.character(blocos$nome)
-  if (is.null(blocos$cor) && !is.null(blocos$medida)) {
+  # Descobrindo a medida de cada pétala quando ela não vier pronta
+  if (is.null(blocos$medida)) {
+    blocos$medida <- MEDIDAS$medida[match(blocos$nome, MEDIDAS$nome)]
+  }
+  # Preenchendo a cor de identificação a partir da medida quando necessário
+  if (is.null(blocos$cor)) {
     blocos$cor <- cor_medida(blocos$medida)
   }
 
@@ -194,21 +206,23 @@ grafico_petalas <- function(blocos, medianas = NULL) {
     `stroke-width` = 2
   )
 
-  # Montando a lembrança da mediana apenas quando ela existir
-  legenda_mediana <- NULL
-  if (!is.null(medianas)) {
-    legenda_mediana <- htmltools::tags$div(
-      class = "petalas-mediana",
-      htmltools::tags$span(class = "petalas-mediana__ponto"),
-      "Mediana Brasil"
+  # Nomeando cada bloco na legenda para identificar as pétalas sem hover
+  itens_legenda <- lapply(seq_len(nrow(blocos)), function(i) {
+    htmltools::tags$span(
+      class = "petalas-legenda__item",
+      htmltools::tags$span(
+        class = "petalas-legenda__cor",
+        style = paste0("background:", blocos$cor[i], ";")
+      ),
+      as.character(blocos$nome[i])
     )
-  }
+  })
 
   # Montando o contêiner final com o SVG responsivo
   htmltools::tags$div(
     class = "petalas",
     htmltools::tags$svg(
-      viewBox = "0 0 500 300",
+      viewBox = PETALAS_VIEWBOX,
       class = "svg-petalas",
       xmlns = "http://www.w3.org/2000/svg",
       `role` = "img",
@@ -216,6 +230,6 @@ grafico_petalas <- function(blocos, medianas = NULL) {
       centro,
       petalas
     ),
-    legenda_mediana
+    htmltools::tags$div(class = "petalas-legenda", itens_legenda)
   )
 }

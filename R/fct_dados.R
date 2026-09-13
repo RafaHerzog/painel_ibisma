@@ -438,7 +438,11 @@ frase_percentil <- function(valor) {
   if (is.na(valor)) {
     return("Sem dado disponível para este ano.")
   }
-  # Limitando a frase a 99% para evitar "acima de 100%" no município máximo
-  percentil <- min(round(valor), 99)
-  paste0("acima de ", percentil, "% dos municípios brasileiros em insegurança")
+  # Limitando a 99,9% para o município mais vulnerável não chegar a "100%"
+  percentil <- min(valor, 99.9)
+  # Usando a mesma casa decimal dos demais valores do painel
+  paste0(
+    "acima de ", formatar_numero(percentil),
+    "% dos municípios brasileiros em insegurança"
+  )
 }
