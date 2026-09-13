@@ -372,6 +372,6 @@ frase_percentil <- function(valor) {
   # Usando a mesma casa decimal dos demais valores do painel
   paste0(
     "acima de ", formatar_numero(percentil),
-    "% dos municípios brasileiros em insegurança"
+    "% dos municípios em insegurança em saúde materna"
   )
 }
