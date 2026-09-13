@@ -135,16 +135,18 @@ body, .content-wrapper, .main-header, .main-sidebar {
   }
 }
 
-/* Ativando a rolagem suave entre as âncoras e compensando a navbar fixa */
+/* Ativando a rolagem suave entre as âncoras */
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: calc(var(--altura-navbar) + 0.75rem);
 }
 
 /* Reservando o espaço da navbar para as âncoras das seções */
+/* A altura é medida no JavaScript e gravada em --altura-navbar para o valor
+   acompanhar qualquer tamanho de tela. A compensação fica só aqui: somar
+   scroll-padding no html deslocaria a seção duas vezes */
 section[id],
 a[id] {
-  scroll-margin-top: calc(var(--altura-navbar) + 0.75rem);
+  scroll-margin-top: var(--altura-navbar, 4.75rem);
 }
 
 /* Liberando a altura natural da página para a navbar acompanhar toda a rolagem */
@@ -660,22 +662,14 @@ input:focus-visible,
 
 /* Empilhando o cabeçalho do perfil */
 .perfil-hero {
-  margin-bottom: 1.75rem;
+  margin-bottom: 0.9rem;
 }
 
-/* Destacando o nome do município no perfil */
+/* Destacando o nome do município e a UF no perfil */
 .perfil-nome {
   font-size: var(--fonte-titulo-home-size);
   font-weight: 700;
   margin: 0 0 0.75rem 0;
-}
-
-/* Suavizando a sigla da UF ao lado do nome */
-.perfil-uf {
-  font-size: var(--fonte-titulos-size);
-  color: var(--cor-texto-suave);
-  font-weight: 600;
-  margin-left: 0.35rem;
 }
 
 /* Distribuindo as métricas territoriais em linha */
@@ -716,13 +710,91 @@ input:focus-visible,
 
 /* ---------------------------------------------- perfil — índice e blocos */
 
-/* Alinhando valor e selo do índice na mesma linha */
+/* Dando respiro vertical entre os blocos empilhados do perfil */
+.secao-perfil .painel-bloco {
+  margin-bottom: 1.5rem;
+}
+
+.secao-perfil .painel-bloco:last-child {
+  margin-bottom: 0;
+}
+
+/* Mantendo nome, pétalas e placar na mesma composição vertical */
+.painel-bloco--palco {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centralizando o leque de pétalas dentro do palco */
+.perfil-palco__grafico {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Explicando as pétalas logo abaixo das métricas do município */
+.petalas-caption {
+  align-self: flex-start;
+  max-width: 52rem;
+  margin: 0.5rem 0 1rem 0;
+  font-size: var(--fonte-media-size);
+  color: var(--cor-texto-suave);
+  text-align: left;
+}
+
+/* Distribuindo o placar com rankings nas laterais e o valor ao centro */
+.perfil-placar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "brasil indice uf";
+  align-items: end;
+  gap: 1rem 2rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cor-linha);
+}
+
+/* Posicionando o ranking nacional à esquerda do placar */
+.perfil-placar__ranking--brasil {
+  grid-area: brasil;
+  text-align: left;
+}
+
+/* Posicionando o ranking estadual à direita do placar */
+.perfil-placar__ranking--uf {
+  grid-area: uf;
+  text-align: right;
+}
+
+/* Centralizando o valor do IBISMA no meio do placar */
+.perfil-placar__indice {
+  grid-area: indice;
+  text-align: center;
+}
+
+/* Nomeando explicitamente o valor em destaque no placar */
+.perfil-placar__rotulo {
+  display: block;
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+  margin-bottom: 0.25rem;
+}
+
+/* Alinhando valor, escala e selo do índice na mesma linha */
 .perfil-indice__linha {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 0.35rem;
+}
+
+/* Centralizando a linha do valor quando ela fica no placar */
+.perfil-indice__linha--centro {
+  justify-content: center;
 }
 
 /* Dando destaque ao número do IBISMA */
@@ -733,81 +805,32 @@ input:focus-visible,
   color: var(--cor-roxo-ibisma);
 }
 
+/* Explicando a escala do número em destaque */
+.perfil-indice__escala {
+  font-size: var(--fonte-subtitulos-sobre-size);
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
 /* Explicando o percentil logo abaixo do valor */
 .perfil-indice__frase {
   font-size: var(--fonte-media-size);
   color: var(--cor-texto-suave);
-  margin: 0 0 1.25rem 0;
+  margin: 0;
 }
 
-/* Distribuindo os rankings em linha */
-.perfil-ranks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 2.5rem;
-  padding-bottom: 1.25rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--cor-linha);
+/* Limitando e centralizando a frase do percentil dentro do placar */
+.perfil-placar__indice .perfil-indice__frase {
+  max-width: 30rem;
+  margin: 0.35rem auto 0 auto;
 }
 
-/* Empilhando as linhas dos blocos */
-.perfil-blocos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-/* Alinhando cor, nome, valor e categoria de cada bloco */
-.perfil-bloco-linha {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0.25rem;
-  border-radius: 8px;
-  transition: background-color 0.15s ease;
-}
-
-/* Realçando a linha do bloco sob o mouse */
-.perfil-bloco-linha:hover {
-  background-color: #FFFFFF;
-}
-
-/* Desenhando o ponto colorido do bloco */
-.perfil-bloco-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-/* Estilizando o nome do bloco */
-.perfil-bloco-nome {
-  font-size: var(--fonte-media-size);
-  font-weight: 600;
-  color: #0A1E3C;
-}
-
-/* Destacando o valor do bloco */
-.perfil-bloco-valor {
-  font-size: var(--fonte-media-size);
-  font-weight: 700;
-  text-align: right;
-}
-
-/* Suavizando a categoria do bloco */
-.perfil-bloco-cat {
-  font-size: var(--fonte-pequena-size);
-  color: var(--cor-texto-suave);
-  min-width: 5.5rem;
-  text-align: right;
+/* Aproveitando a largura do palco para ampliar o leque de pétalas */
+.painel-bloco--palco .svg-petalas {
+  max-height: min(36vh, 520px);
 }
 
 /* --------------------------------------------------------- comparação */
-
-/* Limitando a largura do bloco de comparação */
-.painel-bloco--comparacao {
-  margin-top: 1.5rem;
-}
 
 /* Estilizando a tabela complementar de comparação */
 .tabela-comparacao {
@@ -868,10 +891,11 @@ input:focus-visible,
 }
 
 /* Tornando o SVG das pétalas responsivo e com leve profundidade */
+/* O limite de altura cresce na seção de uma coluna sem esticar o desenho */
 .svg-petalas {
   width: 100%;
   height: auto;
-  max-height: 400px;
+  max-height: 470px;
   overflow: visible;
   filter: drop-shadow(0 4px 8px rgba(10, 30, 60, 0.05));
 }
@@ -901,26 +925,31 @@ input:focus-visible,
 
 .grupo-petala:hover .circulo-nota,
 .grupo-petala:focus-visible .circulo-nota {
-  r: 16;
+  r: 18;
 }
 
-/* Explicando o ponto escuro da mediana abaixo do desenho */
-.petalas-mediana {
+/* Listando os nomes dos blocos com seus marcadores de cor abaixo do leque */
+.petalas-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.petalas-legenda__item {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.35rem;
   font-size: var(--fonte-pequena-size);
   color: var(--cor-texto-suave);
 }
 
-.petalas-mediana__ponto {
-  width: 9px;
-  height: 9px;
+.petalas-legenda__cor {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background-color: #0A1E3C;
-  border: 1.5px solid #FFFFFF;
-  box-shadow: 0 0 0 1px rgba(10, 30, 60, 0.15);
+  flex: 0 0 auto;
 }
 
 /* Estilizando o cartão da tooltip das pétalas no padrão do painel */
@@ -958,9 +987,22 @@ input:focus-visible,
 
 /* Alinhando os textos internos do cartão da pétala */
 .tooltip-petala__titulo {
+  display: flex;
+  align-items: center;
   font-size: var(--fonte-media-size);
   font-weight: 700;
   margin-bottom: 0.3rem;
+}
+
+/* Marcando o título da pétala com a cor da dimensão representada */
+.tooltip-petala__marca {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--cor-medida, var(--cor-roxo-ibisma));
+  margin-right: 0.45rem;
+  flex: 0 0 auto;
 }
 
 .tooltip-petala__linha {
@@ -1111,8 +1153,19 @@ input:focus-visible,
     height: 28px;
   }
 
-  .perfil-bloco-cat {
-    min-width: 0;
+  /* Empilhando o placar do IBISMA em telas pequenas */
+  .perfil-placar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "indice"
+      "brasil"
+      "uf";
+    gap: 0.85rem;
+  }
+
+  .perfil-placar__ranking--brasil,
+  .perfil-placar__ranking--uf {
+    text-align: left;
   }
 }
 

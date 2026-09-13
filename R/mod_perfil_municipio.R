@@ -42,21 +42,18 @@ mod_perfil_municipio_ui <- function(id) {
         htmltools::tags$span(class = "controle-texto", "e comparar com"),
         seletor_inline(ns("comparar"), opcoes_comparacao, selected = "nenhum", largura = "320px")
       ),
-      # Cabeçalho com o nome do município e suas informações territoriais
-      shiny::uiOutput(ns("hero"), class = "perfil-hero"),
-      # Situação no ano: flor dos blocos e resumo do índice
-      bslib::layout_columns(
-        col_widths = bslib::breakpoints(sm = c(12, 12), lg = c(6, 6)),
-        gap = "1.5rem",
+      # Palco do perfil: nome, pétalas e placar na mesma composição
+      htmltools::tags$div(
+        class = "painel-bloco painel-bloco--palco",
+        # Cabeçalho com o nome do município e suas informações territoriais
+        shiny::uiOutput(ns("hero"), class = "perfil-hero"),
+        # Leque dos seis blocos, criado conforme houver dado para o ano escolhido
         htmltools::tags$div(
-          class = "painel-bloco painel-bloco--flor",
-          # O conteúdo é criado conforme houver dado para o ano escolhido
+          class = "perfil-palco__grafico",
           shiny::uiOutput(ns("flor_area"))
         ),
-        htmltools::tags$div(
-          class = "painel-bloco painel-bloco--indice",
-          shiny::uiOutput(ns("indice"))
-        )
+        # Placar com o valor do IBISMA entre os rankings nacional e estadual
+        shiny::uiOutput(ns("placar"))
       ),
       # Evolução temporal da medida escolhida
       htmltools::tags$div(
@@ -145,10 +142,10 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
         return(estado_vazio("Selecione um munic\u00edpio para ver o perfil."))
       }
       htmltools::tagList(
+        # Nome e UF em um \u00fanico destaque, sem elemento separado para a sigla
         htmltools::tags$h3(
           class = "perfil-nome",
-          mun$municipio,
-          htmltools::tags$span(class = "perfil-uf", mun$sigla_uf)
+          paste0(mun$municipio, ", ", mun$sigla_uf)
         ),
         htmltools::tags$div(
           class = "perfil-metricas",
@@ -160,96 +157,78 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       )
     })
 
-    # Montando o cabeçalho do bloco da flor, usado também no estado vazio
-    cabecalho_flor <- shiny::reactive({
-      htmltools::tags$div(
-        class = "bloco-cabecalho",
-        htmltools::tags$h3(
-          class = "bloco-titulo",
-          paste0("Situa\u00e7\u00e3o em ", input$ano)
-        ),
-        htmltools::tags$p(
-          class = "bloco-descricao",
-          paste0(
-            "Cada p\u00e9tala representa um bloco do IBISMA: quanto maior a p\u00e9tala, ",
-            "maior a inseguran\u00e7a naquele bloco. Passe o mouse para ver o valor, ",
-            "a categoria e o ranking; o ponto escuro marca a mediana do Brasil."
-          )
-        )
-      )
-    })
-
     # Inserindo as pétalas apenas quando houver dado para o ano selecionado
     output$flor_area <- shiny::renderUI({
       if (is.null(resumo())) {
-        return(htmltools::tagList(
-          cabecalho_flor(),
-          estado_vazio(
-            "Este munic\u00edpio n\u00e3o possui dados no ano selecionado.",
-            icone = "circle-info"
-          )
-        ))
-      }
-      htmltools::tagList(
-        cabecalho_flor(),
-        grafico_petalas(resumo()$blocos, medianas = medianas_blocos())
-      )
-    })
-
-    # Montando o resumo numérico ao lado da flor
-    output$indice <- shiny::renderUI({
-      r <- resumo()
-      if (is.null(r)) {
         return(estado_vazio(
           paste(
-            "Sem dados de IBISMA e dos blocos para",
-            info()$municipio, "em", input$ano, ".",
+            "Este munic\u00edpio n\u00e3o possui dados no ano selecionado.",
             "Veja a evolu\u00e7\u00e3o ao longo do tempo abaixo."
           ),
           icone = "circle-info"
         ))
       }
-
-      # Montando uma linha para cada bloco com cor, nome, valor e categoria
-      linhas_blocos <- lapply(seq_len(nrow(r$blocos)), function(i) {
-        bloco <- r$blocos[i, ]
-        htmltools::tags$div(
-          class = "perfil-bloco-linha",
-          htmltools::tags$span(
-            class = "perfil-bloco-dot",
-            style = paste0("background:", bloco$cor, ";")
-          ),
-          htmltools::tags$span(class = "perfil-bloco-nome", bloco$nome),
-          htmltools::tags$span(class = "perfil-bloco-valor", formatar_numero(bloco$valor)),
-          htmltools::tags$span(class = "perfil-bloco-cat", as.character(bloco$categoria))
-        )
-      })
-
       htmltools::tagList(
-        htmltools::tags$div(
-          class = "perfil-indice",
-          htmltools::tags$div(
-            class = "perfil-indice__linha",
-            htmltools::tags$span(
-              class = "perfil-indice__valor",
-              formatar_numero(r$valor, decimais = 2)
-            ),
-            badge_categoria(r$categoria)
-          ),
-          htmltools::tags$p(class = "perfil-indice__frase", frase_percentil(r$valor))
-        ),
-        htmltools::tags$div(
-          class = "perfil-ranks",
-          metrica_hero(
-            "Ranking nacional",
-            rotulo_posicao(r$pos_nac, r$total_nac)
-          ),
-          metrica_hero(
-            paste0("Ranking em ", r$sigla_uf),
-            rotulo_posicao(r$pos_uf, r$total_uf)
+        # Explicando as pétalas logo acima do leque, como no restante do bloco
+        htmltools::tags$p(
+          class = "petalas-caption",
+          paste(
+            "Cada p\u00e9tala representa um bloco do IBISMA: quanto maior a p\u00e9tala,",
+            "maior a inseguran\u00e7a naquele bloco. O ponto escuro marca a mediana",
+            "do Brasil."
           )
         ),
-        htmltools::tags$div(class = "perfil-blocos", linhas_blocos)
+        grafico_petalas(resumo()$blocos, medianas = medianas_blocos())
+      )
+    })
+
+    # Montando o placar do IBISMA com os rankings nas laterais
+    output$placar <- shiny::renderUI({
+      r <- resumo()
+      # O valor só aparece quando existir dado para o ano selecionado
+      if (is.null(r)) {
+        return(NULL)
+      }
+      htmltools::tags$div(
+        class = "perfil-placar",
+        # Valor do IBISMA nomeado, com categoria e leitura do percentil
+        htmltools::tags$div(
+          class = "perfil-placar__indice",
+          htmltools::tags$span(
+            class = "perfil-placar__rotulo",
+            paste0("IBISMA em ", input$ano)
+          ),
+          htmltools::tags$div(
+            class = "perfil-indice__linha perfil-indice__linha--centro",
+            htmltools::tags$span(
+              class = "perfil-indice__valor",
+              # Todos os valores do painel são exibidos com uma casa decimal
+              formatar_numero(r$valor)
+            ),
+            htmltools::tags$span(class = "perfil-indice__escala", "de 100"),
+            badge_categoria(r$categoria)
+          ),
+          htmltools::tags$p(
+            class = "perfil-indice__frase",
+            frase_percentil(r$valor)
+          )
+        ),
+        # Ranking nacional à esquerda do placar
+        htmltools::tags$div(
+          class = "perfil-placar__ranking perfil-placar__ranking--brasil",
+          metrica_hero(
+            "Ranking Brasil",
+            rotulo_posicao(r$pos_nac, r$total_nac)
+          )
+        ),
+        # Ranking estadual à direita do placar
+        htmltools::tags$div(
+          class = "perfil-placar__ranking perfil-placar__ranking--uf",
+          metrica_hero(
+            paste0("Ranking na UF (", r$uf, ")"),
+            rotulo_posicao(r$pos_uf, r$total_uf)
+          )
+        )
       )
     })
 
