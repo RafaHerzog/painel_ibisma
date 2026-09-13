@@ -800,3 +800,42 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - Smoke headless com Abadia de Goiás/2024: pétala Clima com razão 0,491 da
   guia (49,1%) e 2,5 px de distância do meio — coerente com a leitura
   "meio = 50%".
+
+---
+
+# Sessão 7 — Seções e módulos "Onde?" e "Como?" (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** renomear as duas seções do painel e seus módulos para
+  "Onde?" (antigo Panorama/Visão geral) e "Como?" (antigo Perfil dos
+  municípios), mantendo a coerência entre rótulos, âncoras e código.
+
+## 1. Rótulos das seções
+
+- Na navbar e no eyebrow de cada seção: "Panorama" e "Visão geral" passaram a
+  "Onde?"; "Perfil dos municípios" passou a "Como?".
+
+## 2. Módulos e âncoras
+
+- Arquivos renomeados com `git mv` (histórico preservado):
+  `R/mod_panorama.R` → `R/mod_onde.R` e `R/mod_perfil_municipio.R` →
+  `R/mod_como.R`.
+- Funções renomeadas: `mod_panorama_ui/server` → `mod_onde_ui/server` e
+  `mod_perfil_municipio_ui/server` → `mod_como_ui/server`, com os chamados
+  atualizados em `app_ui.R` e `app_server.R`.
+- Ids dos módulos e âncoras das seções: `"panorama"` → `"onde"` e
+  `"perfil"` → `"como"`; os outputs com namespace passam a ser `#onde-mapa` e
+  `#como-palcos`.
+- Classe da seção de perfil: `secao-perfil` → `secao-como`, com as duas
+  regras correspondentes do CSS atualizadas.
+- Mantido o termo "perfil" nos componentes de conteúdo (`fct_perfil.R`,
+  `perfil_palco()`, `perfil_placar()` e classes `perfil-*`), que descrevem o
+  perfil do município e não o módulo.
+
+## 3. Testes e validação
+
+- `devtools::test()`: **152 asserções verdes** — a suíte não referencia ids
+  ou rótulos das seções.
+- Smoke headless: navbar com `Onde?->#onde` e `Como?->#como`, seções `#onde`
+  e `#como` presentes e módulos `#onde-mapa` e `#como-palcos` renderizando,
+  sem erros de JavaScript ou de servidor.
