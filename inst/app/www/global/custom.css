@@ -822,9 +822,8 @@ input:focus-visible,
   grid-template-areas: "brasil indice uf";
   align-items: end;
   gap: 1rem 2rem;
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--cor-linha);
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
 /* Mantendo rótulo e valor de cada ranking em uma única linha */
@@ -976,7 +975,7 @@ input:focus-visible,
 
 /* Nomeando cada gráfico da evolução com o município correspondente */
 .evolucao-titulo {
-  font-size: var(--fonte-subtitulos-sobre-size);
+  font-size: var(--fonte-muito-grande-size);
   font-weight: 700;
   color: #0A1E3C;
   margin: 0 0 0.5rem 0;
