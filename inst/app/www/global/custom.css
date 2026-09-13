@@ -814,15 +814,26 @@ input:focus-visible,
 }
 
 /* Distribuindo o placar com rankings nas laterais e o valor ao centro */
+/* A largura mínima das laterais reserva o mesmo espaço para os rankings */
+/* mesmo com posições e totais de dígitos diferentes em cada município */
 .perfil-placar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(7.5rem, 1fr) auto minmax(7.5rem, 1fr);
   grid-template-areas: "brasil indice uf";
   align-items: end;
   gap: 1rem 2rem;
   margin-top: 1.25rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--cor-linha);
+}
+
+/* Mantendo rótulo e valor de cada ranking em uma única linha */
+/* Assim um texto maior não muda a altura nem desloca os elementos seguintes */
+.perfil-placar__ranking .metrica-rotulo,
+.perfil-placar__ranking .metrica-valor {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Posicionando o ranking nacional à esquerda do placar */
@@ -943,9 +954,16 @@ input:focus-visible,
     opacity 0.4s ease, visibility 0s linear 0.5s;
 }
 
+/* Igualando a largura das duas colunas quando a comparação está ativa */
+/* As duas bases descontam metade do respiro de 1.5rem, de modo que principal */
+/* e comparado fiquem exatamente do mesmo tamanho, sem sobra nem encolhimento */
+.dupla--comparando .dupla__item--principal {
+  flex-basis: calc(50% - 0.75rem);
+}
+
 /* Abrindo a coluna comparada com metade do espaço e um respiro à esquerda */
 .dupla--comparando .dupla__item--comparado {
-  flex-basis: 50%;
+  flex-basis: calc(50% - 0.75rem);
   max-width: 50%;
   height: auto;
   margin-left: 1.5rem;
