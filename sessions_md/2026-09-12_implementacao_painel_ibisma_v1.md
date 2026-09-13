@@ -547,3 +547,125 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   pelo servidor a partir da base; não usar essa opção para conteúdo de usuário.
 - Os rótulos numéricos das barras de comparação não aparecem no gráfico (os
   valores seguem na tooltip e na tabela); comportamento pré-existente.
+
+---
+
+# Sessão 4 — Evolução temporal e comparação lado a lado (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** corrigir dois problemas do gráfico de evolução temporal
+  (formatação do eixo X e sete séries simultâneas) e reformular completamente a
+  comparação entre municípios, que passou a acontecer nos próprios elementos do
+  perfil (palcos e gráficos lado a lado), sem seção independente.
+
+## 1. Eixo X do gráfico temporal
+
+- **Causa:** o eixo de valor do ECharts formata números com quatro dígitos com
+  separador de milhar por padrão (`2.015`). Não era problema de dado: os anos
+  sempre foram inteiros.
+- **Correção:** `grafico_evolucao()` passou a definir o formatter do eixo
+  (`e_x_axis(formatter = JS("Math.round(...)"))`), mantendo `min`, `max` e
+  `interval = 1`. Funciona em qualquer município e com a comparação ativa
+  (o formatter é reaplicado a cada re-render).
+- **Teste:** o objeto do gráfico é inspecionado quanto ao formatter
+  (`JS_EVAL` com `Math.round`) na suíte.
+
+## 2. Sete séries no gráfico de evolução
+
+- `series_municipio()` (em `fct_dados.R`) monta um data frame com `ano` e uma
+  coluna por medida, preenchendo anos ausentes com `NA`; `series_tem_valor()`
+  decide quando há algo para desenhar.
+- O gráfico desenha **IBISMA + seis blocos** de uma vez, com os nomes e as cores
+  reais de `MEDIDAS`; o IBISMA é a linha mais espessa e todas as séries mostram
+  o ponto de cada ano como círculo (`symbolSize = 6`, borda branca).
+- O seletor "Evolução do" foi removido — a leitura é sempre conjunta.
+- As cores continuam representando **dimensões**, nunca municípios.
+
+## 3. Legenda nativa compartilhada (reformulada em duas etapas)
+
+- A legenda HTML foi descartada. A pedido, passou a ser a legenda **nativa do
+  ECharts**, primeiro embutida no gráfico principal; na revisão final, foi
+  movida para **um widget ECharts próprio, abaixo dos gráficos e centralizado
+  entre os dois**, com os eixos e a grade escondidos (`grafico_legenda()`).
+- `estilo_echarts()` centraliza a legenda (`left = "center"`), usa os ícones
+  padrão das séries, `itemGap = 16` e altura responsiva por media query.
+- O widget de legenda entra no **mesmo grupo** dos dois gráficos
+  (`e_group` + `e_connect_group`): clicar em um item oculta/mostra a série nos
+  **dois** gráficos. A sincronização também faz as **tooltips** aparecerem no
+  mesmo ano nos dois gráficos — leitura comparativa direta.
+- **Persistência da seleção:** a echarts4r publica a seleção da legenda em
+  `input$legenda_evolucao_legend_selected`; os gráficos a reaplicam com
+  `shiny::isolate()`, de modo que esconder uma série sobrevive à troca de ano,
+  à troca do município principal e à troca/remoção da comparação, sem
+  re-renderizar os gráficos a cada clique na legenda.
+
+## 4. Comparação reformulada, sem seção própria
+
+- A seção "Comparação entre municípios" foi removida por completo (interface,
+  gráfico de diferenças, tabela e linha pontilhada), junto das funções
+  `comparar_series()`, `comparar_ano()`, `grafico_diferencas()`,
+  `eh_tooltip_diferencas()` e `grafico_vazio()`, e `jsonlite` saiu das
+  dependências.
+- **Palcos reutilizáveis:** `perfil_palco()` (novo `R/fct_perfil.R`) monta
+  identificação, métricas territoriais, pétalas e placar para qualquer
+  município; `perfil_placar()` concentra o placar. O mesmo componente serve
+  principal e comparado, mudando apenas os argumentos.
+- **Evolução reutilizável:** o mesmo `grafico_evolucao()` desenha cada
+  município; cada um tem seu próprio gráfico (não compartilham o mesmo canvas).
+- **Estados controlados:** sem comparação há um palco e um gráfico; com
+  comparação, dois de cada; ao remover, a coluna comparada é suspensa (`req`)
+  e o layout volta suavemente. Trocar o principal mantém a comparação ativa e
+  atualiza apenas o lado esquerdo.
+- **Hierarquia:** rótulos "Município principal"/"Município comparado" e títulos
+  com o nome de cada município acima dos gráficos.
+
+## 5. Transições e espaçamento
+
+- **Causa da animação invisível:** a transição usava
+  `grid-template-columns` (não interpola em engines mais antigas) e era
+  desligada por `prefers-reduced-motion: reduce` — que é o padrão do Chrome
+  headless e pode estar ativo no sistema do usuário.
+- **Correção:** a `.dupla` passou a ser um **flex** com transição em
+  `flex-basis`/`max-width`/`margin-left`/`opacity` (interpola em qualquer
+  navegador) e o desligamento por `prefers-reduced-motion` foi removido para
+  essa transição.
+- **Verificação de verdade:** o smoke ganhou `--motion` e `--reduce`, que emulam
+  a preferência via CDP, e a largura das colunas passou a ser amostrada a cada
+  80 ms. Resultado real: `1376x0 → 1340x35 → 1112x256 → 890x470 → 763x592 →
+  664x688` (com `no-preference` e com `reduce`).
+- **Espaçamento palco ↔ evolução:** o card do palco tem `height: 100%`; dentro
+  da coluna com `overflow: hidden`, a `margin-bottom` era clipada e a evolução
+  encostava no palco. A margem dos cards dentro da `.dupla` foi zerada e o
+  respiro (`1.5rem`) passou a vir da `.dupla--palcos` — medido em 24 px.
+
+## 6. Tooltip da evolução
+
+- Mostra `Município (UF) — ano` e as sete linhas, com marcadores nas cores das
+  dimensões e valores ausentes omitidos; nomes com apóstrofo são escapados
+  (`encodeString`) antes de entrar no JavaScript.
+- Com a comparação ativa, as tooltips dos dois gráficos aparecem sincronizadas
+  no mesmo ano.
+
+## 7. Testes e validação
+
+- `devtools::test()`: **146 asserções verdes**, cobrindo `series_municipio` /
+  `series_tem_valor`, o formato do gráfico de evolução (séries, cores, símbolos,
+  eixo, tooltip), `grafico_legenda` (itens, eixos ocultos, grupo, `itemGap`) e
+  `perfil_palco` (identificação, pétalas, placar e estado vazio).
+- Smoke headless (evidências em `dev/smoke/sessao_comparacao_v3`, `v4` e `v5`):
+  estados A/B/C/D, troca de comparação, troca de ano, Borá/2023, animação
+  amostrada, legenda compartilhada (clique sincroniza e sobrevive a re-render),
+  ausência da seção antiga e da linha pontilhada, legenda abaixo/centralizada e
+  responsivo em 1600/1024/390 px sem estouro horizontal.
+
+## 8. Decisões e limitações remanescentes
+
+- A legenda compartilhada é um widget ECharts dedicado; o custo é um canvas
+  vazio de ~64 px (96 px no mobile) abaixo dos gráficos.
+- O sincronismo via grupo do ECharts também sincroniza tooltips — avaliado como
+  positivo para a comparação, mas pode ser desligado trocando o mecanismo por
+  um espelho só da legenda, se o uso indicar.
+- No empilhamento (≤1100 px) a entrada do comparado é animada; a saída é
+  instantânea (o `display: none` da coluna vazia).
+- Em telas muito estreitas a legenda quebra em até três linhas; a altura do
+  canvas acompanha por media query.
