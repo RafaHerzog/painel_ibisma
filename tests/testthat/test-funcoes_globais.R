@@ -344,6 +344,12 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
   expect_true(grepl("svg-petalas", html, fixed = TRUE))
   expect_true(grepl("IBISMA em 2020", html, fixed = TRUE))
   expect_true(grepl("perfil-placar", html, fixed = TRUE))
+  # O ranking estadual não repete o nome da UF no título
+  expect_true(grepl("Ranking na UF", html, fixed = TRUE))
+  expect_false(grepl("Ranking na UF (", html, fixed = TRUE))
+  # Os valores territoriais guardam o texto completo para o tooltip condicional
+  expect_true(grepl("metrica-tooltip", html, fixed = TRUE))
+  expect_true(grepl("data-tooltip-texto", html, fixed = TRUE))
 
   # O palco do comparado usa a classe própria, sem o rótulo do principal
   html_b <- as.character(perfil_palco(

@@ -238,13 +238,26 @@ legenda_categorias <- function(paleta = paleta_categorias(), titulo = NULL,
 #' @param rotulo Rótulo da métrica.
 #' @param valor Valor principal já formatado.
 #' @param detalhe Texto auxiliar (opcional).
+#' @param tooltip Guarda o texto completo para o tooltip exibido quando cortado.
 #' @return Elemento HTML da métrica.
 #' @noRd
-metrica_hero <- function(rotulo, valor, detalhe = NULL) {
+metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
+  # Montando um campo que expõe o próprio texto para o tooltip condicional
+  montar_campo <- function(classe, texto) {
+    if (!tooltip) {
+      return(htmltools::tags$span(class = classe, texto))
+    }
+    htmltools::tags$span(
+      class = paste(classe, "metrica-tooltip"),
+      `data-tooltip-texto` = texto,
+      texto
+    )
+  }
+
   htmltools::tags$div(
     class = "metrica",
-    htmltools::tags$span(class = "metrica-rotulo", rotulo),
-    htmltools::tags$span(class = "metrica-valor", valor),
+    montar_campo("metrica-rotulo", rotulo),
+    montar_campo("metrica-valor", valor),
     if (!is.null(detalhe)) {
       htmltools::tags$span(class = "metrica-detalhe", detalhe)
     }

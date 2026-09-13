@@ -48,8 +48,12 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
   });
 });
 
-/* Inicializando as tooltips das pétalas do perfil municipal */
+/* Inicializando as tooltips das pétalas e dos campos territoriais cortados */
 (function () {
+  /* Reunindo pétalas e campos que revelam o próprio texto no hover */
+  var SELETOR_PETALAS = '.grupo-petala[data-bs-toggle="tooltip"]';
+  var SELETOR_METRICAS = '.metrica-tooltip[data-tooltip-texto]';
+
   /* Executando a função imediatamente quando a página já estiver pronta */
   function quandoPronto(fn) {
     if (document.readyState === "loading") {
@@ -59,32 +63,77 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
     }
   }
 
-  /* Ativando o tooltip do Bootstrap nas pétalas que ainda não o receberam */
-  function inicializarTooltipsPetalas() {
+  /* Ativando o tooltip do Bootstrap no elemento quando ainda não houver um */
+  function criarTooltip(el, rico) {
     if (!window.bootstrap || !bootstrap.Tooltip) return;
-    var petalas = document.querySelectorAll(
-      '.grupo-petala[data-bs-toggle="tooltip"]'
-    );
-    petalas.forEach(function (el) {
+    if (bootstrap.Tooltip.getInstance(el)) return;
+    var opcoes = {
+      placement: "top",
+      customClass: "tooltip-ibisma",
+      container: "body",
+      delay: { show: 80, hide: 40 }
+    };
+    if (rico) {
+      /* As pétalas usam HTML com cores gerado pelo servidor */
+      opcoes.html = true;
+      /* A sanitização removeria os estilos em linha com as cores da dimensão */
+      opcoes.sanitize = false;
+    } else {
+      /* Os campos territoriais usam o texto completo guardado em data */
+      opcoes.title = el.getAttribute("data-tooltip-texto");
+    }
+    new bootstrap.Tooltip(el, opcoes);
+  }
+
+  /* Ativando as tooltips das pétalas, que nunca são cortadas */
+  function inicializarPetalas() {
+    document.querySelectorAll(SELETOR_PETALAS).forEach(function (el) {
       if (el.dataset.tooltipIniciado) return;
       el.dataset.tooltipIniciado = "sim";
-      new bootstrap.Tooltip(el, {
-        html: true,
-        /* O conteúdo é gerado pelo servidor e depende dos estilos em linha
-           com as cores da dimensão; a sanitização os removeria */
-        sanitize: false,
-        placement: "top",
-        customClass: "tooltip-ibisma",
-        container: "body",
-        delay: { show: 80, hide: 40 }
-      });
+      criarTooltip(el, true);
+    });
+  }
+
+  /* Ativando a tooltip dos campos territoriais somente quando há corte */
+  function atualizarMetricas() {
+    if (!window.bootstrap || !bootstrap.Tooltip) return;
+    document.querySelectorAll(SELETOR_METRICAS).forEach(function (el) {
+      var cortado = el.scrollWidth > el.clientWidth;
+      var instancia = bootstrap.Tooltip.getInstance(el);
+      if (cortado && !instancia) {
+        el.setAttribute("tabindex", "0");
+        criarTooltip(el, false);
+      } else if (!cortado && instancia) {
+        instancia.dispose();
+        el.removeAttribute("tabindex");
+      }
+    });
+  }
+
+  /* Reavaliando os cortes depois de a janela mudar de tamanho */
+  var reagendado = false;
+  function agendarAtualizacao() {
+    if (reagendado) return;
+    reagendado = true;
+    window.requestAnimationFrame(function () {
+      reagendado = false;
+      atualizarMetricas();
     });
   }
 
   quandoPronto(function () {
-    inicializarTooltipsPetalas();
+    inicializarPetalas();
+    atualizarMetricas();
+    window.addEventListener("resize", agendarAtualizacao);
 
-    /* Reinicializando sempre que o Shiny inserir novas pétalas na página */
+    /* Reavaliando depois que a fonte institucional terminar de carregar */
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () {
+        atualizarMetricas();
+      });
+    }
+
+    /* Reinicializando sempre que o Shiny inserir novos elementos na página */
     var observador = new MutationObserver(function (mutacoes) {
       for (var i = 0; i < mutacoes.length; i++) {
         var adicionados = mutacoes[i].addedNodes;
@@ -92,12 +141,14 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
           var no = adicionados[j];
           if (no.nodeType !== 1) continue;
           var temPetala =
-            (no.matches && no.matches(".grupo-petala")) ||
-            (no.querySelector && no.querySelector(".grupo-petala"));
-          if (temPetala) {
-            inicializarTooltipsPetalas();
-            return;
-          }
+            (no.matches && no.matches(SELETOR_PETALAS)) ||
+            (no.querySelector && no.querySelector(SELETOR_PETALAS));
+          var temMetrica =
+            (no.matches && no.matches(SELETOR_METRICAS)) ||
+            (no.querySelector && no.querySelector(SELETOR_METRICAS));
+          if (temPetala) inicializarPetalas();
+          if (temMetrica) atualizarMetricas();
+          if (temPetala || temMetrica) return;
         }
       }
     });

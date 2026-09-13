@@ -43,10 +43,10 @@ perfil_palco <- function(municipio, resumo, medianas = NULL, ano,
       ),
       htmltools::tags$div(
         class = "perfil-metricas",
-        metrica_hero("Região", municipio$regiao[1]),
-        metrica_hero("Unidade da federação", municipio$uf[1]),
-        metrica_hero("Região de saúde", municipio$r_saude[1]),
-        metrica_hero("Macrorregião de saúde", municipio$macro_r_saude[1])
+        metrica_hero("Região", municipio$regiao[1], tooltip = TRUE),
+        metrica_hero("UF", municipio$uf[1], tooltip = TRUE),
+        metrica_hero("Macrorregião de saúde", municipio$macro_r_saude[1], tooltip = TRUE),
+        metrica_hero("Região de saúde", municipio$r_saude[1], tooltip = TRUE)
       )
     )
   }
@@ -124,7 +124,7 @@ perfil_placar <- function(resumo, ano) {
     htmltools::tags$div(
       class = "perfil-placar__ranking perfil-placar__ranking--uf",
       metrica_hero(
-        paste0("Ranking na UF (", resumo$uf, ")"),
+        "Ranking na UF",
         rotulo_posicao(resumo$pos_uf, resumo$total_uf)
       )
     )

@@ -673,11 +673,81 @@ input:focus-visible,
   margin: 0 0 0.75rem 0;
 }
 
-/* Distribuindo as métricas territoriais em linha */
+/* Organizando as quatro informações territoriais em colunas de largura limitada */
+/* Cada coluna segue o próprio conteúdo entre um mínimo e um máximo, sem esticar */
 .perfil-metricas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 2.5rem;
+  display: grid;
+  grid-template-columns:
+    minmax(3rem, max-content)
+    minmax(3rem, max-content)
+    minmax(7rem, max-content)
+    minmax(7rem, max-content);
+  gap: 0 2.5rem;
+  align-items: start;
+  justify-content: start;
+}
+
+/* Limitando a largura máxima de cada coluna territorial */
+/* Passando do limite, o texto é recortado com reticências */
+.perfil-metricas .metrica:nth-child(1) {
+  max-width: 8rem;
+}
+
+.perfil-metricas .metrica:nth-child(2) {
+  max-width: 10rem;
+}
+
+.perfil-metricas .metrica:nth-child(3) {
+  max-width: 18rem;
+}
+
+.perfil-metricas .metrica:nth-child(4) {
+  max-width: 22rem;
+}
+
+/* Distribuindo as informações territoriais pela largura no modo comparação */
+/* Cada palco fica mais estreito; o space-between aproveita o espaço restante */
+.dupla--comparando .perfil-metricas {
+  justify-content: space-between;
+}
+
+/* Reduzindo colunas e limites com a tipografia de telas até 1280px */
+@media (max-width: 1280px) {
+  .perfil-metricas .metrica:nth-child(1) {
+    max-width: 7.5rem;
+  }
+
+  .perfil-metricas .metrica:nth-child(2) {
+    max-width: 8rem;
+  }
+
+  .perfil-metricas .metrica:nth-child(3) {
+    max-width: 15rem;
+  }
+
+  .perfil-metricas .metrica:nth-child(4) {
+    max-width: 19rem;
+  }
+}
+
+/* Mantendo cada informação territorial em uma única linha, sem quebra */
+/* O texto que não couber é recortado com reticências, sem mudar a altura */
+.perfil-metricas .metrica {
+  min-width: 0;
+}
+
+.perfil-metricas .metrica-rotulo,
+.perfil-metricas .metrica-valor {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dando visibilidade ao foco por teclado nos campos com tooltip */
+.perfil-metricas .metrica-tooltip:focus-visible {
+  outline: 3px solid rgba(50, 160, 255, 0.55);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* Empilhando rótulo e valor de cada métrica */
@@ -988,7 +1058,17 @@ input:focus-visible,
   flex: 0 0 auto;
 }
 
-/* Estilizando o cartão da tooltip das pétalas no padrão do painel */
+/* Deixando a seta da tooltip branca, igual ao fundo do cartão */
+.tooltip.tooltip-ibisma {
+  --bs-tooltip-bg: #FFFFFF;
+}
+
+/* Removendo a transparência padrão da tooltip */
+.tooltip.tooltip-ibisma.show {
+  opacity: 1;
+}
+
+/* Estilizando o cartão da tooltip no padrão do painel */
 .tooltip.tooltip-ibisma .tooltip-inner {
   background-color: #FFFFFF;
   color: #0A1E3C;
@@ -997,28 +1077,8 @@ input:focus-visible,
   box-shadow: 0 10px 28px rgba(10, 30, 60, 0.18);
   padding: 0.65rem 0.8rem;
   font-family: 'Source Sans Pro', system-ui, sans-serif;
+  font-size: var(--fonte-media-size);
   text-align: left;
-}
-
-/* Colorindo as setas da tooltip conforme a posição calculada */
-.tooltip.tooltip-ibisma .tooltip-arrow::before {
-  border-color: transparent;
-}
-
-.tooltip.tooltip-ibisma.bs-tooltip-top .tooltip-arrow::before {
-  border-top-color: #FFFFFF;
-}
-
-.tooltip.tooltip-ibisma.bs-tooltip-bottom .tooltip-arrow::before {
-  border-bottom-color: #FFFFFF;
-}
-
-.tooltip.tooltip-ibisma.bs-tooltip-start .tooltip-arrow::before {
-  border-left-color: #FFFFFF;
-}
-
-.tooltip.tooltip-ibisma.bs-tooltip-end .tooltip-arrow::before {
-  border-right-color: #FFFFFF;
 }
 
 /* Alinhando os textos internos do cartão da pétala */
@@ -1235,6 +1295,12 @@ input:focus-visible,
       "brasil"
       "uf";
     gap: 0.85rem;
+  }
+
+  /* Reorganizando as informações territoriais em duas colunas por linha */
+  .perfil-metricas {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem 1rem;
   }
 
   .perfil-placar__ranking--brasil,
