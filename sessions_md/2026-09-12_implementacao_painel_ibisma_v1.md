@@ -439,3 +439,111 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 > Observação de ambiente: o `rlang` 1.1.4 instalado ficou abaixo do exigido
 > pelo `testthat` 3.3.2; a suíte foi rodada com `rlang` 1.2.0 vindo de uma
 > biblioteca temporária. Recomenda-se atualizar o pacote com o R fechado.
+
+---
+
+# Sessão 3 — UI/UX, cores e hierarquia (12/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** corrigir cinco problemas de UI/UX e comportamento, centralizar
+  a lógica de cores por dimensão e validar tudo com smoke tests headless.
+
+## 1. Posicionamento das seções ao clicar na navbar
+
+- **Causa raiz:** `html { scroll-padding-top: ... }` **e** `section[id] {
+  scroll-margin-top: ... }` eram aplicados juntos; o navegador soma os dois,
+  parando a seção ~176 px abaixo do topo (navbar + sobra da seção anterior).
+  A altura ainda era um chute fixo (`--altura-navbar: 4.75rem`) e não
+  acompanhava breakpoints.
+- **Correção estrutural:** o CSS passou a compensar só com `scroll-margin-top:
+  var(--altura-navbar)`; o JavaScript mede a altura real da navbar
+  (`ResizeObserver` + `resize`) e grava em `--altura-navbar`. Os cliques nas
+  âncoras são interceptados: o menu móvel fecha primeiro, a altura é remedida
+  e a rolagem usa `section.top - altura_navbar` (com respeito a
+  `prefers-reduced-motion`). Deep link com hash na URL também é reposicionado
+  no `load`.
+- **Validação:** offset seção↔navbar de 0,0–0,4 px em desktop, após `resize`
+  e no mobile (menu abrindo e fechando), com o item ativo do scrollspy correto.
+
+## 2. Paleta central por medida (uma fonte de verdade)
+
+- `fct_cores.R` ganhou `paleta_bloco()` e `paleta_medida(medida)`; `paleta_mapa`
+  e `paleta_categorias` passaram a delegar para ela.
+- `cor_categoria(categoria, medida = "indice_final")` e
+  `montar_selos(categorias, medida)` agora aceitam a medida.
+- Tooltip do mapa (`tooltip_municipio`) recebe a paleta da medida: a chip da
+  categoria deixa de ser sempre roxa e passa a usar a rampa do IBISMA ou do
+  bloco exibido, com cor de texto por contraste.
+- Tooltip das pétalas ganhou marcador ao lado do título e selo de categoria na
+  rampa do bloco (`--cor-medida` + `cor_categoria(categoria, medida)`).
+- **Descoberta:** o Bootstrap sanitiza o HTML do tooltip e remove `style` em
+  linha; as cores dinâmicas eram descartadas. As tooltips das pétalas passaram
+  a ser inicializadas com `sanitize: false` (o conteúdo é gerado pelo servidor).
+- Ranking, legenda do mapa, evolução temporal e pétalas consomem as mesmas
+  funções; o tema do reactable deriva os tons de destaque de `COR_IBISMA` com
+  `misturar_cores()` em vez de hexadecimais soltos.
+- O campo de busca dos `slimSelectInput` passou a exibir "Buscar..." no lugar
+  do "Search" padrão do plugin.
+
+## 3. Rebalanceamento das cinco categorias
+
+- IBISMA: `#D5C2E8`, `#B592D6`, `#915EC4`, `#6B35A3`, `#4B1D73`.
+- Blocos: rampa derivada com pesos 0,62 e 0,30 para o branco e 0,32 e 0,62 para
+  o azul escuro (antes 0,88/0,55 no branco), mantendo a cor do bloco na
+  categoria central. "Muito baixo" deixou de se confundir com o fundo do mapa e
+  com as bordas brancas, e as cinco categorias seguem progressivas e distintas.
+- `grafico_petalas()` ganhou uma legenda de nomes (sem valores, que continuam
+  só nas pétalas) para identificar os blocos sem hover.
+
+## 4. Ranking com 12 linhas fixas
+
+- Removidos `pageSizeOptions` e `showPageSizeOptions`; a tabela continua
+  paginada, com `defaultPageSize = 12` e a última página com o resto.
+
+## 5. Perfil dos municípios — palco único
+
+- A tabela de valores dos blocos foi removida.
+- A primeira versão da sessão empilhou o resumo e as pétalas em coluna única,
+  mas o resultado desperdiçava a largura. O perfil foi refeito como um palco
+  único inspirado no IMAPI: nome do município e métricas territoriais no topo,
+  leque de pétalas grande e centralizado e, na base, um placar com o ranking
+  Brasil à esquerda, o valor do IBISMA nomeado ao centro ("IBISMA em \<ano\>",
+  "de 100", selo e frase de percentil) e o ranking estadual à direita.
+- No mobile o placar empilha com o valor primeiro e os rankings abaixo.
+- O leque ganhou `viewBox` recortado (`45 60 410 236`) e limite de altura
+  `min(56vh, 520px)`, crescendo dentro do palco sem esticar o desenho.
+- Ajustes finais pedidos a partir da referência: nome e UF em um único
+  destaque (`Jutaí, AM`, sem elemento separado para a sigla); a descrição das
+  pétalas passou para logo abaixo das métricas, antes do leque; a lembrança
+  textual "Mediana Brasil" saiu da legenda (os pontos escuros continuam no
+  desenho, explicados pelo texto).
+- O ranking estadual passou a ser rotulado "Ranking na UF (Amazonas)".
+- Todos os valores exibidos no painel usam uma casa decimal, incluindo o
+  número dentro de cada pétala e o valor em destaque do IBISMA.
+- A frase de percentil passou a usar uma casa decimal e teto de 99,9% (antes
+  99%), para não subestimar o município mais vulnerável do ranking.
+- Ordem da seção: identificação (controles + palco) → evolução → comparação.
+
+## 6. Testes e validação
+
+- `devtools::test()`: 115 asserções verdes (novos testes de `paleta_medida`,
+  `cor_categoria`/`montar_selos` por medida, chip do tooltip do mapa e da
+  pétala, arredondamento em uma casa e frase de percentil em 99,9%).
+- Smoke headless: navbar (cliques, resize, hash, mobile), mapa com as 7 medidas
+  (preenchimentos e legenda idênticos às paletas), tooltips com chip correta,
+  ranking (12 linhas, sem seletor, chips por medida, busca), perfil (palco
+  ocupando a largura útil, valor centralizado entre os rankings, ausência da
+  tabela antiga, pétalas com tooltip, evolução com comparação, tabela de
+  diferenças), cenário sem dados (Borá/2023, com o placar desaparecendo e
+  voltando ao trocar o ano) e responsivo em 1600/1024/390 px sem estouro
+  horizontal.
+- `dev/headless_smoke.R` ganhou `--pre-eval`/`--pre-eval-file` para preparar um
+  estado (trocar medida, abrir tooltip) antes do screenshot.
+
+## 7. Limitações remanescentes
+
+- O eixo de anos da evolução ainda mostra separador de milhar ("2.015").
+- O `sanitize: false` das tooltips das pétalas é seguro porque o HTML é gerado
+  pelo servidor a partir da base; não usar essa opção para conteúdo de usuário.
+- Os rótulos numéricos das barras de comparação não aparecem no gráfico (os
+  valores seguem na tooltip e na tabela); comportamento pré-existente.
