@@ -743,3 +743,60 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - Nota de ambiente: a suíte rodou com `rlang` 1.2.0 de uma biblioteca
   temporária, porque o `rlang` 1.1.4 instalado está abaixo do exigido pelo
   `testthat` 3.3.2.
+
+---
+
+# Sessão 6 — Pétalas com disco fixo, escala alinhada à guia (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** redesenhar o gráfico de pétalas (disco de valor no topo, sem
+  ticks e sem mediana, escala alinhada à guia), trocar o texto do percentil e
+  refinar espaçamentos do perfil.
+
+## 1. Disco de valor e limpeza do desenho
+
+- O disco com o valor passou a ficar sempre no fim da guia, na posição que
+  indica 100, independentemente do valor do bloco; guia, disco e texto usam a
+  mesma ponta (`ponta_x`/`ponta_y`).
+- Removidos os ticks de 25/50/75 e o ponto da mediana do Brasil.
+- Removida a infraestrutura de suporte: `distancia_petala()` (ficou sem uso),
+  o argumento `medianas` de `petala_svg()`, `grafico_petalas()` e
+  `perfil_palco()`, o reativo `medianas_blocos` no módulo e a função
+  `mediana_referencia()` em `fct_dados.R`, que ficou sem chamadas.
+- A legenda textual (`TEXTO_PETALAS`) perdeu a menção à mediana.
+
+## 2. Escala da pétala
+
+- Removidos os pisos de tamanho: antes o comprimento era `0,22 + 0,78v` e a
+  largura `0,65 + 0,35v`; a pétala passou a escalar apenas com o valor.
+- **Desalinhamento corrigido:** o caminho base da pétala tem 170 unidades de
+  comprimento e a guia vai até 185; com isso, uma pétala de 49,1 terminava em
+  45,1% da guia e o meio não representava 50%.
+- Criada a constante `PETALAS_COMPRIMENTO <- 170`, usada no próprio `d` do
+  caminho, e a escala passou a `(valor / 100) × (PETALAS_RAIO /
+  PETALAS_COMPRIMENTO)`, com uma escala única para comprimento e largura: o
+  meio da guia é 50% e a ponta em 100% encosta no disco.
+- Valor ausente (`NA`) continua virando 0; sem mínimo, a pétala deixa de ser
+  desenhada e apenas o disco aparece.
+
+## 3. Texto do percentil
+
+- `frase_percentil()` deixou "acima de x% dos municípios brasileiros em
+  insegurança" e passou a "acima de x% dos municípios em insegurança em saúde
+  materna".
+
+## 4. Ajustes visuais do perfil (CSS)
+
+- Placar sem a borda superior e com espaçamentos internos reduzidos de
+  1,25 rem para 1 rem.
+- Título "Evolução ao longo do tempo" passou a usar
+  `--fonte-muito-grande-size`.
+
+## 5. Testes e validação
+
+- `devtools::test()`: **152 asserções verdes** — o teste das pétalas confere os
+  seis discos à distância de 185 do centro, a ausência de `ponto-mediana` no
+  HTML e a escala de cada pétala igual a `valor/100 × 185/170`.
+- Smoke headless com Abadia de Goiás/2024: pétala Clima com razão 0,491 da
+  guia (49,1%) e 2,5 px de distância do meio — coerente com a leitura
+  "meio = 50%".
