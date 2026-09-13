@@ -9,7 +9,7 @@
 #     Rscript dev/headless_smoke.R [--port=4848] [--outdir=dev/smoke]
 #       [--wait-for=".seletor"] [--shot=nome.png] [--eval="<JS>"]
 #       [--pre-eval="<JS>"] [--eval-file=arq.js] [--pre-eval-file=arq.js]
-#       [--width=1600] [--height=900] [--scroll=0] [--mobile]
+#       [--width=1600] [--height=900] [--scroll=0] [--mobile] [--motion] [--reduce]
 #
 #   O JavaScript passado em --eval deve retornar uma STRING; o valor é
 #   impresso no console pelo script.
@@ -117,6 +117,18 @@ if (mobile) {
     width = largura, height = altura, deviceScaleFactor = 2, mobile = TRUE
   )
   sessao$Emulation$setTouchEmulationEnabled(enabled = TRUE)
+}
+
+# Emulando a preferência de movimento para testar animações de verdade
+# O Chrome headless assume "reduce" por padrão, o que desliga as transições
+if (tem_flag("motion")) {
+  sessao$Emulation$setEmulatedMedia(
+    features = list(list(name = "prefers-reduced-motion", value = "no-preference"))
+  )
+} else if (tem_flag("reduce")) {
+  sessao$Emulation$setEmulatedMedia(
+    features = list(list(name = "prefers-reduced-motion", value = "reduce"))
+  )
 }
 
 # Navegando até o app e aguardando o seletor combinado
