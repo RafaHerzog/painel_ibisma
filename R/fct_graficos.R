@@ -1,8 +1,8 @@
 # =============================================================================
 #   FUNÇÕES AUXILIARES DE GRÁFICOS
-#   Monta os gráficos do painel com echarts4r (licença Apache 2.0):
-#   evolução temporal e diferenças entre municípios. O leque de pétalas
-#   dos blocos fica em fct_petalas.R, em SVG.
+#   Monta os gráficos do painel com echarts4r (licença Apache 2.0), entre eles
+#   a evolução temporal do IBISMA e dos seis blocos. O leque de pétalas fica
+#   em fct_petalas.R, em SVG.
 # =============================================================================
 
 # Definindo a família de fontes usada em todos os gráficos
@@ -18,29 +18,35 @@ CSS_TOOLTIP <- paste0(
 #' Aplicando o estilo base do IBISMA a um gráfico echarts4r
 #'
 #' @param grafico Objeto echarts4r.
-#' @param legendar Exibir a legenda na parte superior.
+#' @param legendar Exibir a legenda nativa.
+#' @param selecao Lista com as séries visíveis na legenda (opcional).
+#' @param topo Posição vertical da legenda no gráfico.
 #' @return Objeto echarts4r com o estilo aplicado.
 #' @noRd
-estilo_echarts <- function(grafico, legendar = TRUE) {
-  # Enviando um ícone para cada item para não quebrar legendas com duas séries
-  itens_legenda <- length(grafico$x$opts$legend$data)
-  icones <- if (itens_legenda > 0) rep("roundRect", itens_legenda) else NULL
+estilo_echarts <- function(grafico, legendar = TRUE, selecao = NULL, topo = 0) {
+  # Montando as opções da legenda nativa do echarts
+  opcoes_legenda <- list(
+    show = legendar,
+    top = topo,
+    left = "center",
+    itemWidth = 16,
+    itemHeight = 9,
+    # Dando um respiro maior entre os itens da legenda
+    itemGap = 16,
+    textStyle = list(color = COR_AZUL_ESCURO, fontSize = 12),
+    inactiveColor = "#B9C0CB"
+  )
+  # Reaplicando a seleção do usuário para ela sobreviver a re-renderizações
+  if (!is.null(selecao)) {
+    opcoes_legenda$selected <- selecao
+  }
 
-  grafico |>
+  grafico <- grafico |>
     echarts4r::e_text_style(
       fontFamily = "Source Sans Pro, system-ui, sans-serif",
       color = COR_AZUL_ESCURO
-    ) |>
-    echarts4r::e_legend(
-      show = legendar,
-      top = 0,
-      left = 0,
-      icons = icones,
-      itemWidth = 14,
-      itemHeight = 8,
-      textStyle = list(color = COR_AZUL_ESCURO, fontSize = 12),
-      inactiveColor = "#B9C0CB"
     )
+  do.call(echarts4r::e_legend, c(list(grafico), opcoes_legenda))
 }
 
 #' Aplicando o tooltip padrão do IBISMA a um gráfico echarts4r
@@ -75,70 +81,52 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
   do.call(echarts4r::e_tooltip, c(list(grafico), opcoes))
 }
 
-#' Montando o gráfico de evolução temporal de uma medida
+#' Montando o gráfico de evolução temporal de um município
 #'
-#' @param series Data frame retornado por comparar_series().
-#' @param nome_a Nome do município principal.
-#' @param nome_b Nome do município de comparação (opcional).
-#' @param cor Cor da série principal.
-#' @param ano_destaque Ano a marcar com uma linha vertical (opcional).
-#' @param descricao Texto de acessibilidade do gráfico.
+#' @param series Data frame retornado por series_municipio().
+#' @param nome Nome do município exibido no tooltip (opcional).
+#' @param legenda Exibir a legenda nativa do echarts no topo (opcional).
+#' @param grupo Nome do grupo que sincroniza a legenda entre dois gráficos.
+#' @param selecao Lista com as séries visíveis na legenda (opcional).
 #' @return Objeto echarts4r pronto para renderização.
 #' @noRd
-grafico_evolucao <- function(series, nome_a, nome_b = NULL, cor = COR_IBISMA,
-                             ano_destaque = NULL, descricao = NULL) {
-  # Formatando os valores anuais para uso no tooltip em JavaScript
-  tooltip <- eh_tooltip_series(series)
-
-  # Criando o gráfico com a série do município principal
-  grafico <- series |>
-    echarts4r::e_charts(ano) |>
-    echarts4r::e_line(
-      serie = valor_a,
-      name = nome_a,
-      smooth = TRUE,
-      symbol = "circle",
-      symbolSize = 7,
-      connectNulls = FALSE,
-      lineStyle = list(width = 3),
-      itemStyle = list(color = cor, borderColor = "#FFFFFF", borderWidth = 1.5)
-    )
-
-  # Acrescentando a série do município comparado, quando houver
-  if (!is.null(nome_b) && "valor_b" %in% names(series)) {
+grafico_evolucao <- function(series, nome = NULL, legenda = TRUE, grupo = NULL,
+                             selecao = NULL) {
+  # Criando o gráfico e acrescentando uma linha para cada uma das sete medidas
+  grafico <- echarts4r::e_charts(series, ano)
+  for (i in seq_len(nrow(MEDIDAS))) {
+    medida <- MEDIDAS$medida[i]
+    # Destacando o IBISMA com a linha mais espessa do gráfico
+    largura <- if (identical(medida, "indice_final")) 3 else 2
     grafico <- grafico |>
-      echarts4r::e_line(
-        serie = valor_b,
-        name = nome_b,
-        smooth = TRUE,
+      echarts4r::e_line_(
+        serie = medida,
+        name = MEDIDAS$nome[i],
         symbol = "circle",
-        symbolSize = 7,
+        symbolSize = 6,
         connectNulls = FALSE,
-        lineStyle = list(width = 2, type = "dashed"),
-        itemStyle = list(color = COR_AZUL_ESCURO, borderColor = "#FFFFFF", borderWidth = 1.5)
-      )
-  }
-
-  # Marcando o ano selecionado no perfil com uma linha discreta
-  if (!is.null(ano_destaque)) {
-    grafico <- grafico |>
-      echarts4r::e_mark_line(
-        data = list(xAxis = as.numeric(ano_destaque)),
-        symbol = "none",
-        silent = TRUE,
-        lineStyle = list(color = "#C7CCD4", type = "dotted", width = 1),
-        label = list(show = FALSE)
+        # Apagando as demais linhas ao passar o mouse para facilitar a leitura
+        emphasis = list(focus = "series"),
+        lineStyle = list(width = largura, color = MEDIDAS$cor[i]),
+        itemStyle = list(
+          color = MEDIDAS$cor[i],
+          borderColor = "#FFFFFF",
+          borderWidth = 1.2
+        )
       )
   }
 
   # Finalizando eixos, tooltip e estilo geral do gráfico
-  grafico |>
+  grafico <- grafico |>
     echarts4r::e_x_axis(
       type = "value",
       min = min(series$ano),
       max = max(series$ano),
       interval = 1,
-      name = NULL,
+      # Formando os anos como inteiros, sem o separador de milhar do echarts
+      formatter = htmlwidgets::JS(
+        "function (valor) { return String(Math.round(valor)); }"
+      ),
       axisLabel = list(color = "#5A6472", fontSize = 11),
       axisLine = list(lineStyle = list(color = "#E3E6EB")),
       axisTick = list(show = FALSE),
@@ -155,169 +143,91 @@ grafico_evolucao <- function(series, nome_a, nome_b = NULL, cor = COR_IBISMA,
     ) |>
     tooltip_echarts(
       trigger = "axis",
-      formatter = tooltip,
+      formatter = tooltip_series_js(nome),
       extras = list(
         axisPointer = list(type = "line", lineStyle = list(color = "#C7CCD4"))
       )
     ) |>
-    estilo_echarts(legendar = !is.null(nome_b)) |>
-    echarts4r::e_grid(left = 40, right = 20, top = if (is.null(nome_b)) 20 else 40, bottom = 30) |>
+    estilo_echarts(legendar = legenda, selecao = selecao) |>
+    echarts4r::e_grid(left = 40, right = 16, top = 16, bottom = 28) |>
     echarts4r::e_animation(duration = 350)
+
+  # Colocando os gráficos no mesmo grupo para a legenda valer para os dois
+  if (!is.null(grupo)) {
+    grafico <- grafico |>
+      echarts4r::e_group(grupo) |>
+      echarts4r::e_connect_group(grupo)
+  }
+  grafico
+}
+
+#' Montando um gráfico com apenas a legenda nativa das sete séries
+#'
+#' @param grupo Nome do grupo que sincroniza a legenda com os gráficos.
+#' @return Objeto echarts4r com a legenda centralizada e sem eixos visíveis.
+#' @noRd
+grafico_legenda <- function(grupo = NULL) {
+  # Criando uma linha vazia por medida apenas para a legenda existir
+  vazio <- data.frame(ano = 2015)
+  for (medida in MEDIDAS$medida) {
+    vazio[[medida]] <- NA_real_
+  }
+
+  # Montando as sete séries invisíveis que dão nome e cor a cada item
+  grafico <- echarts4r::e_charts(vazio, ano)
+  for (i in seq_len(nrow(MEDIDAS))) {
+    largura <- if (identical(MEDIDAS$medida[i], "indice_final")) 3 else 2
+    grafico <- grafico |>
+      echarts4r::e_line_(
+        serie = MEDIDAS$medida[i],
+        name = MEDIDAS$nome[i],
+        symbol = "circle",
+        symbolSize = 6,
+        lineStyle = list(width = largura, color = MEDIDAS$cor[i]),
+        itemStyle = list(color = MEDIDAS$cor[i])
+      )
+  }
+
+  # Escondendo eixos e grade para sobrar apenas a legenda centralizada
+  grafico <- grafico |>
+    echarts4r::e_x_axis(show = FALSE) |>
+    echarts4r::e_y_axis(show = FALSE) |>
+    echarts4r::e_grid(left = 0, right = 0, top = 0, bottom = 0) |>
+    estilo_echarts(legendar = TRUE, topo = "middle") |>
+    echarts4r::e_animation(show = FALSE)
+
+  # Entrando no mesmo grupo para os cliques valerem nos dois gráficos
+  if (!is.null(grupo)) {
+    grafico <- grafico |>
+      echarts4r::e_group(grupo) |>
+      echarts4r::e_connect_group(grupo)
+  }
+  grafico
 }
 
 #' Montando o JavaScript do tooltip das séries temporais
 #'
-#' @param series Data frame retornado por comparar_series().
+#' @param nome Nome do município exibido no topo do tooltip (opcional).
 #' @return Texto de função JavaScript para o echarts.
 #' @noRd
-eh_tooltip_series <- function(series) {
-  # Montando uma tabela de valores numéricos por ano para o tooltip
-  linhas <- lapply(seq_len(nrow(series)), function(i) {
-    list(
-      a = if (is.na(series$valor_a[i])) NULL else unname(series$valor_a[i]),
-      b = if (is.null(series$valor_b) || is.na(series$valor_b[i])) NULL else unname(series$valor_b[i])
-    )
-  })
-  names(linhas) <- as.character(series$ano)
+tooltip_series_js <- function(nome = NULL) {
+  # Montando o título com a localidade e escapando aspas para o JavaScript
+  titulo <- if (is.null(nome)) "" else paste0(nome, " \u2014 ")
+  titulo_js <- encodeString(titulo, quote = "'")
 
   paste0(
     "function (params) {
-       var dados = ", jsonlite::toJSON(linhas, auto_unbox = TRUE, null = "null"), ";
        if (!params || !params.length) return '';
-       var ano = String(params[0].axisValue);
-       var d = dados[ano] || {};
        var f = function (v) { return Number(v).toFixed(1).replace('.', ','); };
-       var s = '<b>' + ano + '</b>';
+       var ano = String(Math.round(params[0].axisValue));
+       var s = '<b>' + ", titulo_js, " + ano + '</b>';
        params.forEach(function (p) {
-         var valor = (p.seriesIndex === 0) ? d.a : d.b;
-         if (valor === null || valor === undefined) return;
-         s += '<br/>' + p.marker + ' ' + p.seriesName + ': <b>' + f(valor) + '</b>';
+         var v = p.value;
+         if (Array.isArray(v)) { v = v[v.length - 1]; }
+         if (v === null || v === undefined || isNaN(v)) return;
+         s += '<br/>' + p.marker + ' ' + p.seriesName + ': <b>' + f(v) + '</b>';
        });
-       if (d.a !== null && d.a !== undefined && d.b !== null && d.b !== undefined) {
-         var diferenca = d.b - d.a;
-         s += '<br/><span style=\"color:#5A6472\">Diferen\\u00e7a: </span><b>' +
-              (diferenca > 0 ? '+' : '') + f(diferenca) + '</b>';
-       }
        return s;
      }"
   )
-}
-
-#' Formatando o JavaScript do tooltip do gráfico de diferenças
-#'
-#' @param comparacao Data frame retornado por comparar_ano().
-#' @param nome_a Nome do município principal.
-#' @param nome_b Nome do município de comparação.
-#' @return Texto de função JavaScript para o echarts.
-#' @noRd
-eh_tooltip_diferencas <- function(comparacao, nome_a, nome_b) {
-  # Montando uma tabela de apoio com os valores de cada medida
-  info <- stats::setNames(
-    lapply(seq_len(nrow(comparacao)), function(i) {
-      list(
-        a = formatar_numero(comparacao$valor_a[i]),
-        b = formatar_numero(comparacao$valor_b[i]),
-        d = formatar_numero(comparacao$delta[i])
-      )
-    }),
-    comparacao$nome
-  )
-
-  paste0(
-    "function (p) {
-       var info = ", jsonlite::toJSON(info, auto_unbox = TRUE), ";
-       var d = info[p.name] || {};
-       var sinal = (p.value > 0) ? '+' : '';
-       return '<b>' + p.name + '</b>' +
-              '<br/>", nome_a, ": <b>' + d.a + '</b>' +
-              '<br/>", nome_b, ": <b>' + d.b + '</b>' +
-              '<br/>Diferen\\u00e7a: <b>' + sinal + d.d + '</b>';
-     }"
-  )
-}
-
-#' Montando o gráfico de diferenças entre dois municípios
-#'
-#' @param comparacao Data frame retornado por comparar_ano().
-#' @param nome_a Nome do município principal.
-#' @param nome_b Nome do município de comparação.
-#' @return Objeto echarts4r pronto para renderização.
-#' @noRd
-grafico_diferencas <- function(comparacao, nome_a, nome_b) {
-  # Definindo a cor de cada barra conforme a direção da diferença
-  comparacao$color <- ifelse(comparacao$delta >= 0, COR_CORAL, COR_VERDE)
-
-  # Criando um gráfico de barras horizontal centrado no zero
-  comparacao |>
-    echarts4r::e_charts(nome, reorder = FALSE) |>
-    echarts4r::e_bar(
-      serie = delta,
-      name = "Diferen\u00e7a",
-      barWidth = "55%",
-      itemStyle = list(borderRadius = 4)
-    ) |>
-    echarts4r::e_add_nested("itemStyle", color) |>
-    echarts4r::e_flip_coords() |>
-    echarts4r::e_labels(
-      show = TRUE,
-      position = "right",
-      distance = 6,
-      formatter = htmlwidgets::JS(
-        "function (p) {
-           var v = p.value;
-           if (v === null || v === undefined || isNaN(v)) return '';
-           return (v > 0 ? '+' : '') + Number(v).toFixed(1).replace('.', ',');
-         }"
-      ),
-      color = COR_AZUL_ESCURO,
-      fontSize = 11,
-      fontWeight = "bold"
-    ) |>
-    echarts4r::e_x_axis(
-      min = -100,
-      max = 100,
-      axisLabel = list(color = "#5A6472", fontSize = 11),
-      axisLine = list(show = FALSE),
-      axisTick = list(show = FALSE),
-      splitLine = list(lineStyle = list(color = "#EEF0F4"))
-    ) |>
-    echarts4r::e_y_axis(
-      type = "category",
-      axisLabel = list(color = COR_AZUL_ESCURO, fontSize = 11),
-      axisLine = list(show = FALSE),
-      axisTick = list(show = FALSE)
-    ) |>
-    tooltip_echarts(
-      trigger = "item",
-      formatter = eh_tooltip_diferencas(comparacao, nome_a, nome_b)
-    ) |>
-    estilo_echarts(legendar = FALSE) |>
-    echarts4r::e_grid(left = 150, right = 50, top = 10, bottom = 30)
-}
-
-#' Montando um gráfico vazio com uma mensagem central
-#'
-#' @param mensagem Texto exibido no centro do gráfico.
-#' @return Objeto echarts4r vazio com a mensagem.
-#' @noRd
-grafico_vazio <- function(mensagem) {
-  # Garantindo um texto padrão para que o gráfico nunca fique sem título
-  if (!nzchar(mensagem)) {
-    mensagem <- "Sem dados para exibir."
-  }
-
-  # Criando um gráfico sem eixos apenas com a mensagem ao centro
-  echarts4r::e_charts() |>
-    echarts4r::e_animation(show = FALSE) |>
-    echarts4r::e_title(
-      text = mensagem,
-      left = "center",
-      top = "middle",
-      textStyle = list(
-        color = "#5A6472",
-        fontWeight = "normal",
-        fontSize = 13,
-        fontFamily = "Source Sans Pro"
-      )
-    )
 }

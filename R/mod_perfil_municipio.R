@@ -1,7 +1,8 @@
 # =============================================================================
 #   MÓDULO PERFIL DOS MUNICÍPIOS
 #   Permite explorar um município em detalhe: situação no ano escolhido,
-#   flor dos seis blocos, evolução temporal e comparação com outro município.
+#   flor dos seis blocos e evolução temporal do IBISMA e dos blocos.
+#   Quando há comparação ativa, palcos e gráficos aparecem lado a lado.
 # =============================================================================
 
 #' Interface do módulo Perfil dos municípios
@@ -29,8 +30,9 @@ mod_perfil_municipio_ui <- function(id) {
         eyebrow = "Perfil dos munic\u00edpios",
         titulo = "Como a inseguran\u00e7a se apresenta no munic\u00edpio?",
         descricao = paste(
-          "Escolha um munic\u00edpio para ver a situa\u00e7\u00e3o no ano selecionado,",
-          "a evolu\u00e7\u00e3o ao longo do tempo e a compara\u00e7\u00e3o com outro munic\u00edpio."
+          "Escolha um munic\u00edpio para ver a situa\u00e7\u00e3o no ano selecionado",
+          "e a evolu\u00e7\u00e3o ao longo do tempo, comparando com outro munic\u00edpio",
+          "quando quiser."
         )
       ),
       # Controles principais escritos como uma frase
@@ -42,44 +44,52 @@ mod_perfil_municipio_ui <- function(id) {
         htmltools::tags$span(class = "controle-texto", "e comparar com"),
         seletor_inline(ns("comparar"), opcoes_comparacao, selected = "nenhum", largura = "320px")
       ),
-      # Palco do perfil: nome, pétalas e placar na mesma composição
+      # Explicando as pétalas uma única vez, acima dos palcos
+      htmltools::tags$p(class = "petalas-caption", TEXTO_PETALAS),
+      # Palcos do município principal e do comparado, exibidos lado a lado
       htmltools::tags$div(
-        class = "painel-bloco painel-bloco--palco",
-        # Cabeçalho com o nome do município e suas informações territoriais
-        shiny::uiOutput(ns("hero"), class = "perfil-hero"),
-        # Leque dos seis blocos, criado conforme houver dado para o ano escolhido
+        class = "dupla dupla--palcos",
+        id = ns("palcos"),
         htmltools::tags$div(
-          class = "perfil-palco__grafico",
-          shiny::uiOutput(ns("flor_area"))
+          class = "dupla__item dupla__item--principal",
+          shiny::uiOutput(ns("palco_principal"))
         ),
-        # Placar com o valor do IBISMA entre os rankings nacional e estadual
-        shiny::uiOutput(ns("placar"))
-      ),
-      # Evolução temporal da medida escolhida
-      htmltools::tags$div(
-        class = "painel-bloco",
         htmltools::tags$div(
-          class = "bloco-cabecalho bloco-cabecalho--linha",
-          htmltools::tags$div(
-            htmltools::tags$h3(class = "bloco-titulo", "Evolu\u00e7\u00e3o ao longo do tempo"),
-            htmltools::tags$p(
-              class = "bloco-descricao",
-              "Use o seletor para alternar entre o IBISMA e cada bloco. A linha pontilhada aparece quando h\u00e1 compara\u00e7\u00e3o ativa."
+          class = "dupla__item dupla__item--comparado",
+          shiny::uiOutput(ns("palco_comparado"))
+        )
+      ),
+      # Evolução temporal do IBISMA e dos seis blocos
+      htmltools::tags$div(
+        class = "painel-bloco painel-bloco--evolucao",
+        htmltools::tags$div(
+          class = "bloco-cabecalho",
+          htmltools::tags$h3(class = "bloco-titulo", "Evolu\u00e7\u00e3o ao longo do tempo"),
+          htmltools::tags$p(
+            class = "bloco-descricao",
+            paste(
+              "Cada linha acompanha o IBISMA ou um dos seis blocos ao longo dos anos;",
+              "clique na legenda para ocultar ou mostrar uma s\u00e9rie."
             )
-          ),
-          frase_controles(
-            htmltools::tags$span(class = "controle-texto", "Evolu\u00e7\u00e3o do"),
-            seletor_inline(ns("medida_serie"), opcoes_medidas(), selected = "indice_final", largura = "280px")
           )
         ),
-        # O gráfico ou o aviso de ausência de dados é criado dinamicamente
-        shiny::uiOutput(ns("evolucao_area"))
-      ),
-      # Comparação entre municípios no ano escolhido
-      htmltools::tags$div(
-        class = "painel-bloco painel-bloco--comparacao",
-        # O conteúdo é criado apenas quando houver um município de comparação
-        shiny::uiOutput(ns("comparacao_area"))
+        htmltools::tags$div(
+          class = "dupla dupla--evolucao",
+          id = ns("evolucoes"),
+          htmltools::tags$div(
+            class = "dupla__item dupla__item--principal",
+            shiny::uiOutput(ns("evolucao_principal"))
+          ),
+          htmltools::tags$div(
+            class = "dupla__item dupla__item--comparado",
+            shiny::uiOutput(ns("evolucao_comparada"))
+          )
+        ),
+        # Legenda nativa compartilhada, centralizada abaixo dos gráficos
+        htmltools::tags$div(
+          class = "evolucao-legenda",
+          echarts4r::echarts4rOutput(ns("legenda_evolucao"), height = "64px")
+        )
       )
     )
   )
@@ -112,6 +122,9 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       }
     })
 
+    # Convertendo o ano escolhido no controle para número
+    ano <- shiny::reactive(as.integer(input$ano))
+
     # Obtendo os dados territoriais do município selecionado
     info <- shiny::reactive({
       dados$municipios[dados$municipios$codmunres == municipio(), ][1, ]
@@ -119,120 +132,21 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
 
     # Montando o resumo do município no ano escolhido
     resumo <- shiny::reactive({
-      resumo_municipio(dados, municipio(), as.integer(input$ano))
+      resumo_municipio(dados, municipio(), ano())
     })
 
     # Calculando a mediana nacional de cada bloco como referência da flor
     medianas_blocos <- shiny::reactive({
       valores <- vapply(
         BLOCOS$medida,
-        function(m) mediana_referencia(dados, m, as.integer(input$ano))[["brasil"]],
+        function(m) mediana_referencia(dados, m, ano())[["brasil"]],
         numeric(1)
       )
       names(valores) <- BLOCOS$nome
       valores
     })
 
-    # ----- Cabeçalho e situação no ano -----
-
-    # Desenhando o cabeçalho com nome e informações territoriais
-    output$hero <- shiny::renderUI({
-      mun <- info()
-      if (is.na(mun$codmunres)) {
-        return(estado_vazio("Selecione um munic\u00edpio para ver o perfil."))
-      }
-      htmltools::tagList(
-        # Nome e UF em um \u00fanico destaque, sem elemento separado para a sigla
-        htmltools::tags$h3(
-          class = "perfil-nome",
-          paste0(mun$municipio, ", ", mun$sigla_uf)
-        ),
-        htmltools::tags$div(
-          class = "perfil-metricas",
-          metrica_hero("Regi\u00e3o", mun$regiao),
-          metrica_hero("Unidade da federa\u00e7\u00e3o", mun$uf),
-          metrica_hero("Regi\u00e3o de sa\u00fade", mun$r_saude),
-          metrica_hero("Macrorregi\u00e3o de sa\u00fade", mun$macro_r_saude)
-        )
-      )
-    })
-
-    # Inserindo as pétalas apenas quando houver dado para o ano selecionado
-    output$flor_area <- shiny::renderUI({
-      if (is.null(resumo())) {
-        return(estado_vazio(
-          paste(
-            "Este munic\u00edpio n\u00e3o possui dados no ano selecionado.",
-            "Veja a evolu\u00e7\u00e3o ao longo do tempo abaixo."
-          ),
-          icone = "circle-info"
-        ))
-      }
-      htmltools::tagList(
-        # Explicando as pétalas logo acima do leque, como no restante do bloco
-        htmltools::tags$p(
-          class = "petalas-caption",
-          paste(
-            "Cada p\u00e9tala representa um bloco do IBISMA: quanto maior a p\u00e9tala,",
-            "maior a inseguran\u00e7a naquele bloco. O ponto escuro marca a mediana",
-            "do Brasil."
-          )
-        ),
-        grafico_petalas(resumo()$blocos, medianas = medianas_blocos())
-      )
-    })
-
-    # Montando o placar do IBISMA com os rankings nas laterais
-    output$placar <- shiny::renderUI({
-      r <- resumo()
-      # O valor só aparece quando existir dado para o ano selecionado
-      if (is.null(r)) {
-        return(NULL)
-      }
-      htmltools::tags$div(
-        class = "perfil-placar",
-        # Valor do IBISMA nomeado, com categoria e leitura do percentil
-        htmltools::tags$div(
-          class = "perfil-placar__indice",
-          htmltools::tags$span(
-            class = "perfil-placar__rotulo",
-            paste0("IBISMA em ", input$ano)
-          ),
-          htmltools::tags$div(
-            class = "perfil-indice__linha perfil-indice__linha--centro",
-            htmltools::tags$span(
-              class = "perfil-indice__valor",
-              # Todos os valores do painel são exibidos com uma casa decimal
-              formatar_numero(r$valor)
-            ),
-            htmltools::tags$span(class = "perfil-indice__escala", "de 100"),
-            badge_categoria(r$categoria)
-          ),
-          htmltools::tags$p(
-            class = "perfil-indice__frase",
-            frase_percentil(r$valor)
-          )
-        ),
-        # Ranking nacional à esquerda do placar
-        htmltools::tags$div(
-          class = "perfil-placar__ranking perfil-placar__ranking--brasil",
-          metrica_hero(
-            "Ranking Brasil",
-            rotulo_posicao(r$pos_nac, r$total_nac)
-          )
-        ),
-        # Ranking estadual à direita do placar
-        htmltools::tags$div(
-          class = "perfil-placar__ranking perfil-placar__ranking--uf",
-          metrica_hero(
-            paste0("Ranking na UF (", r$uf, ")"),
-            rotulo_posicao(r$pos_uf, r$total_uf)
-          )
-        )
-      )
-    })
-
-    # ----- Evolução temporal -----
+    # ----- Município de comparação -----
 
     # Descobrindo o município de comparação escolhido, se houver
     cod_comparacao <- shiny::reactive({
@@ -243,165 +157,139 @@ mod_perfil_municipio_server <- function(id, dados, municipio) {
       suppressWarnings(as.integer(valor))
     })
 
-    # Montando a série temporal do município e, se houver, do comparado
-    series_evolucao <- shiny::reactive({
-      comparar_series(dados, municipio(), cod_comparacao(), input$medida_serie)
-    })
-
-    # Verificando se existe algum valor na série para desenhar o gráfico
-    tem_serie <- shiny::reactive({
-      series <- series_evolucao()
-      cod_b <- cod_comparacao()
-      !(all(is.na(series$valor_a)) && (is.null(cod_b) || all(is.na(series$valor_b))))
-    })
-
-    # Inserindo o gráfico da série apenas quando existir algum valor
-    output$evolucao_area <- shiny::renderUI({
-      if (!tem_serie()) {
-        return(estado_vazio(
-          "Sem dados de s\u00e9rie temporal para este munic\u00edpio.",
-          icone = "circle-info"
-        ))
-      }
-      echarts4r::echarts4rOutput(ns("evolucao"), height = "360px")
-    })
-
-    # Desenhando a série temporal do município e, se houver, do comparado
-    output$evolucao <- echarts4r::renderEcharts4r({
-      # Interrompendo quando não existir nenhum valor na série
-      shiny::req(tem_serie())
-      series <- series_evolucao()
-      cod_b <- cod_comparacao()
-
-      grafico_evolucao(
-        series = series,
-        nome_a = nome_municipio(dados, municipio()),
-        nome_b = if (!is.null(cod_b)) nome_municipio(dados, cod_b),
-        cor = cor_medida(input$medida_serie),
-        ano_destaque = input$ano,
-        descricao = paste(
-          "Evolu\u00e7\u00e3o de", nome_medida(input$medida_serie),
-          "entre", min(series$ano), "e", max(series$ano)
-        )
-      )
-    })
-
-    # ----- Comparação entre municípios -----
-
-    # Calculando as diferenças entre os dois municípios no ano escolhido
-    comparacao <- shiny::reactive({
-      cod_b <- cod_comparacao()
-      if (is.null(cod_b) || is.na(cod_b)) {
-        return(NULL)
-      }
-      comparar_ano(dados, municipio(), cod_b, as.integer(input$ano))
-    })
-
     # Verificando se existe um município de comparação escolhido
     tem_comparacao <- shiny::reactive({
       !is.null(cod_comparacao())
     })
 
-    # Montando o conteúdo da comparação, incluindo o gráfico apenas quando houver par
-    output$comparacao_area <- shiny::renderUI({
-      if (!tem_comparacao()) {
-        return(htmltools::tagList(
-          htmltools::tags$h3(class = "bloco-titulo", "Compara\u00e7\u00e3o entre munic\u00edpios"),
-          estado_vazio(
-            "Escolha um munic\u00edpio no controle \u201ccomparar com\u201d para ver as diferen\u00e7as por bloco.",
-            icone = "code-compare"
-          )
-        ))
-      }
+    # Obtendo os dados territoriais do município comparado
+    info_comparacao <- shiny::reactive({
+      cod <- cod_comparacao()
+      if (is.null(cod)) return(NULL)
+      dados$municipios[dados$municipios$codmunres == cod, ][1, ]
+    })
 
-      # Montando o cabeçalho com o nome dos dois municípios comparados
-      cabecalho <- htmltools::tagList(
-        htmltools::tags$h3(
-          class = "bloco-titulo",
-          paste0("Compara\u00e7\u00e3o em ", input$ano)
-        ),
-        htmltools::tags$p(
-          class = "bloco-descricao",
-          paste0(
-            "Barras \u00e0 direita indicam maior inseguran\u00e7a de ",
-            nome_municipio(dados, cod_comparacao()),
-            "; \u00e0 esquerda, menor inseguran\u00e7a em rela\u00e7\u00e3o a ",
-            nome_municipio(dados, municipio()), "."
-          )
-        )
+    # Montando o resumo do município comparado no mesmo ano
+    resumo_comparacao <- shiny::reactive({
+      cod <- cod_comparacao()
+      if (is.null(cod)) return(NULL)
+      resumo_municipio(dados, cod, ano())
+    })
+
+    # ----- Palcos -----
+
+    # Montando o palco do município principal, com rótulo apenas na comparação
+    output$palco_principal <- shiny::renderUI({
+      perfil_palco(
+        municipio = info(),
+        resumo = resumo(),
+        medianas = medianas_blocos(),
+        ano = ano(),
+        rotulo = if (tem_comparacao()) "Munic\u00edpio principal" else NULL
       )
+    })
 
-      # Verificando se há dados para os dois municípios no ano escolhido
-      if (is.null(comparacao())) {
-        return(htmltools::tagList(
-          cabecalho,
-          estado_vazio("Sem dados para comparar no ano selecionado.", icone = "circle-info")
+    # Montando o palco do município comparado; fica suspenso sem comparação
+    output$palco_comparado <- shiny::renderUI({
+      shiny::req(cod_comparacao())
+      perfil_palco(
+        municipio = info_comparacao(),
+        resumo = resumo_comparacao(),
+        medianas = medianas_blocos(),
+        ano = ano(),
+        comparado = TRUE,
+        rotulo = "Munic\u00edpio comparado"
+      )
+    })
+
+    # Avisando o navegador para animar a transição; tem_comparacao nunca é NULL
+    shiny::observeEvent(tem_comparacao(), {
+      session$sendCustomMessage("ibisma_comparacao", list(
+        palcos = ns("palcos"),
+        evolucoes = ns("evolucoes"),
+        ativa = tem_comparacao()
+      ))
+    }, ignoreInit = TRUE)
+
+    # ----- Evolução temporal -----
+
+    # Montando as séries das sete medidas de cada município
+    series_principal <- shiny::reactive(series_municipio(dados, municipio()))
+    series_comparacao <- shiny::reactive({
+      shiny::req(cod_comparacao())
+      series_municipio(dados, cod_comparacao())
+    })
+
+    # Montando a legenda compartilhada, conectada aos dois gráficos
+    output$legenda_evolucao <- echarts4r::renderEcharts4r({
+      grafico_legenda(grupo = ns("evolucao"))
+    })
+
+    # Inserindo o gráfico do principal apenas quando existir algum valor
+    output$evolucao_principal <- shiny::renderUI({
+      series <- series_principal()
+      if (!series_tem_valor(series)) {
+        return(estado_vazio(
+          "Sem dados de s\u00e9rie temporal para este munic\u00edpio.",
+          icone = "circle-info"
         ))
       }
-
-      # Inserindo o gráfico e a tabela somente quando a comparação é possível
       htmltools::tagList(
-        cabecalho,
-        echarts4r::echarts4rOutput(ns("comparacao_grafico"), height = "320px"),
-        shiny::uiOutput(ns("comparacao_tabela"))
-      )
-    })
-
-    # Desenhando o gráfico de diferenças entre os dois municípios
-    output$comparacao_grafico <- echarts4r::renderEcharts4r({
-      r <- comparacao()
-      if (is.null(r)) {
-        return(grafico_vazio(""))
-      }
-      grafico_diferencas(
-        comparacao = r,
-        nome_a = nome_municipio(dados, municipio()),
-        nome_b = nome_municipio(dados, cod_comparacao())
-      )
-    })
-
-    # Montando a tabela complementar com os valores dos dois municípios
-    output$comparacao_tabela <- shiny::renderUI({
-      r <- comparacao()
-      if (is.null(r)) {
-        return(NULL)
-      }
-      nome_a <- nome_municipio(dados, municipio())
-      nome_b <- nome_municipio(dados, cod_comparacao())
-
-      # Montando as linhas da tabela com os valores e as diferen\u00e7as
-      linhas <- lapply(seq_len(nrow(r)), function(i) {
-        diferenca <- r$delta[i]
-        classe <- if (is.na(diferenca) || diferenca == 0) {
-          "delta--neutro"
-        } else if (diferenca > 0) {
-          "delta--pior"
-        } else {
-          "delta--melhor"
-        }
-        sinal <- if (!is.na(diferenca) && diferenca > 0) "+" else ""
-        htmltools::tags$tr(
-          htmltools::tags$th(scope = "row", r$nome[i]),
-          htmltools::tags$td(formatar_numero(r$valor_a[i])),
-          htmltools::tags$td(formatar_numero(r$valor_b[i])),
-          htmltools::tags$td(class = classe, paste0(sinal, formatar_numero(diferenca)))
-        )
-      })
-
-      htmltools::tags$table(
-        class = "tabela-comparacao",
-        htmltools::tags$thead(
-          htmltools::tags$tr(
-            htmltools::tags$th(scope = "col", "Medida"),
-            htmltools::tags$th(scope = "col", nome_a),
-            htmltools::tags$th(scope = "col", nome_b),
-            htmltools::tags$th(scope = "col", "Diferen\u00e7a")
-          )
+        htmltools::tags$h4(
+          class = "evolucao-titulo",
+          nome_municipio(dados, municipio())
         ),
-        htmltools::tags$tbody(linhas)
+        echarts4r::echarts4rOutput(ns("grafico_principal"), height = "330px")
+      )
+    })
+
+    # Desenhando as sete linhas do município principal sem legenda interna
+    output$grafico_principal <- echarts4r::renderEcharts4r({
+      series <- series_principal()
+      shiny::req(series_tem_valor(series))
+      grafico_evolucao(
+        series,
+        nome = nome_municipio(dados, municipio()),
+        legenda = FALSE,
+        grupo = ns("evolucao"),
+        # Lendo a seleção da legenda sem criar dependência reativa
+        selecao = shiny::isolate(input$legenda_evolucao_legend_selected)
+      )
+    })
+
+    # Inserindo o gráfico do comparado apenas quando houver par e algum valor
+    output$evolucao_comparada <- shiny::renderUI({
+      cod <- cod_comparacao()
+      shiny::req(cod)
+      series <- series_comparacao()
+      if (!series_tem_valor(series)) {
+        return(estado_vazio(
+          "Sem dados de s\u00e9rie temporal para o munic\u00edpio comparado.",
+          icone = "circle-info"
+        ))
+      }
+      htmltools::tagList(
+        htmltools::tags$h4(
+          class = "evolucao-titulo",
+          nome_municipio(dados, cod)
+        ),
+        echarts4r::echarts4rOutput(ns("grafico_comparado"), height = "330px")
+      )
+    })
+
+    # Desenhando as sete linhas do município comparado sem repetir a legenda
+    output$grafico_comparado <- echarts4r::renderEcharts4r({
+      cod <- cod_comparacao()
+      shiny::req(cod)
+      series <- series_comparacao()
+      shiny::req(series_tem_valor(series))
+      grafico_evolucao(
+        series,
+        nome = nome_municipio(dados, cod),
+        legenda = FALSE,
+        grupo = ns("evolucao"),
+        selecao = shiny::isolate(input$legenda_evolucao_legend_selected)
       )
     })
   })
 }
-
-

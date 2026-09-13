@@ -219,7 +219,7 @@ body {
 
 /* Destacando o nome do painel ao lado do logo */
 .navbar-brand__texto {
-  font-size: var(--fonte-titulos-size);
+  font-size: var(--fonte-subtitulos-size);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #FFFFFF;
@@ -229,6 +229,7 @@ body {
 .navbar-brand__descricao {
   color: rgba(255, 255, 255, 0.72);
   font-weight: 400;
+  font-size: var(--fonte-muito-grande-size);
 }
 
 /* Estilizando os links das âncoras em branco */
@@ -697,7 +698,7 @@ input:focus-visible,
 
 /* Estilizando o valor das métricas */
 .metrica-valor {
-  font-size: var(--fonte-muito-grande-size);
+  font-size: var(--fonte-grande-size);
   font-weight: 600;
   color: #0A1E3C;
 }
@@ -830,56 +831,91 @@ input:focus-visible,
   max-height: min(36vh, 520px);
 }
 
-/* --------------------------------------------------------- comparação */
+/* ------------------------------------------- comparação lado a lado */
 
-/* Estilizando a tabela complementar de comparação */
-.tabela-comparacao {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.5rem;
-  font-size: var(--fonte-media-size);
+/* Dividindo palcos e gráficos em duas colunas quando há comparação ativa */
+/* A largura é animada em flex-basis, que interpola em qualquer navegador */
+.dupla {
+  display: flex;
+  align-items: stretch;
 }
 
-/* Desenhando as linhas da tabela de comparação */
-.tabela-comparacao th,
-.tabela-comparacao td {
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid var(--cor-linha);
-  text-align: right;
+/* Dando respiro entre o conjunto de palcos e a evolução temporal */
+.dupla--palcos {
+  margin-bottom: 1.5rem;
 }
 
-/* Alinhando à esquerda a primeira coluna da tabela */
-.tabela-comparacao tbody th,
-.tabela-comparacao thead th:first-child {
-  text-align: left;
-  font-weight: 600;
+/* Anulando a margem dos cards dentro das colunas comparadas */
+.dupla .painel-bloco {
+  margin-bottom: 0;
 }
 
-/* Destacando o cabeçalho da tabela */
-.tabela-comparacao thead th {
+/* Impedindo que o conteúdo estoure a coluna durante a transição */
+.dupla__item {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Fazendo o painel principal ocupar todo o espaço que sobrar */
+.dupla__item--principal {
+  flex: 1 1 0;
+}
+
+/* Mantendo o painel comparado invisível e sem largura até a comparação */
+.dupla__item--comparado {
+  flex: 0 0 0%;
+  max-width: 0;
+  height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: flex-basis 0.5s ease, max-width 0.5s ease, margin-left 0.5s ease,
+    opacity 0.4s ease, visibility 0s linear 0.5s;
+}
+
+/* Abrindo a coluna comparada com metade do espaço e um respiro à esquerda */
+.dupla--comparando .dupla__item--comparado {
+  flex-basis: 50%;
+  max-width: 50%;
+  height: auto;
+  margin-left: 1.5rem;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: flex-basis 0.5s ease, max-width 0.5s ease, margin-left 0.5s ease,
+    opacity 0.4s ease 0.05s, visibility 0s;
+}
+
+/* Nomeando cada gráfico da evolução com o município correspondente */
+.evolucao-titulo {
+  font-size: var(--fonte-subtitulos-sobre-size);
+  font-weight: 700;
+  color: #0A1E3C;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Centralizando a legenda nativa abaixo dos gráficos da evolução */
+.evolucao-legenda {
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+/* Dando mais altura à legenda quando ela quebra em telas pequenas */
+@media (max-width: 768px) {
+  .evolucao-legenda .html-widget {
+    height: 96px !important;
+  }
+}
+
+/* Marcando a hierarquia do palco principal e do comparado */
+.palco-rotulo {
+  display: inline-block;
   font-size: var(--fonte-pequena-size);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--cor-texto-suave);
-}
-
-/* Colorindo as diferenças que indicam maior insegurança */
-.delta--pior {
-  color: #C2401C;
-  font-weight: 700;
-}
-
-/* Colorindo as diferenças que indicam menor insegurança */
-.delta--melhor {
-  color: #2E8B29;
-  font-weight: 700;
-}
-
-/* Mantendo neutras as diferenças iguais a zero */
-.delta--neutro {
-  color: var(--cor-texto-suave);
-  font-weight: 700;
+  margin-bottom: 0.35rem;
 }
 
 /* ---------------------------------------------------- gráfico de pétalas */
@@ -1114,6 +1150,44 @@ input:focus-visible,
 }
 
 /* ---------------------------------------------------------- responsivo */
+
+/* Empilhando palcos e gráficos quando não houver largura para duas colunas */
+@media (max-width: 1100px) {
+  .dupla,
+  .dupla--comparando {
+    flex-direction: column;
+  }
+
+  .dupla__item--principal,
+  .dupla--comparando .dupla__item--comparado {
+    flex: 0 1 auto;
+    max-width: none;
+  }
+
+  /* Empilhando a comparação abaixo do principal com um respiro */
+  .dupla--comparando .dupla__item--comparado {
+    margin-left: 0;
+    margin-top: 1.25rem;
+    animation: surgir-comparacao 0.4s ease both;
+  }
+
+  /* Escondendo de vez a coluna vazia quando não há comparação */
+  .dupla:not(.dupla--comparando) .dupla__item--comparado {
+    display: none;
+  }
+}
+
+/* Animando a entrada do painel comparado em telas empilhadas */
+@keyframes surgir-comparacao {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /* Empilhando os controles em frases longas em telas pequenas */
 @media (max-width: 768px) {

@@ -83,19 +83,75 @@ test_that("resumo_municipio devolve NULL quando não há dado no ano", {
   expect_null(resumo)
 })
 
-test_that("comparar_series alinha os anos dos dois municípios", {
-  series <- comparar_series(preparado_teste, 110002, 350001, "indice_final")
-  expect_equal(names(series), c("ano", "valor_a", "valor_b"))
+test_that("series_municipio monta as sete medidas em colunas", {
+  series <- series_municipio(preparado_teste, 110002)
+  expect_equal(names(series), c("ano", MEDIDAS$medida))
   expect_equal(nrow(series), 2)
-  expect_equal(series$valor_a[series$ano == 2020], 90)
-  expect_equal(series$valor_b[series$ano == 2020], 30)
+  expect_equal(series$indice_final[series$ano == 2020], 90)
+  expect_equal(series$bloco1[series$ano == 2021], 70)
+  expect_true(series_tem_valor(series))
+
+  # Município sem dado no ano deve continuar com os anos e colunas esperados
+  vazio <- series_municipio(preparado_teste, 999999)
+  expect_equal(names(vazio), c("ano", MEDIDAS$medida))
+  expect_false(series_tem_valor(vazio))
 })
 
-test_that("comparar_ano calcula as diferenças por medida", {
-  comparacao <- comparar_ano(preparado_teste, 110002, 350001, 2020)
-  expect_equal(nrow(comparacao), 7)
-  expect_equal(comparacao$nome[1], "IBISMA")
-  expect_equal(comparacao$delta[1], 30 - 90)
+test_that("grafico_evolucao desenha as sete séries com as cores das medidas", {
+  series <- series_municipio(preparado_teste, 110002)
+  grafico <- grafico_evolucao(series, nome = "Dois (RO)", grupo = "teste")
+
+  # Conferindo a quantidade, os nomes e as cores de cada linha
+  expect_length(grafico$x$opts$series, 7)
+  nomes <- vapply(grafico$x$opts$series, function(s) s$name, character(1))
+  expect_equal(nomes, MEDIDAS$nome)
+  cores <- vapply(grafico$x$opts$series, function(s) s$itemStyle$color, character(1))
+  expect_equal(cores, MEDIDAS$cor)
+
+  # Cada série deve mostrar o ponto de cada ano como um círculo
+  simbolos <- vapply(grafico$x$opts$series, function(s) s$symbol, character(1))
+  expect_true(all(simbolos == "circle"))
+  tamanhos <- vapply(grafico$x$opts$series, function(s) s$symbolSize, numeric(1))
+  expect_true(all(tamanhos == 6))
+
+  # A legenda nativa aparece e o grupo sincroniza os dois gráficos
+  expect_true(grafico$x$opts$legend$show)
+  expect_equal(grafico$x$chartGroup, "teste")
+  expect_equal(grafico$x$groupConnect, "teste")
+
+  # O eixo X precisa formatar os anos como inteiros, sem separador de milhar
+  formatter <- grafico$x$opts$xAxis[[1]]$axisLabel$formatter
+  expect_s3_class(formatter, "JS_EVAL")
+  expect_true(grepl("Math.round", as.character(formatter)))
+
+  # A série do IBISMA deve ser a mais espessa do gráfico
+  larguras <- vapply(grafico$x$opts$series, function(s) s$lineStyle$width, numeric(1))
+  expect_equal(larguras[1], 3)
+  expect_true(all(larguras[-1] == 2))
+
+  # O tooltip leva o nome do município com aspas escapadas para o JavaScript
+  formatter <- as.character(grafico$x$opts$tooltip$formatter)
+  expect_true(grepl("Dois (RO)", formatter, fixed = TRUE))
+  expect_true(grepl("Math.round", formatter))
+
+  com_apostrofo <- grafico_evolucao(series, nome = "Olho d'\u00c1gua do Borges (RN)")
+  escapado <- as.character(com_apostrofo$x$opts$tooltip$formatter)
+  expect_true(grepl("Olho d\\'\u00c1gua do Borges (RN)", escapado, fixed = TRUE))
+})
+
+test_that("grafico_legenda monta a legenda nativa compartilhada das sete séries", {
+  grafico <- grafico_legenda(grupo = "teste")
+
+  # A legenda deve listar as sete medidas, sem eixos visíveis
+  expect_true(grafico$x$opts$legend$show)
+  expect_equal(unlist(grafico$x$opts$legend$data), MEDIDAS$nome)
+  expect_equal(grafico$x$opts$legend$itemGap, 16)
+  expect_false(grafico$x$opts$xAxis[[1]]$show)
+  expect_false(grafico$x$opts$yAxis[[1]]$show)
+
+  # O grupo precisa ser o mesmo dos gráficos para os cliques valerem nos dois
+  expect_equal(grafico$x$chartGroup, "teste")
+  expect_equal(grafico$x$groupConnect, "teste")
 })
 
 test_that("formatadores usam a convenção brasileira", {
@@ -274,4 +330,33 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
   )
   # A lembrança textual da mediana saiu; o ponto permanece no desenho
   expect_false(grepl("Mediana Brasil", html_mediana))
+})
+
+test_that("perfil_palco monta identificação, pétalas e placar", {
+  resumo <- resumo_municipio(preparado_teste, 110002, 2020)
+  municipio <- preparado_teste$municipios[preparado_teste$municipios$codmunres == 110002, ]
+  html <- as.character(perfil_palco(
+    municipio, resumo, medianas = NULL, ano = 2020,
+    rotulo = "Município principal"
+  ))
+  expect_true(grepl("Dois, RO", html, fixed = TRUE))
+  expect_true(grepl("Município principal", html, fixed = TRUE))
+  expect_true(grepl("svg-petalas", html, fixed = TRUE))
+  expect_true(grepl("IBISMA em 2020", html, fixed = TRUE))
+  expect_true(grepl("perfil-placar", html, fixed = TRUE))
+
+  # O palco do comparado usa a classe própria, sem o rótulo do principal
+  html_b <- as.character(perfil_palco(
+    municipio, resumo, medianas = NULL, ano = 2020,
+    comparado = TRUE, rotulo = "Município comparado"
+  ))
+  expect_true(grepl("painel-bloco--comparado", html_b, fixed = TRUE))
+  expect_true(grepl("Município comparado", html_b, fixed = TRUE))
+})
+
+test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
+  municipio <- preparado_teste$municipios[preparado_teste$municipios$codmunres == 110002, ]
+  html <- as.character(perfil_palco(municipio, NULL, ano = 2020))
+  expect_true(grepl("não possui dados no ano selecionado", html, fixed = TRUE))
+  expect_false(grepl("perfil-placar", html, fixed = TRUE))
 })

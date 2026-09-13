@@ -227,88 +227,39 @@ resumo_municipio <- function(dados, codmunres, ano) {
   )
 }
 
-#' Montando a série temporal de uma medida para um município
+#' Montando as séries das sete medidas de um município
 #'
 #' @param dados Lista retornada por preparar_dados().
 #' @param codmunres Código do município.
-#' @param medida Identificador da medida.
-#' @return Data frame com ano e valor, preenchendo anos sem dado com NA.
+#' @return Data frame com uma linha por ano e uma coluna por medida.
 #' @noRd
-serie_municipio <- function(dados, codmunres, medida) {
-  # Filtrando as observações do município e da medida
-  base <- dados$longo[
-    dados$longo$codmunres == codmunres & dados$longo$medida == medida,
-  ]
-  base <- base[!duplicated(base$ano), ]
+series_municipio <- function(dados, codmunres) {
+  # Filtrando as observações do município em todas as medidas
+  base <- dados$longo[dados$longo$codmunres == codmunres, ]
+  base <- base[!duplicated(base[c("ano", "medida")]), ]
 
-  # Garantindo que todos os anos disponíveis apareçam na série
+  # Abrindo as medidas em colunas para desenhar as sete linhas juntas
+  larga <- tidyr::pivot_wider(
+    base[, c("ano", "medida", "valor")],
+    names_from = "medida",
+    values_from = "valor"
+  )
+
+  # Garantindo que todos os anos e medidas apareçam, mesmo sem dado
   anos <- data.frame(ano = dados$anos)
-  serie <- merge(anos, base[, c("ano", "valor")], by = "ano", all.x = TRUE)
-  serie[order(serie$ano), ]
+  serie <- merge(anos, larga, by = "ano", all.x = TRUE)
+  faltantes <- setdiff(MEDIDAS$medida, names(serie))
+  serie[faltantes] <- NA_real_
+  serie[order(serie$ano), c("ano", MEDIDAS$medida)]
 }
 
-#' Montando as séries de dois municípios para comparação temporal
+#' Verificando se uma série tem algum valor para desenhar
 #'
-#' @param dados Lista retornada por preparar_dados().
-#' @param cod_a Código do primeiro município.
-#' @param cod_b Código do segundo município (opcional).
-#' @param medida Identificador da medida.
-#' @return Data frame com ano, valor do município A e valor do município B.
+#' @param series Data frame retornado por series_municipio().
+#' @return TRUE quando existe pelo menos um valor entre as sete medidas.
 #' @noRd
-comparar_series <- function(dados, cod_a, cod_b = NULL, medida) {
-  # Buscando a série do município principal
-  serie_a <- serie_municipio(dados, cod_a, medida)
-  names(serie_a)[names(serie_a) == "valor"] <- "valor_a"
-
-  # Devolvendo apenas a série principal quando não há comparação
-  if (is.null(cod_b) || is.na(cod_b)) {
-    return(serie_a)
-  }
-
-  # Acrescentando a série do segundo município alinhada pelos anos
-  serie_b <- serie_municipio(dados, cod_b, medida)
-  names(serie_b)[names(serie_b) == "valor"] <- "valor_b"
-  merge(serie_a, serie_b, by = "ano", all.x = TRUE)
-}
-
-#' Montando a tabela de diferenças entre dois municípios em um ano
-#'
-#' @param dados Lista retornada por preparar_dados().
-#' @param cod_a Código do primeiro município.
-#' @param cod_b Código do segundo município.
-#' @param ano Ano de referência.
-#' @return Data frame com valor, categoria e diferença por medida.
-#' @noRd
-comparar_ano <- function(dados, cod_a, cod_b, ano) {
-  # Buscando o resumo dos dois municípios no ano
-  a <- resumo_municipio(dados, cod_a, ano)
-  b <- resumo_municipio(dados, cod_b, ano)
-  if (is.null(a) || is.null(b)) {
-    return(NULL)
-  }
-
-  # Reunindo o índice final e os seis blocos dos dois municípios
-  tabela_a <- rbind(
-    data.frame(nome = "IBISMA", valor = a$valor, categoria = a$categoria, stringsAsFactors = FALSE),
-    data.frame(nome = a$blocos$nome, valor = a$blocos$valor, categoria = as.character(a$blocos$categoria), stringsAsFactors = FALSE)
-  )
-  tabela_b <- rbind(
-    data.frame(nome = "IBISMA", valor = b$valor, categoria = b$categoria, stringsAsFactors = FALSE),
-    data.frame(nome = b$blocos$nome, valor = b$blocos$valor, categoria = as.character(b$blocos$categoria), stringsAsFactors = FALSE)
-  )
-
-  # Calculando a diferença do segundo município em relação ao primeiro
-  comparacao <- data.frame(
-    nome = tabela_a$nome,
-    valor_a = tabela_a$valor,
-    valor_b = tabela_b$valor,
-    delta = tabela_b$valor - tabela_a$valor,
-    stringsAsFactors = FALSE
-  )
-  comparacao$cor_a <- cor_medida(c("indice_final", BLOCOS$medida))
-  comparacao$nome_a <- a$municipio
-  comparacao$nome_b <- b$municipio
-  comparacao
+series_tem_valor <- function(series) {
+  any(!is.na(series[, MEDIDAS$medida]))
 }
 
 #' Gerando as opções de municípios para os seletores
