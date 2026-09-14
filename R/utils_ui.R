@@ -286,19 +286,17 @@ estado_vazio <- function(mensagem, icone = NULL) {
 #' @return Elemento HTML do rodapé.
 #' @noRd
 rodape_ibisma <- function() {
-  # Definindo os logos e seus textos alternativos para o rodapé
+  # Definindo os logos negativos e seus textos alternativos para o rodapé
   realizacao <- c(
-    "logos/realizacao/logo_oobr.png" = "Observatório Obstétrico Brasileiro",
-    "logos/realizacao/logo_fiocruz.png" = "Fiocruz",
-    "logos/realizacao/logo_ufes.png" = "Universidade Federal do Espírito Santo",
-    "logos/realizacao/logo_ufrj.png" = "Universidade Federal do Rio de Janeiro",
-    "logos/realizacao/logo_medicina_usp.png" = "Faculdade de Medicina da USP"
+    "logos/realizacao/logo_oobr_negativo.png" = "Observatório Obstétrico Brasileiro",
+    "logos/realizacao/logo_fiocruz_negativo.png" = "Fiocruz",
+    "logos/realizacao/logo_ufes_negativo.png" = "Universidade Federal do Espírito Santo",
+    "logos/realizacao/logo_ufrj_negativo.png" = "Universidade Federal do Rio de Janeiro"
   )
   financiadores <- c(
-    "logos/financiadores/logo_bill_melinda.png" = "Bill & Melinda Gates Foundation",
-    "logos/financiadores/logo_cnpq.png" = "CNPq",
-    "logos/financiadores/logo_fapes.png" = "FAPES",
-    "logos/financiadores/logo_ms.png" = "Ministério da Saúde"
+    "logos/financiadores/logo_bill_melinda_negativo.png" = "Bill & Melinda Gates Foundation",
+    "logos/financiadores/logo_cnpq_negativo.png" = "CNPq",
+    "logos/financiadores/logo_fapes_negativo.png" = "FAPES"
   )
 
   # Montando uma faixa de logos a partir de um vetor nomeado
@@ -309,7 +307,9 @@ rodape_ibisma <- function() {
         htmltools::tags$img(
           src = paste0("www/", caminho),
           alt = logos[[caminho]],
-          class = "rodape-logo"
+          class = "rodape-logo",
+          loading = "lazy",
+          decoding = "async"
         )
       })
     )
@@ -332,11 +332,14 @@ rodape_ibisma <- function() {
           faixa_logos(financiadores)
         )
       ),
-      htmltools::tags$p(
-        class = "rodape-nota",
-        "Os dados apresentados são uma base de exemplo para desenvolvimento do painel. ",
-        "O IBISMA é um índice relativo: seus valores representam o percentil de ",
-        "vulnerabilidade dos municípios brasileiros, não uma medida absoluta."
+      htmltools::tags$div(
+        class = "rodape-base",
+        htmltools::tags$p(
+          class = "rodape-nota",
+          "Este painel está em desenvolvimento. ",
+          "O IBISMA é um índice relativo: seus valores representam o percentil de ",
+          "vulnerabilidade dos municípios brasileiros, não uma medida absoluta."
+        )
       )
     )
   )
