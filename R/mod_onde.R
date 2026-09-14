@@ -58,7 +58,7 @@ mod_onde_ui <- function(id) {
               htmltools::tags$h3(class = "bloco-titulo", "Distribui\u00e7\u00e3o no territ\u00f3rio"),
               htmltools::tags$p(
                 class = "bloco-descricao",
-                "Passe o mouse para ver o valor e a categoria. Clique em um munic\u00edpio para abrir o perfil e destacar no ranking."
+                "Passe o mouse para ver o valor e a categoria. Clique em um município para destacá-lo em todo o painel."
               )
             )
           ),
