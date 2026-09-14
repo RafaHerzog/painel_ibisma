@@ -180,37 +180,87 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
   });
 })();
 
-/* Reposicionando o dropdown do slim select quando ele sai da tela */
+/* Posicionando o dropdown do slim select dentro da janela e afastado do input */
 (function () {
-  /* Movendo o dropdown para a esquerda o suficiente para caber na janela */
+  /* Definindo a margem de segurança em relação às bordas da janela */
+  var MARGEM = 10;
+  /* Definindo o respiro entre o input e o cartão do dropdown */
+  var ESPACO = 6;
+
+  /* Verificando se o dropdown está aberto em uma das direções */
+  function estaAberto(el) {
+    return (
+      el.classList.contains("ss-open-below") ||
+      el.classList.contains("ss-open-above")
+    );
+  }
+
+  /* Ajustando o dropdown aberto sem sobrescrever a posição calculada pelo plugin */
   function ajustarDropdown(el) {
-    var margem = 8;
-    var retangulo = el.getBoundingClientRect();
-    var excesso = retangulo.right - (window.innerWidth - margem);
-    if (excesso > 0) {
-      var esquerda = parseFloat(el.style.left || "0") - excesso;
-      el.style.left = Math.max(margem, esquerda) + "px";
-    }
+    /* Usando a propriedade translate para deslocar sem brigar com o plugin */
+    var largura = el.offsetWidth;
+    /* O left inline é gravado pelo plugin em coordenadas do documento */
+    var baseX = parseFloat(el.style.left || "0") - window.scrollX;
+    /* Reservando a margem dos dois lados antes de limitar a posição */
+    var limite = window.innerWidth - MARGEM - largura;
+    /* Centralizando o dropdown quando ele for maior que a janela disponível */
+    var destinoX =
+      largura > window.innerWidth - 2 * MARGEM
+        ? MARGEM - baseX
+        : Math.min(Math.max(baseX, MARGEM), Math.max(limite, MARGEM));
+    /* Invertendo o respiro quando o dropdown abre acima do input */
+    var deslocamentoY = el.classList.contains("ss-open-above")
+      ? -ESPACO
+      : ESPACO;
+    /* Evitando reescrever o valor quando o ajuste já está aplicado */
+    var valor = Math.round(destinoX - baseX) + "px " + deslocamentoY + "px";
+    if (el.style.translate !== valor) el.style.translate = valor;
+  }
+
+  /* Reposicionando todos os dropdowns abertos, por exemplo após um resize */
+  function ajustarAbertos() {
+    document.querySelectorAll(".ss-content").forEach(function (el) {
+      if (estaAberto(el)) ajustarDropdown(el);
+    });
+  }
+
+  /* Reagendando um ajuste por quadro para não recalcular a cada mutação */
+  var agendado = false;
+  function agendarAjuste() {
+    if (agendado) return;
+    agendado = true;
+    window.requestAnimationFrame(function () {
+      agendado = false;
+      ajustarAbertos();
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    /* Observando a classe de abertura que o plugin adiciona ao dropdown */
+    /* Observando abertura, virada de direção e reposicionamento do plugin */
     var observador = new MutationObserver(function (mutacoes) {
-      mutacoes.forEach(function (mutacao) {
-        var el = mutacao.target;
-        if (!(el instanceof Element)) return;
-        if (!el.classList.contains("ss-content")) return;
-        var aberto =
-          el.classList.contains("ss-open-below") ||
-          el.classList.contains("ss-open-above");
-        if (aberto) ajustarDropdown(el);
-      });
+      for (var i = 0; i < mutacoes.length; i++) {
+        var el = mutacoes[i].target;
+        if (!(el instanceof Element)) continue;
+        if (!el.classList.contains("ss-content")) continue;
+        if (estaAberto(el)) agendarAjuste();
+      }
     });
     observador.observe(document.body, {
       attributes: true,
-      attributeFilter: ["class"],
+      attributeFilter: ["class", "style"],
       subtree: true
     });
+
+    /* Reavaliando quando a busca filtra as opções e muda a largura do cartão */
+    document.addEventListener("input", function (evento) {
+      var alvo = evento.target;
+      if (!alvo || alvo.type !== "search") return;
+      var el = alvo.closest(".ss-content");
+      if (el) setTimeout(function () { ajustarDropdown(el); }, 220);
+    });
+
+    /* Reavaliando os dropdowns abertos quando a janela muda de tamanho */
+    window.addEventListener("resize", agendarAjuste);
   });
 })();
 

@@ -398,39 +398,303 @@ input:focus-visible,
   --ss-font-placeholder-color: var(--cor-texto-suave);
   --ss-disabled-color: #F2F4F7;
   font-size: var(--fonte-media-size);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    background-color 0.18s ease;
 }
 
-/* Arredondando a lista de opções e alargando apenas o dropdown aberto */
-/* O width inline definido pelo plugin é sobrescrito com !important */
+/* Suavizando o realce de foco do seletor fechado */
+.ss-main:focus {
+  box-shadow: 0 0 0 3px var(--ss-focus-color);
+}
+
+/* Indicando o seletor desabilitado com texto suave e sem realce de hover */
+.ss-main.ss-disabled {
+  color: var(--cor-texto-suave);
+  cursor: not-allowed;
+}
+
+.ss-main.ss-disabled .ss-values .ss-single,
+.ss-main.ss-disabled .ss-values .ss-placeholder {
+  color: var(--cor-texto-suave);
+}
+
+/* Acompanhando a cor dos controles em frase no hover e no estado aberto */
+.controles-inline .ss-main.ss-open-below,
+.controles-inline .ss-main.ss-open-above {
+  border-bottom-color: var(--cor-azul-medio);
+}
+
+/* Trocando a seta do seletor pela cor azul dos controles em frase */
+.controles-inline .ss-main .ss-arrow path {
+  stroke: var(--cor-azul-medio);
+}
+
+/* Amaciando a troca de cor da seta quando o dropdown abre e fecha */
+.ss-main .ss-arrow path {
+  transition: stroke 0.18s ease;
+}
+
+/* ------------------------------------------------- slim select — chips */
+
+/* Estilizando as fichas da seleção múltipla como pílulas leves */
+.ss-main .ss-values .ss-value {
+  background-color: rgba(50, 160, 255, 0.12);
+  border: 1px solid rgba(30, 90, 160, 0.25);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ss-main .ss-values .ss-value .ss-value-text {
+  font-size: var(--fonte-pequena-size);
+  font-weight: 600;
+  color: var(--cor-azul-medio);
+  padding: 0.3rem 0.5rem;
+}
+
+.ss-main .ss-values .ss-value .ss-value-delete {
+  border-left: 1px solid rgba(30, 90, 160, 0.25);
+  padding: 0.3rem 0.45rem;
+  transition: background-color 0.15s ease;
+}
+
+.ss-main .ss-values .ss-value .ss-value-delete:hover {
+  background-color: rgba(30, 90, 160, 0.18);
+}
+
+.ss-main .ss-values .ss-value .ss-value-delete svg path {
+  stroke: var(--cor-azul-medio);
+}
+
+/* Alinhando o contador de fichas ocultas ao mesmo tom das pílulas */
+.ss-main .ss-values .ss-max {
+  background-color: rgba(50, 160, 255, 0.12);
+  color: var(--cor-azul-medio);
+  font-size: var(--fonte-pequena-size);
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* ------------------------------------------- slim select — dropdown */
+
+/* Montando o dropdown como um cartão flutuante alinhado à identidade do painel */
 .ss-content {
+  --ss-primary-color: var(--cor-azul-medio);
+  --ss-font-color: #0A1E3C;
+  --ss-bg-color: #FFFFFF;
+  --ss-border-color: var(--cor-linha);
+  --ss-font-placeholder-color: rgba(10, 30, 60, 0.45);
+  --ss-disabled-color: rgba(10, 30, 60, 0.04);
+  --ss-highlight-color: rgba(250, 200, 15, 0.34);
+  --ss-content-height: min(20rem, 56vh);
+  --ss-spacing-l: 0.65rem;
+  --ss-spacing-m: 0.45rem;
+  --ss-spacing-s: 0.35rem;
   border: 1px solid var(--cor-linha);
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(10, 30, 60, 0.14);
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(10, 30, 60, 0.06),
+    0 18px 42px rgba(10, 30, 60, 0.14);
   font-family: 'Source Sans Pro', system-ui, sans-serif;
   font-size: var(--fonte-media-size);
   z-index: 2000;
   width: max-content !important;
   max-width: min(92vw, 30rem) !important;
+  transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
-/* Permitindo a quebra dos textos muito longos dentro da lista */
-.ss-content .ss-list .ss-option,
-.ss-content .ss-search input {
+/* Mantendo o raio completo nas duas direções de abertura */
+.ss-content,
+.ss-content.ss-open-below,
+.ss-content.ss-open-above {
+  border-radius: 14px;
+}
+
+/* Anima a entrada a partir do input, mas some por completo quando fechado */
+/* Sem visibility e pointer-events, a caixa invisível continuaria clicável */
+.ss-content:not(.ss-open-below):not(.ss-open-above) {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.985);
+  transition: opacity 0.16s ease,
+    transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1),
+    visibility 0s linear 0.16s;
+}
+
+.ss-content.ss-open-below,
+.ss-content.ss-open-above {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* ------------------------------------- slim select — campo de busca */
+
+/* Integrando a busca ao cartão, com fundo suave no lugar de um input solto */
+.ss-content > .ss-search {
+  position: relative;
+  padding: 0.55rem 0.6rem 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+/* Desenhando a lupa da busca com uma máscara que acompanha a cor do estado */
+.ss-content > .ss-search::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 1.25rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  transform: translateY(-50%);
+  background-color: rgba(10, 30, 60, 0.45);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+  transition: background-color 0.16s ease;
+}
+
+.ss-content > .ss-search:focus-within::before {
+  background-color: var(--cor-azul-medio);
+}
+
+/* Criando o campo de busca sem borda dura, com foco em anel azul */
+.ss-content > .ss-search input {
+  width: 100%;
+  height: 2.4rem;
+  padding: 0 0.7rem 0 2.25rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background-color: rgba(10, 30, 60, 0.04);
+  color: #0A1E3C;
+  font-size: var(--fonte-media-size);
+  line-height: 1;
   overflow-wrap: break-word;
+  transition: background-color 0.16s ease, border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
-/* Estilizando o campo de busca dentro da lista */
-.ss-content .ss-search input {
-  border-radius: 8px;
+.ss-content > .ss-search input::placeholder {
+  color: rgba(10, 30, 60, 0.45);
+}
+
+.ss-content > .ss-search input:hover {
+  background-color: rgba(10, 30, 60, 0.07);
+}
+
+.ss-content > .ss-search input:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: rgba(50, 160, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(50, 160, 255, 0.16);
+}
+
+/* Desenhando o botão de limpar a busca no mesmo traço dos ícones do painel */
+.ss-content > .ss-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  background-color: rgba(10, 30, 60, 0.45);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.ss-content > .ss-search input::-webkit-search-cancel-button:hover {
+  background-color: var(--cor-azul-medio);
+}
+
+/* --------------------------------------------- slim select — lista */
+
+/* Dando respiro à lista e mantendo o scroll isolado do restante da página */
+.ss-content .ss-list {
+  padding: 0.3rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 30, 60, 0.22) transparent;
+  overscroll-behavior: contain;
+}
+
+/* Alinhando a mensagem de busca sem resultados ao centro do cartão */
+.ss-content .ss-list > .ss-search {
+  display: block;
+  padding: 1.2rem 0.9rem;
+  border-bottom: 0;
+  text-align: center;
+  color: var(--cor-texto-suave);
   font-size: var(--fonte-media-size);
 }
 
-/* Dando destaque em azul à opção em foco na lista */
+/* ------------------------------------------- slim select — opções */
+
+/* Desenhando as opções como linhas leves e arredondadas */
+.ss-content .ss-list .ss-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 2.1rem;
+  margin: 4px 0;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  color: #0A1E3C;
+  font-size: var(--fonte-media-size);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+/* Realçando a opção sob o mouse ou navegada pelo teclado */
+/* O !important vence a regra do plugin, que pinta a opção com a cor primária */
 .ss-content .ss-list .ss-option:hover,
-.ss-content .ss-list .ss-option.ss-highlighted,
+.ss-content .ss-list .ss-option.ss-highlighted {
+  background-color: rgba(50, 160, 255, 0.10) !important;
+  color: #0A1E3C !important;
+}
+
+/* Pintando a opção selecionada com o azul médio cheio e texto branco */
 .ss-content .ss-list .ss-option.ss-selected {
   background-color: var(--cor-azul-medio) !important;
   color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+/* Aprofundando a seleção sob o mouse com uma mistura da própria paleta */
+/* O azul médio fica como reserva para navegadores sem color-mix */
+.ss-content .ss-list .ss-option.ss-selected:hover,
+.ss-content .ss-list .ss-option.ss-selected.ss-highlighted {
+  background-color: var(--cor-azul-medio) !important;
+  background-color: color-mix(in srgb, var(--cor-azul-medio) 85%, #0A1E3C) !important;
+  color: #FFFFFF !important;
+}
+
+/* Apagando qualquer realce de hover da opção desabilitada */
+.ss-content .ss-list .ss-option.ss-disabled,
+.ss-content .ss-list .ss-option.ss-disabled:hover {
+  background-color: transparent !important;
+  color: rgba(10, 30, 60, 0.35) !important;
+  cursor: not-allowed;
+}
+
+/* Destacando o trecho encontrado pela busca em amarelo suave */
+.ss-content .ss-list .ss-option .ss-search-highlight {
+  background-color: var(--ss-highlight-color);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+/* Estilizando os rótulos de grupo para leitura em caixa-alta discreta */
+.ss-content .ss-list .ss-optgroup .ss-optgroup-label {
+  padding: 0.6rem 0.65rem 0.25rem 0.65rem;
+  color: var(--cor-texto-suave);
+  font-size: var(--fonte-pequena-size);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ss-content .ss-list .ss-optgroup .ss-optgroup-label .ss-optgroup-label-text {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 /* -------------------------------------------------------------- blocos */

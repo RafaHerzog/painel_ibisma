@@ -222,13 +222,14 @@ desenhar_ufs <- function(mapa) {
 #' @return Nada; envia a mensagem para o JavaScript do painel.
 #' @noRd
 atualizar_municipios <- function(session, output_id, base) {
+  # Convertendo os mapas de código para cor e tooltip em listas nomeadas
+  # Evitando o aviso do jsonlite, que surge ao serializar vetores nomeados
+  cores <- as.list(stats::setNames(base$cor, as.character(base$codmunres)))
+  labels <- as.list(stats::setNames(base$tooltip, as.character(base$codmunres)))
+
   # Atualizando os polígonos já desenhados sem reenviar a geometria
   session$sendCustomMessage(
     "ibisma_mapa_atualiza",
-    list(
-      id = output_id,
-      cores = stats::setNames(base$cor, as.character(base$codmunres)),
-      labels = stats::setNames(base$tooltip, as.character(base$codmunres))
-    )
+    list(id = output_id, cores = cores, labels = labels)
   )
 }

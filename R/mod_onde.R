@@ -35,9 +35,13 @@ mod_onde_ui <- function(id) {
       # Controles principais escritos como uma frase
       frase_controles(
         htmltools::tags$span(class = "controle-texto", "Mostrar"),
-        seletor_inline(ns("medida"), medidas, selected = "indice_final", largura = "300px"),
+        # Desabilitando a busca na medida e no nível, que têm poucas opções
+        seletor_inline(
+          ns("medida"), medidas, selected = "indice_final",
+          largura = "300px", busca = FALSE
+        ),
         htmltools::tags$span(class = "controle-texto", "dos"),
-        seletor_inline(ns("nivel"), niveis, selected = "municipio"),
+        seletor_inline(ns("nivel"), niveis, selected = "municipio", busca = FALSE),
         htmltools::tags$span(class = "controle-texto", "em"),
         seletor_inline(ns("ano"), anos, selected = max(anos_disponiveis()))
       ),
@@ -88,7 +92,7 @@ mod_onde_ui <- function(id) {
           ),
           # Controle de escopo do ranking (Brasil ou uma UF)
           frase_controles(
-            htmltools::tags$span(class = "controle-texto", "Ranking em"),
+            htmltools::tags$span(class = "controle-texto", "Ranking para"),
             seletor_inline(ns("escopo"), opcoes_escopo_ranking(), selected = "nacional")
           ),
           # Tabela interativa com a lista de municípios e esqueleto empilhado

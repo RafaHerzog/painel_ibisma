@@ -120,11 +120,12 @@ titulo_secao <- function(eyebrow, titulo, descricao = NULL) {
 #' @return Nada; envia a mensagem de atualização para o navegador.
 #' @noRd
 atualizar_seletor <- function(session, input_id, selecionado) {
+  # Removendo nomes do valor para a mensagem JSON não carregar vetor nomeado
   # Usando a função oficial do shinyWidgets para manter o slim select sincronizado
   shinyWidgets::updateSlimSelect(
     session = session,
     inputId = input_id,
-    selected = as.character(selecionado)
+    selected = unname(as.character(selecionado))
   )
 }
 
@@ -134,19 +135,23 @@ atualizar_seletor <- function(session, input_id, selecionado) {
 #' @param choices Vetor nomeado de opções.
 #' @param selected Valor selecionado inicialmente.
 #' @param largura Largura do seletor (mínima).
+#' @param busca Habilita o campo de busca dentro do dropdown.
 #' @return Elemento HTML do seletor estilizado.
 #' @noRd
-seletor_inline <- function(input_id, choices, selected = NULL, largura = "auto") {
+seletor_inline <- function(input_id, choices, selected = NULL, largura = "auto",
+                           busca = TRUE) {
   shinyWidgets::slimSelectInput(
     inputId = input_id,
     label = NULL,
     choices = choices,
     selected = selected,
     width = largura,
-    search = TRUE,
+    search = busca,
     placeholder = "Selecione",
-    # Traduzindo também o texto do campo de busca da lista
-    searchPlaceholder = "Buscar..."
+    # Traduzindo os textos e realçando o trecho encontrado pela busca
+    searchPlaceholder = "Buscar...",
+    searchText = "Nenhum resultado",
+    searchHighlight = TRUE
   )
 }
 

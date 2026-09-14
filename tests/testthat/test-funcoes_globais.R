@@ -195,6 +195,48 @@ test_that("opções de medida, ano e escopo do ranking estão completas", {
   expect_equal(length(escopos), 28)
 })
 
+test_that("seletor_inline controla a busca e traduz os textos", {
+  # O seletor padrão liga a busca e usa os textos em português
+  com_busca <- as.character(seletor_inline("teste", c("A" = "a", "B" = "b")))
+  expect_true(grepl('"showSearch":true', com_busca, fixed = TRUE))
+  expect_true(grepl("Buscar...", com_busca, fixed = TRUE))
+  expect_true(grepl("Nenhum resultado", com_busca, fixed = TRUE))
+  expect_true(grepl('"searchHighlight":true', com_busca, fixed = TRUE))
+
+  # O seletor sem busca esconde o campo, mantendo as opções intactas
+  sem_busca <- as.character(seletor_inline("teste2", c("A" = "a"), busca = FALSE))
+  expect_true(grepl('"showSearch":false', sem_busca, fixed = TRUE))
+})
+
+test_that("atualizar_municipios envia listas nomeadas que serializam sem aviso", {
+  # Capturando a mensagem enviada por uma sessão simulada
+  capturada <- new.env(parent = emptyenv())
+  sessao <- list(sendCustomMessage = function(tipo, mensagem) {
+    capturada$tipo <- tipo
+    capturada$mensagem <- mensagem
+  })
+  base <- dados_mapa(preparado_teste, 2020, "indice_final")
+  atualizar_municipios(sessao, "mapa", base)
+
+  expect_equal(capturada$tipo, "ibisma_mapa_atualiza")
+  mensagem <- capturada$mensagem
+  # As cores e os tooltips precisam ser listas nomeadas, e não vetores nomeados
+  expect_type(mensagem$cores, "list")
+  expect_type(mensagem$labels, "list")
+  expect_equal(names(mensagem$cores), as.character(base$codmunres))
+
+  # O toJSON usado pelo Shiny não deve emitir o aviso de vetor nomeado
+  aviso <- NULL
+  withCallingHandlers(
+    shiny:::toJSON(mensagem),
+    warning = function(w) {
+      aviso <<- conditionMessage(w)
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_null(aviso)
+})
+
 test_that("montar_selos gera o HTML dos selos de categoria", {
   selos <- montar_selos(c("Muito baixo", "Muito alto"))
   expect_length(selos, 2)
