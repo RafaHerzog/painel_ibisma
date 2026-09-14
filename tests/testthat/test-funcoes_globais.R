@@ -378,3 +378,52 @@ test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
   expect_true(grepl("não possui dados no ano selecionado", html, fixed = TRUE))
   expect_false(grepl("perfil-placar", html, fixed = TRUE))
 })
+
+test_that("esqueletos preservam a estrutura de cada output", {
+  # O ranking replica a busca, o cabeçalho, as 12 linhas e a paginação
+  ranking <- as.character(esqueleto_ranking())
+  expect_equal(
+    lengths(regmatches(ranking, gregexpr("esqueleto__linha", ranking))),
+    12
+  )
+  expect_true(grepl("esqueleto__busca", ranking))
+  expect_true(grepl("esqueleto__paginacao", ranking))
+  # O cabeçalho alinha números à direita e a paginação reproduz os botões
+  expect_true(grepl("esqueleto__celula--direita", ranking))
+  expect_true(grepl("esqueleto__paginacao-nav", ranking))
+  expect_true(grepl("esqueleto__barra--reticencias", ranking))
+
+  # O mapa desenha a silhueta do Brasil junto do controle de zoom
+  mapa <- as.character(esqueleto_mapa())
+  expect_true(grepl("esqueleto__desenho", mapa))
+  expect_true(grepl("esqueleto__forma", mapa))
+  expect_true(grepl("esqueleto__controle", mapa))
+
+  # O palco mantém identificação, pétalas e placar na mesma composição
+  palco <- as.character(esqueleto_palco())
+  expect_true(grepl("perfil-nome", palco))
+  expect_true(grepl("perfil-metricas", palco))
+  expect_true(grepl("svg-petalas", palco))
+  expect_true(grepl("perfil-placar", palco))
+  expect_equal(
+    lengths(regmatches(palco, gregexpr("esqueleto__disco", palco))),
+    6
+  )
+  # O esqueleto não deve repetir nenhum valor do conteúdo real
+  expect_false(grepl("IBISMA em", palco))
+
+  # A evolução reserva a área do gráfico com eixos e traços abstratos
+  evolucao <- as.character(esqueleto_evolucao())
+  expect_true(grepl("esqueleto__grafico", evolucao))
+  expect_true(grepl("esqueleto__traco", evolucao))
+
+  # O slot empilha o output e o esqueleto para o CSS exibir durante a carga
+  slot <- as.character(esqueleto_slot(
+    htmltools::tags$div(id = "saida"),
+    esqueleto_texto(),
+    classe = "esqueleto-slot--texto"
+  ))
+  expect_true(grepl("esqueleto-slot", slot, fixed = TRUE))
+  expect_true(grepl('id="saida"', slot, fixed = TRUE))
+  expect_true(grepl("esqueleto--texto", slot, fixed = TRUE))
+})
