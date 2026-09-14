@@ -9,7 +9,8 @@
 #     Rscript dev/headless_smoke.R [--port=4848] [--outdir=dev/smoke]
 #       [--wait-for=".seletor"] [--shot=nome.png] [--eval="<JS>"]
 #       [--pre-eval="<JS>"] [--eval-file=arq.js] [--pre-eval-file=arq.js]
-#       [--width=1600] [--height=900] [--scroll=0] [--mobile] [--motion] [--reduce]
+#       [--width=1600] [--height=900] [--scroll=0] [--mobile] [--dpr=1.25]
+#       [--motion] [--reduce]
 #
 #   O JavaScript passado em --eval deve retornar uma STRING; o valor é
 #   impresso no console pelo script.
@@ -117,6 +118,14 @@ if (mobile) {
     width = largura, height = altura, deviceScaleFactor = 2, mobile = TRUE
   )
   sessao$Emulation$setTouchEmulationEnabled(enabled = TRUE)
+} else if (as.numeric(pega_arg("dpr", "0")) > 0) {
+  # Emulando uma escala de tela específica (útil para checar nitidez)
+  sessao$Emulation$setDeviceMetricsOverride(
+    width = largura,
+    height = altura,
+    deviceScaleFactor = as.numeric(pega_arg("dpr", "0")),
+    mobile = FALSE
+  )
 }
 
 # Emulando a preferência de movimento para testar animações de verdade

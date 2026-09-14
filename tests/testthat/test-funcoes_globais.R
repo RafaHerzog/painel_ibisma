@@ -147,6 +147,9 @@ test_that("grafico_evolucao desenha as sete séries com as cores das medidas", {
   compartilhado <- grafico_evolucao(series, minimo_y = 90)
   expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 90)
 
+  # O desenho em SVG evita o borrão do canvas sob zoom ou escala fracionária
+  expect_equal(grafico$x$renderer, "svg")
+
   # O tooltip leva o nome do município com aspas escapadas para o JavaScript
   formatter <- as.character(grafico$x$opts$tooltip$formatter)
   expect_true(grepl("Dois (RO)", formatter, fixed = TRUE))
@@ -220,6 +223,9 @@ test_that("grafico_legenda monta a legenda nativa compartilhada das sete séries
   # O grupo precisa ser o mesmo dos gráficos para os cliques valerem nos dois
   expect_equal(grafico$x$chartGroup, "teste")
   expect_equal(grafico$x$groupConnect, "teste")
+
+  # A legenda também usa SVG para acompanhar a nitidez dos gráficos
+  expect_equal(grafico$x$renderer, "svg")
 })
 
 test_that("formatadores usam a convenção brasileira", {

@@ -116,7 +116,8 @@ grafico_evolucao <- function(series, nome = NULL, legenda = TRUE, grupo = NULL,
   }
 
   # Criando o gráfico e acrescentando uma linha para cada uma das sete medidas
-  grafico <- echarts4r::e_charts(series, ano)
+  # Desenhando em SVG, que não depende do devicePixelRatio e não borra sob zoom
+  grafico <- echarts4r::e_charts(series, ano, renderer = "svg")
   for (i in seq_len(nrow(MEDIDAS))) {
     medida <- MEDIDAS$medida[i]
     # Reservando ao IBISMA a linha mais espessa, o maior ponto e o topo do desenho
@@ -215,7 +216,8 @@ grafico_legenda <- function(grupo = NULL) {
   }
 
   # Montando as sete séries invisíveis que dão nome e cor a cada item
-  grafico <- echarts4r::e_charts(vazio, ano)
+  # Usando o mesmo renderizador SVG dos gráficos para a legenda não borrar
+  grafico <- echarts4r::e_charts(vazio, ano, renderer = "svg")
   for (i in seq_len(nrow(MEDIDAS))) {
     largura <- if (identical(MEDIDAS$medida[i], "indice_final")) 3.5 else 1.5
     grafico <- grafico |>
