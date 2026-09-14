@@ -15,39 +15,9 @@ CSS_TOOLTIP <- paste0(
   "padding:10px 12px;"
 )
 
-#' Aplicando o estilo base do IBISMA a um gráfico echarts4r
-#'
-#' @param grafico Objeto echarts4r.
-#' @param legendar Exibir a legenda nativa.
-#' @param selecao Lista com as séries visíveis na legenda (opcional).
-#' @param topo Posição vertical da legenda no gráfico.
-#' @return Objeto echarts4r com o estilo aplicado.
-#' @noRd
-estilo_echarts <- function(grafico, legendar = TRUE, selecao = NULL, topo = 0) {
-  # Montando as opções da legenda nativa do echarts
-  opcoes_legenda <- list(
-    show = legendar,
-    top = topo,
-    left = "center",
-    itemWidth = 16,
-    itemHeight = 9,
-    # Dando um respiro maior entre os itens da legenda
-    itemGap = 16,
-    textStyle = list(color = COR_AZUL_ESCURO, fontSize = 12),
-    inactiveColor = "#B9C0CB"
-  )
-  # Reaplicando a seleção do usuário para ela sobreviver a re-renderizações
-  if (!is.null(selecao)) {
-    opcoes_legenda$selected <- selecao
-  }
-
-  grafico <- grafico |>
-    echarts4r::e_text_style(
-      fontFamily = "Source Sans Pro, system-ui, sans-serif",
-      color = COR_AZUL_ESCURO
-    )
-  do.call(echarts4r::e_legend, c(list(grafico), opcoes_legenda))
-}
+# Definindo as alturas dos gráficos de evolução do índice e dos blocos
+ALTURA_GRAFICO_IBISMA <- 270L
+ALTURA_GRAFICO_BLOCO <- 160L
 
 #' Aplicando o tooltip padrão do IBISMA a um gráfico echarts4r
 #'
@@ -81,14 +51,16 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
   do.call(echarts4r::e_tooltip, c(list(grafico), opcoes))
 }
 
-#' Calculando o piso do eixo Y das séries temporais
+#' Calculando o piso do eixo Y de um conjunto de séries
 #'
 #' @param series Data frame retornado por series_municipio().
+#' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
 #' @return Piso em dezena para o eixo começar perto dos dados (0 a 90).
 #' @noRd
-piso_eixo_y <- function(series) {
-  # Reunindo todos os valores das sete medidas em um único vetor
-  valores <- unlist(series[, MEDIDAS$medida], use.names = FALSE)
+piso_eixo_y <- function(series, medidas = MEDIDAS$medida) {
+  # Reunindo os valores das medidas pedidas em um único vetor
+  colunas <- intersect(medidas, names(series))
+  valores <- unlist(series[, colunas, drop = FALSE], use.names = FALSE)
   if (all(is.na(valores))) {
     return(0)
   }
@@ -98,63 +70,206 @@ piso_eixo_y <- function(series) {
   max(0, min(piso, 90))
 }
 
-#' Montando o gráfico de evolução temporal de um município
+#' Obtendo o último valor válido de uma série
+#'
+#' @param valores Vetor numérico de uma série.
+#' @return Último valor não ausente ou NA quando não houver nenhum.
+#' @noRd
+ultimo_valor <- function(valores) {
+  validos <- valores[!is.na(valores)]
+  if (length(validos) == 0) {
+    return(NA_real_)
+  }
+  validos[length(validos)]
+}
+
+#' Decidindo em que lado do último ponto cada nome de localidade é desenhado
+#'
+#' Os rótulos ficam acima do fim das linhas, exceto quando a série termina
+#' perto do topo do gráfico. Com comparação ativa, os dois nomes nunca dividem
+#' o mesmo espaço: eles vão para lados opostos ou recebem afastamentos
+#' diferentes quando não há espaço livre de um dos lados.
+#'
+#' @param dados Data frame com as colunas principal e comparacao (opcional).
+#' @param minimo_y Piso do eixo Y.
+#' @return Lista com lado e afastamento vertical do rótulo de cada série.
+#' @noRd
+lados_rotulos <- function(dados, minimo_y) {
+  # Calculando a posição relativa do fim de cada série dentro do eixo
+  faixa <- 100 - minimo_y
+  posicao <- function(valores) {
+    valor <- ultimo_valor(valores)
+    if (is.na(valor) || faixa <= 0) {
+      return(0.5)
+    }
+    (valor - minimo_y) / faixa
+  }
+
+  # Guardando o afastamento padrão do rótulo em relação ao último ponto
+  afastamento <- 12
+  # Guardando um afastamento maior para dois nomes que dividem o mesmo lado
+  afastamento_longo <- 30
+  # Existe espaço seguro acima até 80% da faixa; abaixo, a partir de 20%
+  cabe_acima <- function(fracao) fracao <= 0.8
+  cabe_abaixo <- function(fracao) fracao >= 0.2
+  # Montando o rótulo com um lado e um afastamento opcional
+  rotulo <- function(lado, distancia = afastamento) {
+    list(lado = lado, afastamento = distancia)
+  }
+
+  # Resolvendo o caso sem comparação, em que existe apenas um rótulo
+  fracao_principal <- posicao(dados$principal)
+  if (is.null(dados$comparacao)) {
+    return(list(principal = rotulo(
+      if (cabe_acima(fracao_principal)) "acima" else "abaixo"
+    )))
+  }
+
+  # Mantendo o lado natural quando os dois fins estão bem separados no eixo
+  fracao_comparacao <- posicao(dados$comparacao)
+  if (abs(fracao_principal - fracao_comparacao) > 0.15) {
+    lado_natural <- function(fracao) if (cabe_acima(fracao)) "acima" else "abaixo"
+    return(list(
+      principal = rotulo(lado_natural(fracao_principal)),
+      comparacao = rotulo(lado_natural(fracao_comparacao))
+    ))
+  }
+
+  # Resolvendo os fins próximos, em que os dois nomes precisam de espaço
+  principal_maior <- fracao_principal >= fracao_comparacao
+  fracao_maior <- max(fracao_principal, fracao_comparacao)
+  fracao_menor <- min(fracao_principal, fracao_comparacao)
+
+  # Perto do topo, descendo os dois nomes com afastamentos diferentes
+  if (!cabe_acima(fracao_maior)) {
+    rotulos <- list(
+      maior = rotulo("abaixo"),
+      menor = rotulo("abaixo", afastamento_longo)
+    )
+  } else if (cabe_abaixo(fracao_menor)) {
+    # Com espaço abaixo, o menor valor desce e o maior fica acima
+    rotulos <- list(maior = rotulo("acima"), menor = rotulo("abaixo"))
+  } else {
+    # Colado no piso, o menor valor sobe mais para não encostar no maior
+    rotulos <- list(
+      maior = rotulo("acima"),
+      menor = rotulo("acima", afastamento_longo)
+    )
+  }
+  list(
+    principal = if (principal_maior) rotulos$maior else rotulos$menor,
+    comparacao = if (principal_maior) rotulos$menor else rotulos$maior
+  )
+}
+
+#' Montando as opções do rótulo exibido no fim de uma linha
+#'
+#' @param rotulo Lado e afastamento calculados por lados_rotulos().
+#' @param cor Cor do texto, igual à cor da série.
+#' @param opacidade Opacidade do texto (menor na série comparada).
+#' @return Lista com as opções do endLabel do echarts.
+#' @noRd
+opcoes_rotulo_serie <- function(rotulo, cor, opacidade = 1) {
+  acima <- identical(rotulo$lado, "acima")
+  list(
+    show = TRUE,
+    # Usando o próprio nome da série como texto do rótulo
+    formatter = "{a}",
+    color = cor,
+    opacity = opacidade,
+    fontSize = 11,
+    fontWeight = 600,
+    # Ancorando o texto à direita do ponto para ele não sair pela borda
+    align = "right",
+    verticalAlign = if (acima) "bottom" else "top",
+    offset = c(0, if (acima) -rotulo$afastamento else rotulo$afastamento),
+    # Criando um halo branco para o nome ficar legível sobre a linha
+    textBorderColor = "#FFFFFF",
+    textBorderWidth = 4
+  )
+}
+
+#' Montando o gráfico de evolução temporal de uma medida
 #'
 #' @param series Data frame retornado por series_municipio().
-#' @param nome Nome do município exibido no tooltip (opcional).
-#' @param legenda Exibir a legenda nativa do echarts no topo (opcional).
-#' @param grupo Nome do grupo que sincroniza a legenda entre dois gráficos.
-#' @param selecao Lista com as séries visíveis na legenda (opcional).
+#' @param medida Medida desenhada ("indice_final" ou um "bloco1"..."bloco6").
+#' @param nome Nome da localidade principal exibido no rótulo e no tooltip.
+#' @param comparacao Data frame do município comparado (opcional).
+#' @param nome_comparacao Nome do município comparado (opcional).
 #' @param minimo_y Piso do eixo Y; quando NULL, calculado das próprias séries.
 #' @return Objeto echarts4r pronto para renderização.
 #' @noRd
-grafico_evolucao <- function(series, nome = NULL, legenda = TRUE, grupo = NULL,
-                             selecao = NULL, minimo_y = NULL) {
+grafico_evolucao <- function(series, medida, nome = NULL,
+                             comparacao = NULL, nome_comparacao = NULL,
+                             minimo_y = NULL) {
+  # Identificando a cor e o destaque da medida desenhada
+  cor <- cor_medida(medida)
+  eh_indice <- identical(medida, "indice_final")
+
   # Calculando o piso do eixo quando o módulo não impõe um valor compartilhado
   if (is.null(minimo_y)) {
-    minimo_y <- piso_eixo_y(series)
+    minimo_y <- piso_eixo_y(series, medida)
   }
 
-  # Criando o gráfico e acrescentando uma linha para cada uma das sete medidas
-  # Desenhando em SVG, que não depende do devicePixelRatio e não borra sob zoom
-  grafico <- echarts4r::e_charts(series, ano, renderer = "svg")
-  for (i in seq_len(nrow(MEDIDAS))) {
-    medida <- MEDIDAS$medida[i]
-    # Reservando ao IBISMA a linha mais espessa, o maior ponto e o topo do desenho
-    eh_indice <- identical(medida, "indice_final")
-    largura <- if (eh_indice) 3.5 else 1.8
-    tamanho <- if (eh_indice) 8 else 5
-    z <- if (eh_indice) 10 else 2
-    # Esmaecendo os blocos para o índice se destacar entre as sete linhas
-    opacidade <- if (eh_indice) 1 else 0.7
+  # Montando a tabela do gráfico com uma coluna por localidade
+  dados <- data.frame(ano = series$ano, principal = series[[medida]])
+  if (!is.null(comparacao)) {
+    dados$comparacao <- comparacao[[medida]]
+  }
+
+  # Descobrindo em que lado cada nome de localidade aparece no fim da linha
+  lados <- lados_rotulos(dados, minimo_y)
+
+  # Reservando ao IBISMA a linha mais espessa e o símbolo maior
+  largura <- if (eh_indice) 3 else 2
+  tamanho <- if (eh_indice) 6 else 4.5
+
+  # Criando o gráfico e desenhando a série da localidade principal
+  grafico <- echarts4r::e_charts(dados, ano, renderer = "svg") |>
+    echarts4r::e_line_(
+      serie = "principal",
+      name = if (is.null(nome)) "Munic\u00edpio" else nome,
+      symbol = "circle",
+      symbolSize = tamanho,
+      showSymbol = TRUE,
+      z = 3,
+      connectNulls = FALSE,
+      # Sem foco de série no hover: a outra linha nunca é apagada
+      lineStyle = list(width = largura, color = cor, type = "solid"),
+      itemStyle = list(
+        color = cor,
+        borderColor = "#FFFFFF",
+        borderWidth = 1.2
+      ),
+      endLabel = opcoes_rotulo_serie(lados$principal, cor)
+    )
+
+  # Acrescentando a linha pontilhada do município comparado, quando houver
+  if (!is.null(dados$comparacao)) {
     grafico <- grafico |>
       echarts4r::e_line_(
-        serie = medida,
-        name = MEDIDAS$nome[i],
+        serie = "comparacao",
+        name = if (is.null(nome_comparacao)) "Compara\u00e7\u00e3o" else nome_comparacao,
         symbol = "circle",
-        symbolSize = tamanho,
-        # Mostrando a bolinha só no IBISMA; nos blocos ela surge no hover
-        showSymbol = eh_indice,
-        # Colocando o IBISMA acima das demais linhas na ordem de desenho
-        z = z,
+        symbolSize = tamanho - 1,
+        showSymbol = TRUE,
+        # Desenhando abaixo da linha principal, que fica em evidência
+        z = 2,
         connectNulls = FALSE,
-        # Apagando as demais linhas ao passar o mouse para facilitar a leitura
-        emphasis = list(
-          focus = "series",
-          lineStyle = list(opacity = 1),
-          itemStyle = list(opacity = 1)
-        ),
+        # Mantendo a mesma cor, com traço pontilhado e opacidade menor
         lineStyle = list(
           width = largura,
-          color = MEDIDAS$cor[i],
-          opacity = opacidade
+          color = cor,
+          type = "dotted",
+          opacity = 0.55
         ),
         itemStyle = list(
-          color = MEDIDAS$cor[i],
+          color = cor,
           borderColor = "#FFFFFF",
-          borderWidth = 1.2,
-          opacity = opacidade
-        )
+          borderWidth = 1,
+          opacity = 0.55
+        ),
+        endLabel = opcoes_rotulo_serie(lados$comparacao, cor, opacidade = 0.75)
       )
   }
 
@@ -185,92 +300,102 @@ grafico_evolucao <- function(series, nome = NULL, legenda = TRUE, grupo = NULL,
     ) |>
     tooltip_echarts(
       trigger = "axis",
-      formatter = tooltip_series_js(nome),
+      formatter = tooltip_evolucao_js(),
       extras = list(
         axisPointer = list(type = "line", lineStyle = list(color = "#C7CCD4"))
       )
     ) |>
-    estilo_echarts(legendar = legenda, selecao = selecao) |>
-    echarts4r::e_grid(left = 40, right = 16, top = 16, bottom = 28) |>
+    echarts4r::e_text_style(
+      fontFamily = FONTE_GRAFICOS,
+      color = COR_AZUL_ESCURO
+    ) |>
+    # Desligando a legenda, já que o nome de cada localidade fica no fim da linha
+    echarts4r::e_legend(show = FALSE) |>
+    # Reservando só a coluna dos números do eixo Y, alinhada ao título do cartão
+    echarts4r::e_grid(left = 28, right = 12, top = 16, bottom = 28) |>
     echarts4r::e_animation(duration = 350)
 
-  # Colocando os gráficos no mesmo grupo para a legenda valer para os dois
-  if (!is.null(grupo)) {
-    grafico <- grafico |>
-      echarts4r::e_group(grupo) |>
-      echarts4r::e_connect_group(grupo)
-  }
   grafico
 }
 
-#' Montando um gráfico com apenas a legenda nativa das sete séries
+#' Montando o JavaScript do tooltip da evolução temporal
 #'
-#' @param grupo Nome do grupo que sincroniza a legenda com os gráficos.
-#' @return Objeto echarts4r com a legenda centralizada e sem eixos visíveis.
-#' @noRd
-grafico_legenda <- function(grupo = NULL) {
-  # Criando uma linha vazia por medida apenas para a legenda existir
-  vazio <- data.frame(ano = 2015)
-  for (medida in MEDIDAS$medida) {
-    vazio[[medida]] <- NA_real_
-  }
-
-  # Montando as sete séries invisíveis que dão nome e cor a cada item
-  # Usando o mesmo renderizador SVG dos gráficos para a legenda não borrar
-  grafico <- echarts4r::e_charts(vazio, ano, renderer = "svg")
-  for (i in seq_len(nrow(MEDIDAS))) {
-    largura <- if (identical(MEDIDAS$medida[i], "indice_final")) 3.5 else 1.5
-    grafico <- grafico |>
-      echarts4r::e_line_(
-        serie = MEDIDAS$medida[i],
-        name = MEDIDAS$nome[i],
-        symbol = "circle",
-        symbolSize = 6,
-        lineStyle = list(width = largura, color = MEDIDAS$cor[i]),
-        itemStyle = list(color = MEDIDAS$cor[i])
-      )
-  }
-
-  # Escondendo eixos e grade para sobrar apenas a legenda centralizada
-  grafico <- grafico |>
-    echarts4r::e_x_axis(show = FALSE) |>
-    echarts4r::e_y_axis(show = FALSE) |>
-    echarts4r::e_grid(left = 0, right = 0, top = 0, bottom = 0) |>
-    estilo_echarts(legendar = TRUE, topo = "middle") |>
-    echarts4r::e_animation(show = FALSE)
-
-  # Entrando no mesmo grupo para os cliques valerem nos dois gráficos
-  if (!is.null(grupo)) {
-    grafico <- grafico |>
-      echarts4r::e_group(grupo) |>
-      echarts4r::e_connect_group(grupo)
-  }
-  grafico
-}
-
-#' Montando o JavaScript do tooltip das séries temporais
-#'
-#' @param nome Nome do município exibido no topo do tooltip (opcional).
 #' @return Texto de função JavaScript para o echarts.
 #' @noRd
-tooltip_series_js <- function(nome = NULL) {
-  # Montando o título com a localidade e escapando aspas para o JavaScript
-  titulo <- if (is.null(nome)) "" else paste0(nome, " \u2014 ")
-  titulo_js <- encodeString(titulo, quote = "'")
-
+tooltip_evolucao_js <- function() {
   paste0(
     "function (params) {
        if (!params || !params.length) return '';
        var f = function (v) { return Number(v).toFixed(1).replace('.', ','); };
+       /* Clareando a cor em direção ao branco, como a opacidade reduzida do traço */
+       /* A cor fica opaca para o traço pontilhado não aparecer dentro da bolinha */
+       var clarear = function (cor, alfa) {
+         var hex = String(cor).replace('#', '');
+         if (hex.length === 3) {
+           hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+         }
+         var n = parseInt(hex, 16);
+         if (isNaN(n)) return cor;
+         var misturar = function (canal) {
+           return Math.round(canal * alfa + 255 * (1 - alfa));
+         };
+         return 'rgb(' + misturar((n >> 16) & 255) + ',' +
+                misturar((n >> 8) & 255) + ',' + misturar(n & 255) + ')';
+       };
+       /* Montando a marca da série com a cor e o tipo de traço do gráfico */
+       var marca = function (p) {
+         var cor = typeof p.color === 'string' ? p.color : '#4B1D73';
+         /* A comparação mantém a mesma cor com a opacidade reduzida do traço */
+         var corMarca = p.seriesIndex === 0 ? cor : clarear(cor, 0.55);
+         var traco = p.seriesIndex === 0
+           ? 'background:' + corMarca
+           : 'background-image:repeating-linear-gradient(90deg,' +
+             corMarca + ' 0 2px,transparent 2px 5px)';
+         return '<span style=\"position:relative;display:inline-block;width:18px;height:9px;margin-right:6px;vertical-align:middle;flex:0 0 auto\">' +
+                '<span style=\"position:absolute;left:0;right:0;top:3px;height:3px;border-radius:2px;' + traco + '\"></span>' +
+                '<span style=\"position:absolute;left:50%;top:1px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:' + corMarca + ';box-shadow:0 0 0 1.5px #FFFFFF\"></span>' +
+                '</span>';
+       };
        var ano = String(Math.round(params[0].axisValue));
-       var s = '<b>' + ", titulo_js, " + ano + '</b>';
+       var s = '<b>' + ano + '</b>';
        params.forEach(function (p) {
          var v = p.value;
          if (Array.isArray(v)) { v = v[v.length - 1]; }
          if (v === null || v === undefined || isNaN(v)) return;
-         s += '<br/>' + p.marker + ' ' + p.seriesName + ': <b>' + f(v) + '</b>';
+         s += '<div style=\"display:flex;align-items:center;justify-content:space-between;gap:1.5rem\">' +
+              '<span>' + marca(p) + p.seriesName + '</span><b>' + f(v) + '</b></div>';
        });
        return s;
      }"
+  )
+}
+
+#' Montando a grade de gráficos da evolução temporal
+#'
+#' @param ns Função de namespace do módulo.
+#' @return Elemento HTML com o cartão do IBISMA e os seis cartões dos blocos.
+#' @noRd
+grade_evolucao_ui <- function(ns) {
+  # Montando um cartão com o título e o gráfico de uma medida
+  cartao <- function(medida, altura, classe = NULL) {
+    htmltools::tags$div(
+      class = paste(c("evolucao-card", classe), collapse = " "),
+      htmltools::tags$h4(class = "evolucao-card__titulo", nome_medida(medida)),
+      echarts4r::echarts4rOutput(
+        ns(paste0("grafico_", medida)),
+        height = paste0(altura, "px")
+      )
+    )
+  }
+
+  htmltools::tags$div(
+    class = "evolucao-grade",
+    # Destacando o IBISMA em um cartão de largura total
+    cartao("indice_final", ALTURA_GRAFICO_IBISMA, "evolucao-card--ibisma"),
+    # Organizando os seis blocos em pequenos múltiplos
+    htmltools::tags$h4(class = "evolucao-grade__titulo", "Blocos do IBISMA"),
+    lapply(seq_len(nrow(BLOCOS)), function(i) {
+      cartao(BLOCOS$medida[i], ALTURA_GRAFICO_BLOCO)
+    })
   )
 }

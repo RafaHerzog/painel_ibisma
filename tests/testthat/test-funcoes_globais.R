@@ -97,73 +97,117 @@ test_that("series_municipio monta as sete medidas em colunas", {
   expect_false(series_tem_valor(vazio))
 })
 
-test_that("grafico_evolucao desenha as sete séries com as cores das medidas", {
+test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   series <- series_municipio(preparado_teste, 110002)
-  grafico <- grafico_evolucao(series, nome = "Dois (RO)", grupo = "teste")
 
-  # Conferindo a quantidade, os nomes e as cores de cada linha
-  expect_length(grafico$x$opts$series, 7)
-  nomes <- vapply(grafico$x$opts$series, function(s) s$name, character(1))
-  expect_equal(nomes, MEDIDAS$nome)
-  cores <- vapply(grafico$x$opts$series, function(s) s$itemStyle$color, character(1))
-  expect_equal(cores, MEDIDAS$cor)
+  # Sem comparação existe apenas a série principal, com a cor da medida
+  grafico <- grafico_evolucao(series, "indice_final", nome = "Dois (RO)")
+  expect_length(grafico$x$opts$series, 1)
+  serie <- grafico$x$opts$series[[1]]
+  expect_equal(serie$name, "Dois (RO)")
+  expect_equal(serie$itemStyle$color, cor_medida("indice_final"))
+  expect_equal(serie$lineStyle$type, "solid")
+  expect_true(serie$showSymbol)
 
-  # Cada série deve mostrar o ponto de cada ano como um círculo
-  simbolos <- vapply(grafico$x$opts$series, function(s) s$symbol, character(1))
-  expect_true(all(simbolos == "circle"))
-  tamanhos <- vapply(grafico$x$opts$series, function(s) s$symbolSize, numeric(1))
-  expect_equal(tamanhos[1], 8)
-  expect_true(all(tamanhos[-1] == 5))
-
-  # Somente o IBISMA exibe a bolinha fixa; nos blocos ela aparece no hover
-  mostrar <- vapply(grafico$x$opts$series, function(s) s$showSymbol, logical(1))
-  expect_true(mostrar[1])
-  expect_true(all(!mostrar[-1]))
-
-  # A legenda nativa aparece e o grupo sincroniza os dois gráficos
-  expect_true(grafico$x$opts$legend$show)
-  expect_equal(grafico$x$chartGroup, "teste")
-  expect_equal(grafico$x$groupConnect, "teste")
+  # O nome da localidade é o rótulo do fim da linha, sem legenda no gráfico
+  expect_true(serie$endLabel$show)
+  expect_equal(serie$endLabel$formatter, "{a}")
+  expect_equal(serie$endLabel$align, "right")
+  expect_false(isTRUE(grafico$x$opts$legend$show))
 
   # O eixo X precisa formatar os anos como inteiros, sem separador de milhar
   formatter <- grafico$x$opts$xAxis[[1]]$axisLabel$formatter
   expect_s3_class(formatter, "JS_EVAL")
   expect_true(grepl("Math.round", as.character(formatter)))
 
-  # O IBISMA deve ser a série mais espessa, mais opaca e desenhada por cima
-  larguras <- vapply(grafico$x$opts$series, function(s) s$lineStyle$width, numeric(1))
-  expect_equal(larguras[1], 3.5)
-  expect_true(all(larguras[-1] == 1.8))
-  opacidades <- vapply(grafico$x$opts$series, function(s) s$lineStyle$opacity, numeric(1))
-  expect_equal(opacidades[1], 1)
-  expect_true(all(opacidades[-1] == 0.7))
-  zs <- vapply(grafico$x$opts$series, function(s) s$z, numeric(1))
-  expect_equal(zs[1], 10)
-  expect_true(all(zs[-1] == 2))
-
-  # O eixo Y começa no piso dos dados e pode ser fixado pelo módulo
-  expect_equal(grafico$x$opts$yAxis[[1]]$min, 20)
+  # O eixo Y começa no piso da medida e pode ser fixado pelo módulo
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 80)
   expect_equal(grafico$x$opts$yAxis[[1]]$max, 100)
-  compartilhado <- grafico_evolucao(series, minimo_y = 90)
+  compartilhado <- grafico_evolucao(series, "indice_final", minimo_y = 90)
   expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 90)
 
   # O desenho em SVG evita o borrão do canvas sob zoom ou escala fracionária
   expect_equal(grafico$x$renderer, "svg")
 
-  # O tooltip leva o nome do município com aspas escapadas para o JavaScript
-  formatter <- as.character(grafico$x$opts$tooltip$formatter)
-  expect_true(grepl("Dois (RO)", formatter, fixed = TRUE))
-  expect_true(grepl("Math.round", formatter))
+  # O tooltip mostra apenas o ano e cada localidade com a marca da série
+  tooltip <- as.character(grafico$x$opts$tooltip$formatter)
+  expect_true(grepl("Math.round", tooltip))
+  expect_true(grepl("repeating-linear-gradient", tooltip, fixed = TRUE))
+  expect_true(grepl("seriesIndex", tooltip, fixed = TRUE))
+  expect_true(grepl("space-between", tooltip, fixed = TRUE))
+  # A marca da comparação usa a mesma cor clareada em direção ao branco
+  expect_true(grepl("clarear", tooltip, fixed = TRUE))
+  expect_true(grepl("0.55", tooltip, fixed = TRUE))
+  expect_false(grepl("rgba(", tooltip, fixed = TRUE))
+  expect_false(grepl("IBISMA", tooltip, fixed = TRUE))
+})
 
-  com_apostrofo <- grafico_evolucao(series, nome = "Olho d'\u00c1gua do Borges (RN)")
-  escapado <- as.character(com_apostrofo$x$opts$tooltip$formatter)
-  expect_true(grepl("Olho d\\'\u00c1gua do Borges (RN)", escapado, fixed = TRUE))
+test_that("grafico_evolucao destaca a comparação com traço pontilhado", {
+  principal <- series_municipio(preparado_teste, 110002)
+  comparacao <- series_municipio(preparado_teste, 350002)
+  grafico <- grafico_evolucao(
+    principal, "bloco1",
+    nome = "Dois (RO)",
+    comparacao = comparacao,
+    nome_comparacao = "Quatro (SP)"
+  )
+
+  # As duas localidades usam a mesma cor, diferenciadas pelo traço
+  expect_length(grafico$x$opts$series, 2)
+  linha_principal <- grafico$x$opts$series[[1]]
+  linha_comparada <- grafico$x$opts$series[[2]]
+  expect_equal(linha_comparada$name, "Quatro (SP)")
+  expect_equal(linha_principal$lineStyle$color, cor_medida("bloco1"))
+  expect_equal(linha_comparada$lineStyle$color, cor_medida("bloco1"))
+  expect_equal(linha_comparada$lineStyle$type, "dotted")
+  expect_true(linha_comparada$lineStyle$opacity < 1)
+  expect_true(linha_comparada$z < linha_principal$z)
+
+  # Os dois nomes vão para o fim das linhas, respeitando o lado calculado
+  expect_equal(linha_principal$endLabel$formatter, "{a}")
+  expect_equal(linha_comparada$endLabel$formatter, "{a}")
+
+  # Nenhuma série apaga a outra no hover (sem foco de série no destaque)
+  expect_null(linha_principal$emphasis)
+  expect_null(linha_comparada$emphasis)
+})
+
+test_that("lados_rotulos separa rótulos próximos e respeita as bordas do eixo", {
+  # Fins bem separados mantêm cada rótulo no lado natural do próprio ponto
+  lados <- lados_rotulos(data.frame(principal = c(1, 95), comparacao = c(1, 60)), 50)
+  expect_equal(lados$principal$lado, "abaixo")
+  expect_equal(lados$comparacao$lado, "acima")
+
+  # Fins próximos e longe do topo ficam em lados opostos
+  lados <- lados_rotulos(data.frame(principal = c(60, 70), comparacao = c(60, 68)), 50)
+  expect_equal(lados$principal$lado, "acima")
+  expect_equal(lados$comparacao$lado, "abaixo")
+
+  # Fins próximos e perto do topo descem juntos, com afastamentos diferentes
+  lados <- lados_rotulos(data.frame(principal = c(60, 99), comparacao = c(60, 98.5)), 90)
+  expect_equal(lados$principal$lado, "abaixo")
+  expect_equal(lados$comparacao$lado, "abaixo")
+  expect_true(lados$principal$afastamento != lados$comparacao$afastamento)
+
+  # Fins próximos e no piso do eixo sobem juntos, com afastamentos diferentes
+  lados <- lados_rotulos(data.frame(principal = c(95, 91), comparacao = c(1, 90.5)), 90)
+  expect_equal(lados$principal$lado, "acima")
+  expect_equal(lados$comparacao$lado, "acima")
+  expect_true(lados$principal$afastamento != lados$comparacao$afastamento)
+
+  # Sem comparação o rótulo sobe, a menos que a série termine no topo
+  expect_equal(lados_rotulos(data.frame(principal = c(60, 70)), 50)$principal$lado, "acima")
+  expect_equal(lados_rotulos(data.frame(principal = c(60, 95)), 50)$principal$lado, "abaixo")
 })
 
 test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
   series <- series_municipio(preparado_teste, 110002)
   # O menor valor do município fica em 25, então o eixo começa em 20
   expect_equal(piso_eixo_y(series), 20)
+
+  # O piso pode ser calculado apenas com um grupo de medidas
+  expect_equal(piso_eixo_y(series, "indice_final"), 80)
+  expect_equal(piso_eixo_y(series, BLOCOS$medida), 20)
 
   # Valores altos aproximam o piso de 100, sem criar um eixo degenerado
   alto <- series
@@ -181,7 +225,7 @@ test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
   expect_equal(piso_eixo_y(vazio), 0)
 })
 
-test_that("a comparação usa o mesmo piso de eixo Y nos dois gráficos", {
+test_that("a evolução usa pisos de eixo por grupo de medidas", {
   municipio <- shiny::reactiveVal(110002)
   shiny::testServer(
     mod_como_server,
@@ -189,43 +233,31 @@ test_that("a comparação usa o mesmo piso de eixo Y nos dois gráficos", {
     {
       session$setInputs(municipio = "110002", ano = "2020", comparar = "350002")
 
-      # Lendo o piso diretamente do JSON do widget renderizado
-      piso_do_grafico <- function(saida) {
-        jsonlite::fromJSON(saida, simplifyVector = FALSE)$x$opts$yAxis[[1]]$min
+      # Lendo as opções diretamente do JSON do widget renderizado
+      opcoes_do_grafico <- function(saida) {
+        jsonlite::fromJSON(saida, simplifyVector = FALSE)$x$opts
       }
 
-      # O comparado tem os menores valores, então o eixo dos dois começa em 10
-      expect_equal(piso_do_grafico(output$grafico_principal), 10)
-      expect_equal(piso_do_grafico(output$grafico_comparado), 10)
+      # O IBISMA tem escala própria, partindo do menor índice entre os dois
+      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 10)
+      # Os seis blocos compartilham o piso da menor série de bloco
+      expect_equal(opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$min, 20)
 
-      # Sem comparação o eixo volta a acompanhar apenas o município principal
+      # Cada gráfico desenha a localidade principal e a comparação
+      series_bloco <- opcoes_do_grafico(output$grafico_bloco1)$series
+      expect_length(series_bloco, 2)
+      expect_equal(series_bloco[[2]]$lineStyle$type, "dotted")
+
+      # Sem comparação o eixo do IBISMA segue apenas o município principal
       session$setInputs(comparar = "nenhum")
-      expect_equal(piso_do_grafico(output$grafico_principal), 20)
+      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 80)
+      expect_length(opcoes_do_grafico(output$grafico_bloco1)$series, 1)
 
-      # Com o principal sem dado, o eixo do comparado segue apenas o comparado
+      # Com o principal sem dado, os gráficos ficam suspensos na grade
       session$setInputs(comparar = "350002", municipio = "999999")
-      expect_error(output$grafico_principal, class = "shiny.silent.error")
-      expect_equal(piso_do_grafico(output$grafico_comparado), 10)
+      expect_error(output$grafico_indice_final, class = "shiny.silent.error")
     }
   )
-})
-
-test_that("grafico_legenda monta a legenda nativa compartilhada das sete séries", {
-  grafico <- grafico_legenda(grupo = "teste")
-
-  # A legenda deve listar as sete medidas, sem eixos visíveis
-  expect_true(grafico$x$opts$legend$show)
-  expect_equal(unlist(grafico$x$opts$legend$data), MEDIDAS$nome)
-  expect_equal(grafico$x$opts$legend$itemGap, 16)
-  expect_false(grafico$x$opts$xAxis[[1]]$show)
-  expect_false(grafico$x$opts$yAxis[[1]]$show)
-
-  # O grupo precisa ser o mesmo dos gráficos para os cliques valerem nos dois
-  expect_equal(grafico$x$chartGroup, "teste")
-  expect_equal(grafico$x$groupConnect, "teste")
-
-  # A legenda também usa SVG para acompanhar a nitidez dos gráficos
-  expect_equal(grafico$x$renderer, "svg")
 })
 
 test_that("formatadores usam a convenção brasileira", {
@@ -528,10 +560,23 @@ test_that("esqueletos preservam a estrutura de cada output", {
   # O esqueleto não deve repetir nenhum valor do conteúdo real
   expect_false(grepl("IBISMA em", palco))
 
-  # A evolução reserva a área do gráfico com eixos e traços abstratos
-  evolucao <- as.character(esqueleto_evolucao())
-  expect_true(grepl("esqueleto__grafico", evolucao))
+  # A evolução reserva os sete cartões com eixos e traços abstratos
+  evolucao <- as.character(esqueleto_grade_evolucao())
+  expect_true(grepl("evolucao-grade", evolucao))
   expect_true(grepl("esqueleto__traco", evolucao))
+  expect_equal(
+    lengths(regmatches(evolucao, gregexpr('class="esqueleto__grafico"', evolucao))),
+    7
+  )
+  # Cada gráfico reserva a coluna dos números do eixo Y, como o gráfico real
+  expect_equal(
+    lengths(regmatches(evolucao, gregexpr("esqueleto__grafico-margem", evolucao))),
+    7
+  )
+  expect_equal(
+    lengths(regmatches(evolucao, gregexpr("esqueleto__barra--rotulo", evolucao))),
+    28
+  )
 
   # O slot empilha o output e o esqueleto para o CSS exibir durante a carga
   slot <- as.character(esqueleto_slot(

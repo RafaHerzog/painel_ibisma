@@ -7,19 +7,9 @@
 
 /* Abrindo e fechando as duas colunas quando a comparação é ligada ou desligada */
 Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
-  /* Aplicando a classe que o CSS usa para animar palcos e gráficos */
-  [mensagem.palcos, mensagem.evolucoes].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.classList.toggle("dupla--comparando", !!mensagem.ativa);
-  });
-
-  /* Redimensionando os gráficos depois que a transição de layout terminar */
-  [80, 500].forEach(function (atraso) {
-    setTimeout(function () {
-      window.dispatchEvent(new Event("resize"));
-    }, atraso);
-  });
+  /* Aplicando a classe que o CSS usa para animar os palcos lado a lado */
+  var el = document.getElementById(mensagem.palcos);
+  if (el) el.classList.toggle("dupla--comparando", !!mensagem.ativa);
 });
 
 /* Atualizando cores e tooltips dos municípios já desenhados no mapa */

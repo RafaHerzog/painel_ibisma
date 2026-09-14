@@ -1237,25 +1237,51 @@ input:focus-visible,
     opacity 0.4s ease 0.05s, visibility 0s;
 }
 
-/* Nomeando cada gráfico da evolução com o município correspondente */
-.evolucao-titulo {
+/* ------------------------------------------- grade da evolução */
+
+/* Organizando o IBISMA e os seis blocos em pequenos múltiplos */
+.evolucao-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+/* Destacando cada gráfico da evolução em um cartão próprio */
+.evolucao-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem 0.75rem 1rem;
+  background-color: #FFFFFF;
+  border: 1px solid var(--cor-linha);
+  border-radius: 14px;
+}
+
+/* Dando ao gráfico do índice toda a largura da grade */
+.evolucao-card--ibisma {
+  grid-column: 1 / -1;
+}
+
+/* Estilizando o título de cada cartão da evolução */
+.evolucao-card__titulo {
+  font-size: var(--fonte-grande-size);
+  font-weight: 700;
+  color: #0A1E3C;
+  margin: 0;
+}
+
+/* Dando mais destaque ao título do cartão do índice */
+.evolucao-card--ibisma .evolucao-card__titulo {
+  font-size: var(--fonte-muito-grande-size);
+}
+
+/* Abrindo a seção dos blocos dentro da grade */
+.evolucao-grade__titulo {
+  grid-column: 1 / -1;
   font-size: var(--fonte-muito-grande-size);
   font-weight: 700;
   color: #0A1E3C;
-  margin: 0 0 0.5rem 0;
-}
-
-/* Centralizando a legenda nativa abaixo dos gráficos da evolução */
-.evolucao-legenda {
-  margin-top: 0.25rem;
-  text-align: center;
-}
-
-/* Dando mais altura à legenda quando ela quebra em telas pequenas */
-@media (max-width: 768px) {
-  .evolucao-legenda .html-widget {
-    height: 96px !important;
-  }
+  margin: 0.5rem 0 0 0;
 }
 
 /* Marcando a hierarquia do palco principal e do comparado */
@@ -1742,19 +1768,35 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 /* ----------------------------------------- esqueleto da evolução */
 
-/* Reservando a mesma altura usada pelos gráficos de evolução */
+/* Reservando a mesma área desenhada pelos gráficos de evolução */
+/* A altura de cada cartão é aplicada em linha pelo próprio esqueleto */
+/* A primeira coluna guarda o lugar dos números do eixo Y, que ficam */
+/* alinhados à esquerda do cartão junto do título */
 .esqueleto__grafico {
-  height: 330px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+/* Reservando a coluna dos números do eixo Y, alinhados ao título do cartão */
+.esqueleto__grafico-margem {
+  position: relative;
+}
+
+/* Posicionando barras iguais na altura de cada linha da grade */
+.esqueleto__grafico-margem .esqueleto__barra--rotulo {
+  position: absolute;
+  right: 8px;
+  width: 16px;
+  height: 4px;
+  border-radius: 2px;
+  transform: translateY(-50%);
 }
 
 .esqueleto__grafico-svg {
   width: 100%;
   height: 100%;
-}
-
-.esqueleto--grafico {
-  height: 100%;
-  border-radius: 10px;
 }
 
 .esqueleto__grade,
@@ -1786,24 +1828,9 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   stroke-dasharray: 5, 5;
 }
 
-/* --------------------------------- esqueleto da legenda da evolução */
-
-/* Distribuindo as sete séries na mesma faixa da legenda nativa */
-.esqueleto--legenda-evolucao {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem 1.1rem;
-  height: 100%;
-  padding: 0 1rem;
-  border-radius: 0;
-}
-
-.esqueleto__legenda-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+/* Reservando o espaço dos cartões sem carregar nenhum dado */
+.esqueleto--card-evolucao {
+  pointer-events: none;
 }
 
 /* --------------------------------------------- brilho sobre os desenhos */
@@ -1940,6 +1967,11 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   .dupla:not(.dupla--comparando) .dupla__item--comparado {
     display: none;
   }
+
+  /* Passando os blocos da evolução para duas colunas, sem gráficos estreitos */
+  .evolucao-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Empilhando os blocos do rodapé quando não couberem lado a lado */
@@ -2020,6 +2052,11 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   .perfil-placar__ranking--brasil,
   .perfil-placar__ranking--uf {
     text-align: left;
+  }
+
+  /* Empilhando os cartões da evolução em tela estreita */
+  .evolucao-grade {
+    grid-template-columns: 1fr;
   }
 }
 

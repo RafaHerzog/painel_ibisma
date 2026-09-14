@@ -67,7 +67,7 @@ mod_como_ui <- function(id) {
           )
         )
       ),
-      # Evolução temporal do IBISMA e dos seis blocos
+      # Evolução temporal com o IBISMA em destaque e os blocos em pequenos múltiplos
       htmltools::tags$div(
         class = "painel-bloco painel-bloco--evolucao",
         htmltools::tags$div(
@@ -76,39 +76,15 @@ mod_como_ui <- function(id) {
           htmltools::tags$p(
             class = "bloco-descricao",
             paste(
-              "Cada linha acompanha o IBISMA ou um dos seis blocos ao longo dos anos.",
-              "Clique na legenda para ocultar ou mostrar uma s\u00e9rie."
+              "Acompanhe a evolução do IBISMA e de seus seis blocos entre 2015 e 2024."
             )
           )
         ),
-        htmltools::tags$div(
-          class = "dupla dupla--evolucao",
-          id = ns("evolucoes"),
-          htmltools::tags$div(
-            class = "dupla__item dupla__item--principal",
-            esqueleto_slot(
-              shiny::uiOutput(ns("evolucao_principal")),
-              esqueleto_evolucao(),
-              classe = "esqueleto-slot--evolucao"
-            )
-          ),
-          htmltools::tags$div(
-            class = "dupla__item dupla__item--comparado",
-            esqueleto_slot(
-              shiny::uiOutput(ns("evolucao_comparada")),
-              esqueleto_evolucao(),
-              classe = "esqueleto-slot--evolucao"
-            )
-          )
-        ),
-        # Legenda nativa compartilhada, centralizada abaixo dos gráficos
-        htmltools::tags$div(
-          class = "evolucao-legenda",
-          esqueleto_slot(
-            echarts4r::echarts4rOutput(ns("legenda_evolucao"), height = "64px"),
-            esqueleto_legenda_evolucao(),
-            classe = "esqueleto-slot--legenda-evolucao"
-          )
+        # Grade com sete cartões, preenchida apenas quando houver série para desenhar
+        esqueleto_slot(
+          shiny::uiOutput(ns("evolucoes")),
+          esqueleto_grade_evolucao(),
+          classe = "esqueleto-slot--evolucao"
         )
       )
     )
@@ -209,11 +185,10 @@ mod_como_server <- function(id, dados, municipio) {
       )
     })
 
-    # Avisando o navegador para animar a transição; tem_comparacao nunca é NULL
+    # Avisando o navegador para animar a transição dos palcos
     shiny::observeEvent(tem_comparacao(), {
       session$sendCustomMessage("ibisma_comparacao", list(
         palcos = ns("palcos"),
-        evolucoes = ns("evolucoes"),
         ativa = tem_comparacao()
       ))
     }, ignoreInit = TRUE)
@@ -227,102 +202,68 @@ mod_como_server <- function(id, dados, municipio) {
       series_municipio(dados, cod_comparacao())
     })
 
-    # Calculando o piso do eixo Y comum aos dois gráficos para as linhas casarem
-    piso_y <- shiny::reactive({
+    # Verificando se o comparado tem alguma série para desenhar
+    comparacao_tem_serie <- shiny::reactive({
+      tem_comparacao() && series_tem_valor(series_comparacao())
+    })
+
+    # Calculando o piso do eixo Y de um grupo de medidas nos dois municípios
+    piso_do_grupo <- function(medidas) {
       # Reunindo o piso apenas dos gráficos que têm dado para desenhar
       pisos <- numeric(0)
       if (series_tem_valor(series_principal())) {
-        pisos <- c(pisos, piso_eixo_y(series_principal()))
+        pisos <- c(pisos, piso_eixo_y(series_principal(), medidas))
       }
-      if (tem_comparacao() && series_tem_valor(series_comparacao())) {
-        pisos <- c(pisos, piso_eixo_y(series_comparacao()))
+      if (comparacao_tem_serie()) {
+        pisos <- c(pisos, piso_eixo_y(series_comparacao(), medidas))
       }
       if (length(pisos) == 0) {
         return(0)
       }
       min(pisos)
-    })
+    }
 
-    # Montando a legenda compartilhada, conectada aos dois gráficos
-    output$legenda_evolucao <- echarts4r::renderEcharts4r({
-      grafico_legenda(grupo = ns("evolucao"))
-    })
+    # Dando ao IBISMA uma escala própria, mais estreita que a dos blocos
+    piso_ibisma <- shiny::reactive(piso_do_grupo("indice_final"))
+    # Compartilhando a escala dos seis blocos para os cartões serem comparáveis
+    piso_blocos <- shiny::reactive(piso_do_grupo(BLOCOS$medida))
 
-    # Inserindo o gráfico do principal apenas quando existir algum valor
-    output$evolucao_principal <- shiny::renderUI({
-      series <- series_principal()
-      if (!series_tem_valor(series)) {
+    # Montando o gráfico de evolução de uma medida
+    grafico_da_medida <- function(medida) {
+      # Desenhando a linha comparada apenas quando ela tem algum valor
+      comparacao <- if (comparacao_tem_serie()) series_comparacao() else NULL
+      grafico_evolucao(
+        series_principal(),
+        medida = medida,
+        nome = nome_municipio(dados, municipio()),
+        comparacao = comparacao,
+        nome_comparacao = if (is.null(comparacao)) NULL else {
+          nome_municipio(dados, cod_comparacao())
+        },
+        minimo_y = if (identical(medida, "indice_final")) piso_ibisma() else piso_blocos()
+      )
+    }
+
+    # Renderizando um gráfico para cada medida em um laço para evitar repetição
+    for (i in seq_len(nrow(MEDIDAS))) {
+      local({
+        medida <- MEDIDAS$medida[i]
+        output[[paste0("grafico_", medida)]] <- echarts4r::renderEcharts4r({
+          shiny::req(series_tem_valor(series_principal()))
+          grafico_da_medida(medida)
+        })
+      })
+    }
+
+    # Inserindo a grade de cartões apenas quando existir algum valor
+    output$evolucoes <- shiny::renderUI({
+      if (!series_tem_valor(series_principal())) {
         return(estado_vazio(
           "Sem dados de s\u00e9rie temporal para este munic\u00edpio.",
           icone = "circle-info"
         ))
       }
-      htmltools::tagList(
-        htmltools::tags$h4(
-          class = "evolucao-titulo",
-          nome_municipio(dados, municipio())
-        ),
-        esqueleto_slot(
-          echarts4r::echarts4rOutput(ns("grafico_principal"), height = "330px"),
-          esqueleto_grafico(),
-          classe = "esqueleto-slot--grafico"
-        )
-      )
-    })
-
-    # Desenhando as sete linhas do município principal sem legenda interna
-    output$grafico_principal <- echarts4r::renderEcharts4r({
-      series <- series_principal()
-      shiny::req(series_tem_valor(series))
-      grafico_evolucao(
-        series,
-        nome = nome_municipio(dados, municipio()),
-        legenda = FALSE,
-        grupo = ns("evolucao"),
-        # Lendo a seleção da legenda sem criar dependência reativa
-        selecao = shiny::isolate(input$legenda_evolucao_legend_selected),
-        minimo_y = piso_y()
-      )
-    })
-
-    # Inserindo o gráfico do comparado apenas quando houver par e algum valor
-    output$evolucao_comparada <- shiny::renderUI({
-      cod <- cod_comparacao()
-      shiny::req(cod)
-      series <- series_comparacao()
-      if (!series_tem_valor(series)) {
-        return(estado_vazio(
-          "Sem dados de s\u00e9rie temporal para o munic\u00edpio comparado.",
-          icone = "circle-info"
-        ))
-      }
-      htmltools::tagList(
-        htmltools::tags$h4(
-          class = "evolucao-titulo",
-          nome_municipio(dados, cod)
-        ),
-        esqueleto_slot(
-          echarts4r::echarts4rOutput(ns("grafico_comparado"), height = "330px"),
-          esqueleto_grafico(),
-          classe = "esqueleto-slot--grafico"
-        )
-      )
-    })
-
-    # Desenhando as sete linhas do município comparado sem repetir a legenda
-    output$grafico_comparado <- echarts4r::renderEcharts4r({
-      cod <- cod_comparacao()
-      shiny::req(cod)
-      series <- series_comparacao()
-      shiny::req(series_tem_valor(series))
-      grafico_evolucao(
-        series,
-        nome = nome_municipio(dados, cod),
-        legenda = FALSE,
-        grupo = ns("evolucao"),
-        selecao = shiny::isolate(input$legenda_evolucao_legend_selected),
-        minimo_y = piso_y()
-      )
+      grade_evolucao_ui(ns)
     })
   })
 }

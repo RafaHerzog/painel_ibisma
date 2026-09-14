@@ -364,80 +364,110 @@ esqueleto_palco <- function() {
   )
 }
 
+# Definindo as margens verticais do desenho dos esqueletos da evolução
+ESQUELETO_GRAFICO_TOPO <- 16
+ESQUELETO_GRAFICO_RODAPE <- 28
+# Definindo as frações da altura útil usadas na grade e nos números do eixo
+ESQUELETO_GRAFICO_GRADE <- c(0.15, 0.38, 0.62, 0.85)
+
+#' Montando a coluna dos números do eixo Y do esqueleto
+#'
+#' @param altura Altura em pixels da área do gráfico.
+#' @return Elemento HTML com as barras que reservam os números do eixo.
+#' @noRd
+esqueleto_grafico_margem <- function(altura) {
+  # Calculando a altura útil do gráfico, como no desenho real
+  faixa <- altura - ESQUELETO_GRAFICO_TOPO - ESQUELETO_GRAFICO_RODAPE
+  # Repetindo a mesma barra em todas as linhas para um ritmo uniforme
+  barras <- lapply(ESQUELETO_GRAFICO_GRADE, function(fracao) {
+    htmltools::tags$span(
+      class = "esqueleto__barra esqueleto__barra--rotulo",
+      style = paste0(
+        "top:", round(ESQUELETO_GRAFICO_TOPO + fracao * faixa, 1), "px;"
+      )
+    )
+  })
+  htmltools::tags$div(class = "esqueleto__grafico-margem", barras)
+}
+
 #' Montando o desenho abstrato de um gráfico de linhas
 #'
-#' @return Elemento SVG com eixos, grade e traços de tendência.
+#' @param altura Altura em pixels da área do gráfico.
+#' @return Elemento SVG com grade e traços de tendência.
 #' @noRd
-esqueleto_grafico_svg <- function() {
-  # Desenhando a grade horizontal do gráfico em alturas variadas
-  grade <- lapply(c(15, 28, 41, 54), function(y) {
-    htmltools::tags$line(class = "esqueleto__grade", x1 = 5, y1 = y, x2 = 100, y2 = y)
+esqueleto_grafico_svg <- function(altura) {
+  # Reproduzindo as margens verticais usadas pelos gráficos reais
+  topo <- ESQUELETO_GRAFICO_TOPO
+  base <- altura - ESQUELETO_GRAFICO_RODAPE
+  faixa <- base - topo
+
+  # Desenhando a grade horizontal nas mesmas alturas dos números do eixo
+  grade <- lapply(ESQUELETO_GRAFICO_GRADE, function(fracao) {
+    y <- round(topo + fracao * faixa, 1)
+    htmltools::tags$line(class = "esqueleto__grade", x1 = 0, y1 = y, x2 = 100, y2 = y)
   })
+
+  # Montando um traço de tendência a partir de frações da altura útil
+  traco <- function(valores, classe = "esqueleto__traco") {
+    xs <- round(seq(2, 99, length.out = length(valores)), 1)
+    ys <- round(topo + valores * faixa, 1)
+    htmltools::tags$polyline(
+      class = classe,
+      points = paste0(xs, ",", ys, collapse = " ")
+    )
+  }
+
   htmltools::tags$svg(
     class = "esqueleto__grafico-svg",
-    viewBox = "0 0 100 60",
+    viewBox = paste0("0 0 100 ", altura),
     preserveAspectRatio = "none",
-    # Marcando os eixos para lembrar o desenho de um gráfico de linhas
-    htmltools::tags$line(class = "esqueleto__eixo", x1 = 5, y1 = 6, x2 = 5, y2 = 56),
-    htmltools::tags$line(class = "esqueleto__eixo", x1 = 5, y1 = 56, x2 = 100, y2 = 56),
+    # Marcando só o eixo horizontal, como no gráfico real (sem linha vertical)
+    htmltools::tags$line(class = "esqueleto__eixo", x1 = 0, y1 = base, x2 = 100, y2 = base),
     grade,
-    htmltools::tags$polyline(
-      class = "esqueleto__traco",
-      points = "6,44 20,38 34,42 50,28 64,32 80,20 94,24"
-    ),
-    htmltools::tags$polyline(
-      class = "esqueleto__traco esqueleto__traco--tracejado",
-      points = "6,50 20,47 34,52 50,44 64,49 80,40 94,45"
+    traco(c(0.60, 0.48, 0.53, 0.34, 0.41, 0.16, 0.24)),
+    traco(
+      c(0.78, 0.71, 0.80, 0.62, 0.71, 0.52, 0.60),
+      "esqueleto__traco esqueleto__traco--tracejado"
     )
   )
 }
 
-#' Montando o esqueleto da evolução temporal
+#' Montando o esqueleto da grade de evolução temporal
 #'
-#' @return Elemento HTML com título e área equivalente ao gráfico real.
+#' @return Elemento HTML com o cartão do IBISMA e os seis cartões dos blocos.
 #' @noRd
-esqueleto_evolucao <- function() {
+esqueleto_grade_evolucao <- function() {
+  # Reproduzindo um cartão da evolução com a área reservada para o gráfico
+  cartao <- function(classe, altura) {
+    htmltools::tags$div(
+      class = paste(
+        c("evolucao-card esqueleto--card-evolucao", classe),
+        collapse = " "
+      ),
+      htmltools::tags$h4(
+        class = "evolucao-card__titulo",
+        esqueleto_barra("7rem", "0.55em")
+      ),
+      htmltools::tags$div(
+        class = "esqueleto__grafico",
+        style = paste0("height:", altura, "px;"),
+        # Reservando a coluna dos números do eixo Y, como no gráfico real
+        esqueleto_grafico_margem(altura),
+        esqueleto_grafico_svg(altura)
+      )
+    )
+  }
+
   htmltools::tags$div(
-    class = "esqueleto esqueleto--evolucao",
+    class = "evolucao-grade esqueleto esqueleto--grade-evolucao",
     `aria-hidden` = "true",
+    cartao("evolucao-card--ibisma", ALTURA_GRAFICO_IBISMA),
     htmltools::tags$h4(
-      class = "evolucao-titulo",
-      esqueleto_barra("12rem", "0.55em")
+      class = "evolucao-grade__titulo",
+      esqueleto_barra("9rem", "0.55em")
     ),
-    # Reservando a mesma altura do gráfico de evolução
-    htmltools::tags$div(class = "esqueleto__grafico", esqueleto_grafico_svg())
-  )
-}
-
-#' Montando o esqueleto interno de um gráfico de evolução
-#'
-#' @return Elemento HTML que preenche a altura do widget do echarts.
-#' @noRd
-esqueleto_grafico <- function() {
-  htmltools::tags$div(
-    class = "esqueleto esqueleto--grafico",
-    `aria-hidden` = "true",
-    htmltools::tags$div(class = "esqueleto__grafico", esqueleto_grafico_svg())
-  )
-}
-
-#' Montando o esqueleto da legenda compartilhada da evolução
-#'
-#' @return Elemento HTML com marcas e rótulos neutros das sete séries.
-#' @noRd
-esqueleto_legenda_evolucao <- function() {
-  # Variando as larguras para se aproximar dos nomes reais das séries
-  larguras <- c("2.6rem", "4.4rem", "3.4rem", "3rem", "2.4rem", "3.8rem", "3.2rem")
-  itens <- lapply(larguras, function(largura) {
-    htmltools::tags$span(
-      class = "esqueleto__legenda-item",
-      htmltools::tags$span(class = "esqueleto__barra esqueleto__barra--ponto"),
-      esqueleto_barra(largura, "0.55em")
-    )
-  })
-  htmltools::tags$div(
-    class = "esqueleto esqueleto--legenda-evolucao",
-    `aria-hidden` = "true",
-    itens
+    lapply(seq_len(nrow(BLOCOS)), function(i) {
+      cartao("esqueleto--bloco", ALTURA_GRAFICO_BLOCO)
+    })
   )
 }
