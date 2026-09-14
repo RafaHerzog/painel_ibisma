@@ -48,6 +48,30 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
   });
 });
 
+/* =============================================================================
+   ESQUELETOS DE CARREGAMENTO
+   Mantém os esqueletos apenas no carregamento inicial da página; depois da
+   primeira fila de recálculos concluída, eles deixam de aparecer.
+   ============================================================================= */
+(function () {
+  /* Marcando a página como carregada quando o servidor fica ocioso */
+  function concluir() {
+    /* Esperando eventuais recálculos atrasados do próprio carregamento */
+    if (document.querySelectorAll(".recalculating").length) {
+      setTimeout(concluir, 250);
+      return;
+    }
+    document.documentElement.classList.add("pagina-carregada");
+  }
+
+  /* O primeiro idle acontece quando o carregamento inicial termina */
+  if (window.jQuery) {
+    jQuery(document).one("shiny:idle", function () {
+      setTimeout(concluir, 700);
+    });
+  }
+})();
+
 /* Inicializando as tooltips das pétalas e dos campos territoriais cortados */
 (function () {
   /* Reunindo pétalas e campos que revelam o próprio texto no hover */

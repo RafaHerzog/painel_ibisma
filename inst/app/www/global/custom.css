@@ -1164,6 +1164,419 @@ input:focus-visible,
   max-width: 32rem;
 }
 
+/* --------------------------------------------------------- esqueletos */
+
+/* Definindo as cores do brilho compartilhadas por todos os esqueletos */
+:root {
+  --cor-esqueleto-base: rgb(224 233 242 / 68%);
+  --cor-esqueleto-forte: rgb(224 233 242 / 88%);
+  --cor-esqueleto-guia: rgb(224 233 242 / 95%);
+}
+
+/* Empilhando o output e o esqueleto na mesma célula do slot */
+.esqueleto-slot {
+  display: grid;
+  grid-template-areas: "stack";
+  align-items: stretch;
+}
+
+.esqueleto-slot > * {
+  grid-area: stack;
+  min-width: 0;
+}
+
+/* Transformando os wrappers de uiOutput em blocos dentro dos slots */
+.esqueleto-slot > .shiny-html-output {
+  display: block;
+}
+
+/* Escondendo o esqueleto quando o output tem conteúdo */
+.esqueleto-slot > .esqueleto {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease-out, visibility 0s linear 0.24s;
+  z-index: 2;
+}
+
+/* Mostrando o esqueleto apenas enquanto o output nunca foi renderizado */
+.esqueleto-slot > :not(.esqueleto):empty + .esqueleto {
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* Desligando os esqueletos depois do carregamento inicial da página */
+html.pagina-carregada .esqueleto-slot > .esqueleto {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  transition: none;
+}
+
+/* Criando a base comum dos esqueletos */
+.esqueleto {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* Aplicando o brilho e a animação iguais aos do painel hospitalar */
+.esqueleto__barra,
+.esqueleto__busca,
+.esqueleto__controle {
+  background-image: linear-gradient(
+    90deg,
+    rgb(224 233 242 / 68%) 24%,
+    rgb(246 249 252 / 82%) 50%,
+    rgb(224 233 242 / 68%) 76%
+  );
+  background-size: 210% 100%;
+  animation: loading-shimmer 1.7s infinite ease;
+}
+
+/* Movendo a faixa de brilho da esquerda para a direita */
+@keyframes loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Desenhando as barras que representam textos e elementos dos esqueletos */
+.esqueleto__barra {
+  display: inline-block;
+  vertical-align: middle;
+  background-color: var(--cor-esqueleto-base);
+  border-radius: 6px;
+}
+
+/* Ajustando o formato dos marcadores menores */
+.esqueleto__barra--circulo,
+.esqueleto__barra--ponto {
+  border-radius: 50%;
+}
+
+.esqueleto__barra--ponto {
+  width: 10px;
+  height: 10px;
+}
+
+.esqueleto__barra--quadrada {
+  border-radius: 4px;
+}
+
+.esqueleto__barra--selo {
+  border-radius: 999px;
+}
+
+/* Reservando o lugar dos resumos curtos em texto */
+.esqueleto--texto {
+  width: 15rem;
+  max-width: 90%;
+  height: 0.85em;
+}
+
+/* Mantendo o resumo e a barra na mesma linha da frase */
+.esqueleto-slot--texto {
+  display: inline-grid;
+  min-height: 1.9em;
+  vertical-align: middle;
+}
+
+.esqueleto-slot--texto > .esqueleto {
+  align-self: center;
+}
+
+/* ---------------------------------------------- esqueleto do mapa */
+
+/* Ocupando toda a área do mapa já reservada pelo layout */
+.esqueleto--mapa {
+  height: 100%;
+  border-radius: 14px;
+  background-color: #EDF1F7;
+}
+
+/* Posicionando o desenho sobre toda a área do mapa */
+.esqueleto--mapa .esqueleto__desenho {
+  position: absolute;
+  inset: 0;
+}
+
+.esqueleto__mapa-desenho {
+  width: 100%;
+  height: 100%;
+}
+
+.esqueleto__forma {
+  fill: var(--cor-esqueleto-forte);
+}
+
+/* Reservando o lugar do controle de zoom do leaflet */
+.esqueleto__controle {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 30px;
+  height: 60px;
+  border-radius: 6px;
+  background-color: var(--cor-esqueleto-base);
+}
+
+/* ------------------------------------------- esqueleto do ranking */
+
+/* Reproduzindo a busca, o cabeçalho, as linhas e a paginação da tabela */
+.esqueleto--ranking .esqueleto__busca {
+  width: 170px;
+  max-width: 100%;
+  height: 34px;
+  margin-left: auto;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background-color: var(--cor-esqueleto-base);
+}
+
+/* Reproduzindo a rolagem horizontal e a largura mínima da tabela real */
+.esqueleto__tabela {
+  overflow-x: auto;
+}
+
+.esqueleto__tabela-conteudo {
+  min-width: 533px;
+}
+
+.esqueleto__cabecalho,
+.esqueleto__linha {
+  display: flex;
+  align-items: center;
+}
+
+.esqueleto__cabecalho {
+  height: 23px;
+  border-bottom: 1px solid #DDE1E8;
+}
+
+.esqueleto__corpo {
+  padding: 5px 0;
+}
+
+.esqueleto__linha {
+  height: 29px;
+  border-bottom: 1px solid #F1F3F6;
+}
+
+.esqueleto__celula {
+  flex: 0 0 auto;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+/* Alinhando as barras das colunas numéricas à direita, como na tabela real */
+.esqueleto__celula--direita {
+  text-align: right;
+}
+
+.esqueleto__celula--flexivel {
+  flex: 1 0 auto;
+  min-width: 170px;
+}
+
+/* Reproduzindo a disposição dos controles de página do reactable */
+.esqueleto__paginacao {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 6px 4px;
+  border-top: 1px solid #E3E6EB;
+  box-sizing: border-box;
+}
+
+.esqueleto__paginacao-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.esqueleto__barra--reticencias {
+  border-radius: 3px;
+}
+
+/* ------------------------------------------- esqueleto da legenda */
+
+/* Reservando o espaço da legenda com o mesmo respiro do conteúdo real */
+.mapa-legenda {
+  margin-top: 0.9rem;
+}
+
+.mapa-legenda .legenda-categorias {
+  margin-top: 0;
+}
+
+/* Mantendo os itens na mesma faixa flexível da legenda real */
+.esqueleto--legenda .legenda-item .esqueleto__barra {
+  flex: 0 0 auto;
+}
+
+/* Mantendo o palco esticado e com o rótulo apenas no modo comparação */
+.esqueleto-slot--palco {
+  height: 100%;
+}
+
+.esqueleto-slot--palco > .shiny-html-output {
+  height: 100%;
+}
+
+.esqueleto-slot--principal .esqueleto__rotulo {
+  display: none;
+}
+
+.dupla--comparando .esqueleto-slot--principal .esqueleto__rotulo {
+  display: inline-block;
+}
+
+/* -------------------------------------------- esqueleto do perfil */
+
+/* Mantendo o palco na mesma composição vertical do conteúdo real */
+.esqueleto--palco {
+  display: flex;
+  flex-direction: column;
+}
+
+.esqueleto--petalas {
+  width: 100%;
+}
+
+/* Mantendo o desenho das pétalas sem a folga da linha do SVG */
+.esqueleto--petalas .esqueleto__desenho {
+  line-height: 0;
+}
+
+/* Mantendo a altura de linha dos nomes na legenda das pétalas */
+.esqueleto--petalas .petalas-legenda__item {
+  min-height: 1.5em;
+}
+
+/* Tracejando as guias e preenchendo as pétalas sem qualquer dado */
+.esqueleto__guia {
+  stroke: var(--cor-esqueleto-guia);
+  stroke-width: 1.5;
+  stroke-dasharray: 2, 3;
+}
+
+.esqueleto__disco,
+.esqueleto__centro {
+  fill: var(--cor-esqueleto-forte);
+  stroke: #FFFFFF;
+  stroke-width: 2;
+}
+
+/* ----------------------------------------- esqueleto da evolução */
+
+/* Reservando a mesma altura usada pelos gráficos de evolução */
+.esqueleto__grafico {
+  height: 330px;
+}
+
+.esqueleto__grafico-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.esqueleto--grafico {
+  height: 100%;
+  border-radius: 10px;
+}
+
+.esqueleto__grade,
+.esqueleto__eixo,
+.esqueleto__traco {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.esqueleto__grade {
+  stroke: #EEF0F4;
+  stroke-width: 1;
+}
+
+.esqueleto__eixo {
+  stroke: #E3E6EB;
+  stroke-width: 1;
+}
+
+.esqueleto__traco {
+  stroke: var(--cor-esqueleto-forte);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.esqueleto__traco--tracejado {
+  stroke: var(--cor-esqueleto-base);
+  stroke-dasharray: 5, 5;
+}
+
+/* --------------------------------- esqueleto da legenda da evolução */
+
+/* Distribuindo as sete séries na mesma faixa da legenda nativa */
+.esqueleto--legenda-evolucao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1.1rem;
+  height: 100%;
+  padding: 0 1rem;
+  border-radius: 0;
+}
+
+.esqueleto__legenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* --------------------------------------------- brilho sobre os desenhos */
+
+/* Aplicando o mesmo brilho sobre as áreas desenhadas em SVG */
+.esqueleto__desenho,
+.esqueleto__grafico {
+  position: relative;
+}
+
+.esqueleto__desenho::after,
+.esqueleto__grafico::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    rgb(224 233 242 / 0%) 24%,
+    rgb(246 249 252 / 82%) 50%,
+    rgb(224 233 242 / 0%) 76%
+  );
+  background-size: 210% 100%;
+  background-repeat: no-repeat;
+  animation: loading-shimmer 1.7s infinite ease;
+}
+
+/* Mantendo o brilho sempre ativo, como no painel hospitalar */
+/* O painel hospitalar não desliga o shimmer com prefers-reduced-motion */
+
+/* Acompanhando o respiro maior do corpo da tabela em telas pequenas */
+@media (max-width: 768px) {
+  .esqueleto__corpo {
+    padding: 7px 0;
+  }
+}
+
 /* -------------------------------------------------------------- rodapé */
 
 /* Montando o rodapé escuro do painel */
@@ -1174,19 +1587,26 @@ input:focus-visible,
   padding: 2.5rem 0 2rem 0;
 }
 
-/* Organizando os blocos de logos do rodapé */
+/* Organizando os blocos de realizadores e financiadores */
 .rodape-grade {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem 3rem;
-  margin-bottom: 1.5rem;
+  gap: 2rem 3rem;
+  margin-bottom: 1.75rem;
 }
 
 /* Empilhando título e logos de cada bloco */
 .rodape-bloco {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 1.25rem;
+  flex: 1 1 26rem;
+}
+
+/* Separando os blocos com uma linha vertical, como na referência */
+.rodape-bloco + .rodape-bloco {
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+  padding-left: 3rem;
 }
 
 /* Estilizando os títulos do rodapé */
@@ -1195,25 +1615,31 @@ input:focus-visible,
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.72);
   margin: 0;
 }
 
-/* Distribuindo os logos em linha */
+/* Distribuindo os logos negativos em linha */
 .rodape-logos {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  gap: 1.25rem 2rem;
 }
 
-/* Colocando os logos sobre fundo branco para melhor leitura */
+/* Exibindo os logos direto sobre o fundo azul, sem caixa branca */
 .rodape-logo {
-  height: 34px;
+  display: block;
+  height: 2.25rem;
   width: auto;
-  background-color: #FFFFFF;
-  border-radius: 8px;
-  padding: 0.3rem 0.55rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* Separando a base do rodapé com uma linha no container todo */
+.rodape-base {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 1.25rem;
 }
 
 /* Estilizando a nota final do rodapé */
@@ -1222,8 +1648,6 @@ input:focus-visible,
   color: rgba(255, 255, 255, 0.7);
   max-width: 70rem;
   margin: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  padding-top: 1.25rem;
 }
 
 /* ---------------------------------------------------------- responsivo */
@@ -1251,6 +1675,15 @@ input:focus-visible,
   /* Escondendo de vez a coluna vazia quando não há comparação */
   .dupla:not(.dupla--comparando) .dupla__item--comparado {
     display: none;
+  }
+}
+
+/* Empilhando os blocos do rodapé quando não couberem lado a lado */
+@media (max-width: 992px) {
+  /* Removendo a linha vertical, que só faz sentido entre colunas */
+  .rodape-bloco + .rodape-bloco {
+    border-left: 0;
+    padding-left: 0;
   }
 }
 
@@ -1301,7 +1734,7 @@ input:focus-visible,
   }
 
   .rodape-logo {
-    height: 28px;
+    height: 1.75rem;
   }
 
   /* Empilhando o placar do IBISMA em telas pequenas */
