@@ -175,10 +175,10 @@ desenhar_municipios <- function(mapa, base) {
       # Aumentando a opacidade para o fundo do mapa não clarear as cores
       fillColor = ~cor,
       fillOpacity = 0.95,
-      # Fechando as fendas residuais com um traço da própria cor do município
-      color = ~cor,
-      weight = 0.5,
-      opacity = 0.9,
+      # Desenhando as divisas municipais com um traço branco fino e leve
+      color = "#FFFFFF",
+      weight = 0.25,
+      opacity = 0.65,
       # Desenhando a malha já simplificada, sem nova simplificação no cliente
       smoothFactor = 0,
       label = lapply(base$tooltip, htmltools::HTML),
@@ -189,7 +189,7 @@ desenhar_municipios <- function(mapa, base) {
         className = "tooltip-ibisma"
       ),
       highlightOptions = leaflet::highlightOptions(
-        weight = 1.6,
+        weight = 1.2,
         color = COR_AZUL_ESCURO,
         fillOpacity = 0.95,
         bringToFront = TRUE
@@ -209,9 +209,10 @@ desenhar_ufs <- function(mapa) {
     leaflet::addPolygons(
       data = malha_ufs,
       fill = FALSE,
+      # Suavizando o contorno estadual para não competir com as divisas finas
       color = "#FFFFFF",
-      weight = 1.1,
-      opacity = 0.95,
+      weight = 0.8,
+      opacity = 0.85,
       smoothFactor = 0,
       options = leaflet::pathOptions(interactive = FALSE)
     )

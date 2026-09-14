@@ -181,7 +181,7 @@ mod_onde_server <- function(id, dados, municipio) {
             layerId = "selecionado",
             fill = FALSE,
             color = COR_AZUL_ESCURO,
-            weight = 2.4,
+            weight = 1.8,
             opacity = 0.95,
             smoothFactor = 0,
             options = leaflet::pathOptions(interactive = FALSE)
