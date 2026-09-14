@@ -1105,4 +1105,92 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - O RDS da malha cresceu ~45% (1,04 MB → 1,50 MB), o que deixa o primeiro
   carregamento do mapa um pouco mais lento.
 
+---
+
+# Sessão 11 — Evolução temporal: hierarquia, eixo Y e nitidez (14/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** fazer o IBISMA se destacar no gráfico de evolução temporal,
+  adaptar o eixo Y à faixa dos dados (compartilhado na comparação) e corrigir
+  o borrão dos gráficos ECharts em telas com escala fracionária ou sob zoom.
+
+## 1. Hierarquia visual do IBISMA
+
+- O IBISMA passou a ser desenhado **por cima** dos blocos (`z = 10`) — antes
+  era a primeira série e os blocos ficavam sobre ele —, com linha de 3,5 px e
+  bolinha de 8. Os blocos ficaram com 1,8 px, símbolo 5 e opacidade 0,7.
+- Ao passar o mouse, a série focada volta à opacidade 1 (`emphasis` com
+  `lineStyle`/`itemStyle`), preservando o `focus = "series"` que apaga as
+  demais linhas.
+- `grafico_legenda()` alinhou as larguras ao gráfico (3,5 no IBISMA, 1,5 nos
+  blocos).
+
+## 2. Bolinha apenas no IBISMA
+
+- A série do índice mantém o ponto de cada ano sempre visível; nos blocos o
+  ponto só aparece no hover (`showSymbol` condicional em `grafico_evolucao()`),
+  o que limpa o desenho sem perder a leitura da tooltip.
+- A legenda nativa continua exibindo o ícone com bolinha em todos os itens: o
+  ECharts desenha o ícone da legenda por conta própria e ignora
+  `symbol`/`showSymbol` da série (tentativa com `symbol = "none"` revertida).
+  Alinhar a legenda exigiria `legend.data` com `icon` por item.
+
+## 3. Eixo Y adaptativo
+
+- Nova `piso_eixo_y()`: arredonda o menor valor das sete séries para **baixo
+  na dezena** (limite entre 0 e 90, para não degenerar quando tudo é 100).
+- `grafico_evolucao()` ganhou o argumento `minimo_y`; sem ele, o piso vem das
+  próprias séries. Jutaí/AM, por exemplo, passou a exibir o eixo 70–100 em vez
+  de 0–100, aproveitando a área do gráfico.
+
+## 4. Eixo Y compartilhado na comparação
+
+- O reativo `piso_y` do módulo Como? calcula o **menor piso entre principal e
+  comparado** e o repassa aos dois gráficos; séries sem dado são ignoradas
+  (com o principal vazio, o eixo segue apenas o comparado; sem valor algum,
+  volta a 0).
+- Validação: Jutaí × Inhapi/AL resultou em `50|50` nos dois gráficos; ao
+  remover a comparação, o eixo volta ao piso do principal.
+
+## 5. Nitidez dos gráficos (renderizador SVG)
+
+- **Causa:** no ECharts 6.0.0 embutido, `painter.dpr` é definido apenas na
+  construção do gráfico e nunca recalculado — nem no `resize()` — de modo que
+  qualquer mudança de DPR (zoom do navegador, janela movida para um monitor com
+  escala diferente) deixa o canvas na resolução antiga. O htmlwidgets 1.6.4
+  também não observa mudanças de tamanho do contêiner (sem `ResizeObserver`).
+  Além disso, o canvas é naturalmente mais macio em escalas fracionárias
+  (125%/150%), comuns no Windows.
+- **Correção:** os três widgets ECharts (gráficos principal/comparado e legenda
+  compartilhada) passaram a usar `renderer = "svg"`, que independe de
+  `devicePixelRatio` e permanece nítido sob zoom ou escala fracionária.
+- A legenda compartilhada continua sincronizando os dois gráficos com SVG
+  (clique em "Social" esconde a série em ambos).
+
+## 6. Smoke test
+
+- `dev/headless_smoke.R` ganhou `--dpr=<número>`, que emula a escala de tela
+  via `Emulation.setDeviceMetricsOverride` para checagens de nitidez.
+- Evidências: `dev/smoke/evolucao_eixo/` (hierarquia e eixos iguais),
+  `dev/smoke/dpr/` (SVG nítido em 1,25 e 1,5) e `dev/smoke/simbolos/`
+  (bolinha apenas no IBISMA), todas ignoradas pelo git.
+
+## 7. Testes
+
+- `devtools::test()`: **203 asserções verdes**, cobrindo `piso_eixo_y`, o eixo
+  compartilhado entre os dois gráficos (via `testServer`, com o JSON do widget
+  decodificado por `jsonlite`), a hierarquia das séries, o símbolo condicional
+  e o renderizador SVG.
+- `jsonlite` entrou em `Suggests` apenas para os testes; a suíte rodou com
+  `rlang` 1.2.0 de uma biblioteca temporária (o 1.1.4 instalado está abaixo do
+  exigido pelo testthat).
+
+## 8. Limitações
+
+- Os ícones da legenda seguem com bolinha em todos os itens (ver seção 2).
+- O piso do eixo é calculado com as sete séries; esconder uma série pela
+  legenda não recalcula o eixo (por desenho, para não re-renderizar a cada
+  clique).
+- O eixo adaptativo não começa em 0; o recorte fica visível apenas nos rótulos
+  do próprio eixo (a frase que explicava o ajuste foi retirada da descrição).
 
