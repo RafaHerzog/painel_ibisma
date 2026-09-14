@@ -1070,15 +1070,22 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 ## 5. Estilo dos municípios
 
-- `desenhar_municipios()` passou a desenhar o traço com a **própria cor do
-  município** (`color = ~cor`, `weight = 0.5`), o que fecha as fendas
-  residuais no zoom afastado sem o esbranquiçado do traço branco.
+- Primeiro o traço passou a usar a **própria cor do município**
+  (`color = ~cor`, `weight = 0.5`), para fechar as fendas residuais sem o
+  esbranquiçado do traço branco. Na revisão, a preferência foi por manter as
+  divisas municipais visíveis: o **traço branco fino voltou**, bem leve
+  (`color = "#FFFFFF"`, `weight = 0.25`, `opacity = 0.65`), agora sem as fendas
+  que causavam os espaços brancos originais.
 - `fillOpacity` subiu de 0,88 para 0,95 e o `smoothFactor` caiu de 1 para 0
   (a malha já chega simplificada; o cliente não simplifica de novo).
-- O handler JavaScript da mensagem repinta `fillColor`, `color` e
-  `fillOpacity`, para a troca de medida/ano manter o traço coerente.
-- Os contornos brancos das UFs continuam por cima, garantindo a leitura
-  política do mapa.
+- O handler JavaScript da mensagem repinta apenas `fillColor` e
+  `fillOpacity`, já que a divisa branca é fixa.
+- Os contornos brancos das UFs continuam por cima, suavizados para
+  `weight = 0.8` e `opacity = 0.85`, garantindo a leitura política do mapa.
+- O realce de hover e o contorno de seleção (ambos em azul escuro) também
+  ficaram mais leves: `weight = 1.6 → 1.2` no hover (`fct_mapa.R:192`) e
+  `weight = 2.4 → 1.8` no selecionado (`mod_onde.R:184`), preservando a
+  hierarquia base < hover < selecionado.
 
 ## 6. Testes e validação
 
