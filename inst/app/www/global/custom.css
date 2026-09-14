@@ -1319,6 +1319,17 @@ input:focus-visible,
   margin: 0;
 }
 
+/* Marcando o título de cada cartão com a bolinha da dimensão */
+.evolucao-card__ponto {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.45em;
+  border-radius: 50%;
+  background-color: var(--cor-medida);
+  vertical-align: middle;
+}
+
 /* Dando mais destaque ao título do cartão do índice */
 .evolucao-card--ibisma .evolucao-card__titulo {
   font-size: var(--fonte-muito-grande-size);

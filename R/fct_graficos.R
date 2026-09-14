@@ -380,7 +380,15 @@ grade_evolucao_ui <- function(ns) {
   cartao <- function(medida, altura, classe = NULL) {
     htmltools::tags$div(
       class = paste(c("evolucao-card", classe), collapse = " "),
-      htmltools::tags$h4(class = "evolucao-card__titulo", nome_medida(medida)),
+      htmltools::tags$h4(
+        class = "evolucao-card__titulo",
+        # Marcando o título com a bolinha na cor da dimensão do gráfico
+        htmltools::tags$span(
+          class = "evolucao-card__ponto",
+          style = paste0("--cor-medida:", cor_medida(medida), ";")
+        ),
+        nome_medida(medida)
+      ),
       echarts4r::echarts4rOutput(
         ns(paste0("grafico_", medida)),
         height = paste0(altura, "px")

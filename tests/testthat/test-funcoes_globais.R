@@ -272,6 +272,25 @@ test_that("a evolução usa pisos de eixo por grupo de medidas", {
   )
 })
 
+test_that("os títulos da evolução levam a bolinha da dimensão", {
+  grade <- as.character(grade_evolucao_ui(shiny::NS("como")))
+  # Cada um dos sete cartões tem a própria bolinha com a cor da medida
+  expect_equal(
+    lengths(regmatches(grade, gregexpr("evolucao-card__ponto", grade))),
+    7
+  )
+  expect_true(grepl(
+    paste0("--cor-medida:", cor_medida("indice_final")),
+    grade,
+    fixed = TRUE
+  ))
+  expect_true(grepl(
+    paste0("--cor-medida:", cor_medida("bloco3")),
+    grade,
+    fixed = TRUE
+  ))
+})
+
 test_that("formatadores usam a convenção brasileira", {
   expect_equal(formatar_numero(12.345), "12,3")
   expect_equal(formatar_numero(c(1.5, NA)), c("1,5", "Sem dados"))
