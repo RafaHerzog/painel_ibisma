@@ -172,12 +172,15 @@ desenhar_municipios <- function(mapa, base) {
     leaflet::addPolygons(
       data = base,
       layerId = ~codmunres_txt,
+      # Aumentando a opacidade para o fundo do mapa não clarear as cores
       fillColor = ~cor,
-      fillOpacity = 0.88,
-      color = "#FFFFFF",
-      weight = 0.25,
+      fillOpacity = 0.95,
+      # Fechando as fendas residuais com um traço da própria cor do município
+      color = ~cor,
+      weight = 0.5,
       opacity = 0.9,
-      smoothFactor = 1,
+      # Desenhando a malha já simplificada, sem nova simplificação no cliente
+      smoothFactor = 0,
       label = lapply(base$tooltip, htmltools::HTML),
       labelOptions = leaflet::labelOptions(
         direction = "auto",

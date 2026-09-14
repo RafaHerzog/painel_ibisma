@@ -39,7 +39,8 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
     var cor = mensagem.cores ? mensagem.cores[id] : null;
     if (!cor) return;
 
-    camada.setStyle({ fillColor: cor, fillOpacity: 0.88 });
+    /* Repintando preenchimento e traço para acompanhar a cor da medida */
+    camada.setStyle({ fillColor: cor, color: cor, fillOpacity: 0.95 });
 
     var rotulo = mensagem.labels ? mensagem.labels[id] : null;
     if (rotulo !== null && rotulo !== undefined && camada.setTooltipContent) {

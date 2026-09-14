@@ -1,39 +1,19 @@
 # Preparando a malha geográfica municipal e estadual usada pelo painel IBISMA
 # Executar na raiz do pacote: Rscript data-raw/prepara_malha.R
-# A malha é simplificada uma única vez e salva como RDS em inst/app/data,
-# evitando downloads e processamento pesado durante a execução do app.
+# A malha é simplificada uma única vez e salva como RDS em inst/app/data
+# Usando o rmapshaper (instalar com install.packages("rmapshaper"))
 
 suppressPackageStartupMessages({
   library(geobr)
   library(sf)
+  library(rmapshaper)
   library(dplyr)
 })
 
-# Definindo as tolerâncias de simplificação em metros (CRS geodésico EPSG:4674)
-# A tolerância maior reduz o volume; municípios que sumirem nela usam a menor
-tolerancia_m <- 2000
-tolerancia_fina_m <- 1000
-
 # ---------------------------------------------------------------- municípios
 
-# Baixando a malha municipal já simplificada do geobr (ano de referência 2020)
+# Baixando a malha municipal de origem do geobr (ano de referência 2020)
 malha_municipios <- geobr::read_municipality(year = 2020, showProgress = FALSE)
-
-# Criando uma versão mais detalhada para servir de reserva aos menores municípios
-malha_detalhada <- sf::st_simplify(malha_municipios, dTolerance = tolerancia_fina_m)
-
-# Aplicando a simplificação principal para reduzir o volume enviado ao navegador
-malha_municipios <- sf::st_simplify(malha_municipios, dTolerance = tolerancia_m)
-
-# Substituindo as geometrias que desapareceram pela versão mais detalhada
-sumiram <- sf::st_is_empty(malha_municipios)
-if (any(sumiram)) {
-  cat("Municípios recuperados da malha detalhada:", sum(sumiram), "\n")
-  malha_municipios[sumiram, ] <- malha_detalhada[sumiram, ]
-}
-
-# Convertendo para WGS84, o sistema esperado pelo leaflet
-malha_municipios <- sf::st_transform(malha_municipios, 4326)
 
 # Criando a chave de 6 dígitos usada pela base do IBISMA (padrão DATASUS)
 malha_municipios <- malha_municipios |>
@@ -44,6 +24,16 @@ malha_municipios <- malha_municipios |>
   # Mantendo apenas as colunas necessárias para o painel
   dplyr::select(codmunres, sigla_uf = abbrev_state, geometry)
 
+# Simplificando cada divisa uma única vez com o rmapshaper, sem abrir fendas
+malha_municipios <- rmapshaper::ms_simplify(
+  malha_municipios,
+  keep = 0.01,
+  keep_shapes = TRUE
+)
+
+# Convertendo para WGS84, o sistema esperado pelo leaflet
+malha_municipios <- sf::st_transform(malha_municipios, 4326)
+
 # Removendo geometrias vazias que possam ter surgido na simplificação
 malha_municipios <- malha_municipios[!sf::st_is_empty(malha_municipios), ]
 
@@ -51,7 +41,7 @@ malha_municipios <- malha_municipios[!sf::st_is_empty(malha_municipios), ]
 
 # Baixando e simplificando a malha estadual (usada como contorno sobre o mapa)
 malha_ufs <- geobr::read_state(year = 2020, showProgress = FALSE)
-malha_ufs <- sf::st_simplify(malha_ufs, dTolerance = tolerancia_m)
+malha_ufs <- sf::st_simplify(malha_ufs, dTolerance = 2000)
 malha_ufs <- sf::st_transform(malha_ufs, 4326)
 malha_ufs <- malha_ufs |>
   dplyr::select(sigla_uf = abbrev_state, geometry)
