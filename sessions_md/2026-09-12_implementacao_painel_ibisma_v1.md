@@ -941,3 +941,59 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - O esqueleto do palco reserva a altura cheia; em anos sem dado (Borá/2023)
   o palco vira estado vazio depois da carga inicial, como antes.
 
+---
+
+# Sessão 9 — Rodapé institucional com logos negativos (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** refazer o rodapé de realizadores e financiadores, que estava
+  com "cara de adesivos" (cada logo dentro de uma caixa branca), aproximando-o
+  da referência institucional: logos negativos direto no fundo azul, títulos
+  sem linha e nota final com separador de largura total.
+
+## 1. Da plaquinha branca ao logo negativo
+
+- A primeira tentativa manteve os logos coloridos em caixas brancas de
+  tamanho fixo (`7rem × 2,875rem`, `object-fit: contain`): o ritmo melhorou,
+  mas o efeito de adesivos colados permaneceu e não correspondia à
+  referência.
+- Com as versões negativas enviadas pelo usuário, o rodapé passou a exibir
+  os logos brancos direto sobre o `#0A1E3C`, sem fundo, borda ou padding.
+- Ficaram de fora, por enquanto, os logos do Ministério da Saúde e da
+  Medicina USP (sem versão negativa); os arquivos continuam na pasta.
+- Os blocos ganharam a divisória vertical de referência (borda esquerda no
+  segundo bloco), removida quando eles empilham (≤ 992 px).
+
+## 2. Títulos, separador e nota
+
+- As linhas sob "Realização" e "Financiamento" foram removidas; os títulos
+  ficaram apenas com o texto em caixa-alta espaçada.
+- A linha acima da nota deixou de pertencer ao parágrafo: o contêiner
+  `rodape-base` cobre toda a largura útil do `painel-container` (a mesma das
+  logos), com o texto limitado a `70rem` dentro dele.
+- A primeira frase da nota passou a "Este painel está em desenvolvimento.",
+  mantendo o aviso de que o IBISMA é um índice relativo.
+- Os `img` do rodapé ganharam `loading="lazy"` e `decoding="async"`.
+
+## 3. Otimização dos arquivos de logo
+
+- Novo `data-raw/otimiza_logos.R`, executável na raiz do pacote: recorta a
+  moldura transparente, aplica margem uniforme de 8 px e reduz cada PNG das
+  pastas de realização e financiadores para no máximo 480×200 px.
+- O script detecta logos negativos que vierem com o desenho escuro e os
+  converte para branco (`image_colorize`), preservando o recorte — foi o
+  caso do primeiro arquivo da Fiocruz, depois substituído pela versão
+  vertical correta.
+- O rodapé caiu de ~1,4 MB para ~170 KB de PNG no total, sem perda visível
+  nas alturas exibidas (36 px no desktop e 28 px no mobile).
+- Os recursos legados de `inst/app/www/logos/global/` (CSS e JS antigos, já
+  fora do carregamento desde a primeira sessão) foram removidos.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **172 asserções verdes**.
+- Smoke headless em 1600×900 e 390×844: rodapé sem estouro horizontal, com a
+  divisória sumindo no empilhamento, títulos sem borda inferior e a linha da
+  nota com a largura do container (1376 px e 358 px).
+- Evidências em `dev/smoke/rodape/` (ignorado pelo git).
+
