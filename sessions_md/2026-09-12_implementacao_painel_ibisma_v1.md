@@ -1302,3 +1302,110 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   (ignorados pelo git): a v3 registra as alturas menores e o novo tooltip; a
   v4, o alinhamento do eixo e as barras uniformes do esqueleto.
 
+---
+
+# Sessão 13 — Ranking por medida e identificação da evolução (14/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** adaptar o ranking à medida exibida (cores, buscas, seleção e
+  cabeçalho) e identificar os municípios e o período no card de evolução,
+  com esqueleto e bolinhas de dimensão nos títulos.
+
+## 1. Cores do ranking por medida e prefixo "Bloco"
+
+- `tema_reactable(medida)` deriva hover, linha selecionada, barra lateral e
+  botões de página da cor da medida (`cor_medida()`); o botão ativo usa
+  `cor_texto_sobre()` para contraste (ex.: amarelo do Social pede texto
+  azul escuro). Para o IBISMA, os valores são idênticos aos anteriores.
+- `nome_medida(medida, prefixo_bloco = TRUE)` prefixa os blocos: o resumo do
+  ranking virou "5.570 municípios do Brasil em 2024 · Bloco Planejamento
+  Reprodutivo", mantendo "· IBISMA" para o índice.
+- **Achado:** como a coluna Pos. é `sticky`, as linhas usam a classe
+  `rt-tr-highlight-sticky` e o `highlightColor` do tema nunca casava (o
+  hover ficava no cinza padrão). O tema agora expõe `--cor-hover-ranking` e
+  `--cor-selecao-ranking`, consumidas por duas regras em `custom.css`
+  (hover e seleção sob o mouse).
+
+## 2. Buscas insensíveis a acentos e sinais
+
+- A busca do ranking (`busca_sem_acento`) normaliza em NFD, remove
+  diacríticos e sinais não alfanuméricos e ignora caixa: "olho d agua"
+  encontra os sete municípios "Olho d'Água".
+- As buscas dos slimSelect (que só ignoravam caixa) ganharam o mesmo
+  filtro via `funcoes_javascript.js` (`events.searchFilter` normalizado),
+  com nova tentativa por até 5 s até o Shiny criar as instâncias e reforço
+  no `load`. Validado com "sao" → "São Paulo (SP)" e "olho d agua" →
+  resultados "Olho-d'Água"/"Olho D'Água".
+
+## 3. Visual da busca da tabela
+
+- `searchInputStyle` saiu do tema; o campo `.rt-search` passou a repetir a
+  busca dos dropdowns (fundo suave, borda transparente e raio 10 px, altura
+  2.4 rem, lupa por SVG com cor própria no foco, anel azul no foco).
+- Esqueleto da busca ajustado à nova geometria (196 × 38 no desktop,
+  173 × 38 até 768 px), sem estouro horizontal no mobile (390/390).
+- Medição: campo da tabela e campo do dropdown com 196×38, mesmo raio,
+  fonte, padding e estado de foco; digitação continua filtrando.
+
+## 4. Seleção e página do ranking sincronizadas
+
+- A tabela já nasce com o município padrão selecionado: `defaultSelected`
+  no `renderReactable` marca a linha na própria montagem.
+- Na troca de dimensão/escopo, o foco é mantido se o município segue no
+  ranking e reseta para o 1º colocado quando sai dele
+  (`observeEvent(list(input$medida, input$escopo))`). Trocas de fora da
+  tabela (mapa, seletor do perfil) usam `updateReactable(selected=...)`.
+- O salto de página reage ao eco da seleção publicado pelo cliente
+  (`updateReactable(page=...)` apenas), que chega depois da montagem do
+  widget — elimina a corrida em que um índice de outro contexto era
+  aplicado à tabela recém-renderizada (observada como seleção errada em
+  trocas rápidas medida→escopo).
+- Ao limpar a busca, o servidor reposiciona a tabela na página do
+  município em foco (o reset nativo do reactable voltava à página 1).
+
+## 5. Cabeçalho do ranking
+
+- Havia um `<p></p>` vazio abaixo do resumo por HTML inválido (o `div` do
+  slot do esqueleto dentro do `<p>` faz o navegador fechar o parágrafo).
+  O resumo ficou no próprio slot e a dica virou parágrafo próprio.
+- A pedido, a dica saiu do cabeçalho para logo acima da tabela, com a
+  classe `bloco-descricao` e margem própria
+  (`.bloco-descricao--tabela { margin-bottom: 0.6rem }`, folga medida de
+  10 px). O resumo segue sem a classe.
+
+## 6. Identificação da evolução, esqueleto e bolinhas
+
+- Novo `uiOutput("evolucao_identificacao")` no cabeçalho do card:
+  `Jutaí (AM) | 2015 – 2024`, e na comparação
+  `Jutaí (AM) e Inhapi (AL) | 2015 – 2024` (só quando o comparado tem
+  série; some quando o principal não tem série, como o restante da grade).
+  Nomes em `--fonte-muito-grande-size`/700 e separador em
+  `var(--cor-texto-suave)`.
+- Esqueleto dedicado (`esqueleto_identificacao()` + slot): a primeira
+  versão centralizava a barra e ela ficava ~4 px acima do texto; a correção
+  alinha com a margem do parágrafo (topo 9 px nos dois estados).
+- Títulos dos sete cartões ganharam bolinha (`evolucao-card__ponto`,
+  0.5 em) na cor da dimensão via `cor_medida()`.
+
+## 7. Testes e validação
+
+- `devtools::test()`: **263 asserções verdes** — `nome_medida` com
+  prefixo, tema por medida e variáveis CSS, seleção inicial/`defaultSelected`,
+  manter/resetar foco, salto de página, dica do cabeçalho, identificação da
+  evolução, esqueleto e bolinhas. (A suíte rodou com `rlang` 1.3.0 de
+  biblioteca temporária, pois o 1.1.4 instalado fica abaixo do exigido pelo
+  testthat.)
+- Smoke headless (evidências nos temporários, fora do git): resumo com
+  "Bloco", hover/seleção/página nas cores do bloco (bloco2 verde, Social
+  amarelo, IBISMA roxo inalterado), manter Jutaí (rank 22/página 2 →
+  rank 6/página 1 no AM), reset para Campos Novos Paulista em SP,
+  clique na linha sincronizando o perfil, buscas sem acento/sinais e
+  geometria de esqueletos/desktop/mobile.
+
+## 8. Commits da sessão
+
+- `9af4b33` Refina o ranking: cores por medida, buscas, seleção e cabeçalho
+- `882fcb6` Identifica os municípios e o período na evolução
+- `c149286` Marca os títulos da evolução com a cor da dimensão
+
+
