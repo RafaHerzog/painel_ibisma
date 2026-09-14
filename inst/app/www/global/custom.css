@@ -2143,25 +2143,19 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
     height: 1.75rem;
   }
 
-  /* Empilhando o placar do IBISMA em telas pequenas */
+  /* Mantendo o valor na primeira linha e os rankings lado a lado abaixo */
   .perfil-placar {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
-      "indice"
-      "brasil"
-      "uf";
-    gap: 0.85rem;
+      "indice indice"
+      "brasil uf";
+    gap: 0.85rem 1rem;
   }
 
   /* Reorganizando as informações territoriais em duas colunas por linha */
   .perfil-metricas {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.5rem 1rem;
-  }
-
-  .perfil-placar__ranking--brasil,
-  .perfil-placar__ranking--uf {
-    text-align: left;
   }
 
   /* Empilhando os cartões da evolução em tela estreita */
