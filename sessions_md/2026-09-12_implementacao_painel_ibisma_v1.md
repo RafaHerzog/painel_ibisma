@@ -1408,4 +1408,75 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `882fcb6` Identifica os municípios e o período na evolução
 - `c149286` Marca os títulos da evolução com a cor da dimensão
 
+---
+
+# Sessão 14 — Teto adaptativo do eixo Y, rótulos de ano no mobile e placar (14/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** tornar o teto do eixo Y adaptativo (espelhando o piso), dar
+  respiro aos anos do eixo X no mobile com rótulos inclinados e colocar os
+  rankings do placar lado a lado em telas pequenas.
+
+## 1. Teto adaptativo do eixo Y
+
+- Nova `teto_eixo_y(series, medidas)`: arredonda o maior valor das séries para
+  **cima na dezena** e limita a faixa em `[10, 100]` (o 10 evita eixo degenerado
+  quando tudo é zero; 100 é o teto do índice). Série sem valor algum devolve 100.
+- `grafico_evolucao()` ganhou `maximo_y` e o repassa ao `e_y_axis`; quando NULL,
+  o teto vem das próprias séries. Se piso e teto caírem na mesma dezena, o teto
+  sobe 10 (até 100) para o eixo não degenerar.
+- `lados_rotulos()` passou a receber piso e teto e calcula a posição relativa dos
+  nomes no fim das linhas com a faixa real (`maximo_y - minimo_y`), o que também
+  ajusta o corte de "perto do topo" quando o teto encolhe.
+- `mod_como.R`: `piso_do_grupo()` virou `limites_do_grupo()` e devolve
+  `list(min, max)`. Na comparação a faixa é **aberta ao máximo** (menor piso e
+  maior teto entre principal e comparado) para nenhuma das séries ser cortada.
+  O IBISMA mantém escala própria e os seis blocos seguem compartilhando uma
+  única escala, agora com piso e teto iguais.
+- Efeito nos testes: Dois (RO) passou a ter eixo 80–90 no índice (antes 80–100)
+  e, na comparação com Quatro (SP), 10–90 no índice e 20–100 nos blocos.
+- O piso máximo foi avaliado (90 → 95), mas ficou **mantido em 90**: a mudança
+  literal só afetaria o caso de menor valor igual a 100 (um município em 2022).
+
+## 2. Rótulos de ano no mobile
+
+- A primeira tentativa foi mostrar os anos de dois em dois (`interval = 2`) via
+  hook no cliente; a preferência passou a ser manter todos os anos visíveis com
+  inclinação de 45°.
+- Novo `rotulos_anos_js()`, aplicado com `htmlwidgets::onRender()` no fim de
+  `grafico_evolucao()`: em cartões com largura < 340 px
+  (`LARGURA_ROTULOS_ANOS`), inclina os rótulos em 45° e sobe a margem inferior
+  do ECharts de 28 para 40 px; acima disso, tudo segue horizontal. O ajuste roda
+  no cliente, reage a `resize` com um listener único por elemento
+  (`data-rotulos-anos`) e não passa pelo servidor.
+- Medições: cartões de bloco com 395 px no desktop e 276–310 px no mobile, o
+  que separa bem o limiar; a 1024 px os cartões seguem horizontais.
+- Limitação: o esqueleto da grade reserva a margem inferior de 28 px, então no
+  mobile há um ajuste de ~12 px na troca esqueleto → gráfico, visível só no
+  carregamento inicial.
+
+## 3. Placar em duas colunas no mobile
+
+- No `@media (max-width: 768px)`, o `.perfil-placar` passou de três linhas
+  empilhadas para duas colunas: o índice ocupa a primeira linha inteira e
+  "Ranking Brasil" e "Ranking na UF" ficam lado a lado abaixo, mantendo o
+  alinhamento do desktop (Brasil à esquerda, UF à direita). A regra que forçava
+  os dois rankings à esquerda no empilhamento foi removida.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **281 asserções verdes** — novos testes de `teto_eixo_y`
+  (arredondamento para cima, limites, série vazia), dos limites por grupo no
+  `testServer` (min e max), do caso degenerado e do hook de rotação.
+- Smoke headless: mobile 390 px com os 10 anos rotacionados e sem corte;
+  desktop 1600 px e 1024 px horizontais; placar mobile com os rankings lado a
+  lado; sem erros de JavaScript.
+- Evidências em `dev/smoke/` e em temporários fora do git.
+
+## 5. Commits da sessão
+
+- `fa7bfb0` Torna o teto do eixo Y adaptativo na evolucao temporal
+- `53df2dd` Rotaciona os rotulos de ano no mobile
+- `b74bba9` Coloca os rankings do placar lado a lado no mobile
+
 
