@@ -78,6 +78,12 @@ mod_como_ui <- function(id) {
             paste(
               "Acompanhe a evolução do IBISMA e de seus seis blocos entre 2015 e 2024."
             )
+          ),
+          # Identificando os municípios e o período exibidos nos gráficos
+          esqueleto_slot(
+            shiny::uiOutput(ns("evolucao_identificacao")),
+            esqueleto_identificacao(),
+            classe = "esqueleto-slot--identificacao"
           )
         ),
         # Grade com sete cartões, preenchida apenas quando houver série para desenhar
@@ -254,6 +260,27 @@ mod_como_server <- function(id, dados, municipio) {
         })
       })
     }
+
+    # Montando a identificação dos municípios e do período exibidos na grade
+    output$evolucao_identificacao <- shiny::renderUI({
+      # Escondendo a identificação quando o município não tem série temporal
+      shiny::req(series_tem_valor(series_principal()))
+      # Reunindo o principal e, quando houver série, o comparado
+      nomes <- nome_municipio(dados, municipio())
+      if (comparacao_tem_serie()) {
+        nomes <- paste0(nomes, " e ", nome_municipio(dados, cod_comparacao()))
+      }
+      periodos <- range(dados$anos)
+      htmltools::tags$p(
+        class = "evolucao-identificacao",
+        htmltools::tags$span(class = "evolucao-identificacao__nomes", nomes),
+        htmltools::tags$span(class = "evolucao-identificacao__separador", "|"),
+        htmltools::tags$span(
+          class = "evolucao-identificacao__periodo",
+          paste0(periodos[1], " \u2013 ", periodos[2])
+        )
+      )
+    })
 
     # Inserindo a grade de cartões apenas quando existir algum valor
     output$evolucoes <- shiny::renderUI({

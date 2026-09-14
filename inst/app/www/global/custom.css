@@ -1333,6 +1333,34 @@ input:focus-visible,
   margin: 0.5rem 0 0 0;
 }
 
+/* Identificando os municípios e o período logo abaixo da descrição */
+.evolucao-identificacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.55rem 0 0 0;
+  font-size: var(--fonte-grande-size);
+  line-height: 1.2;
+}
+
+/* Destacando os nomes dos municípios exibidos na evolução */
+.evolucao-identificacao__nomes {
+  font-size: var(--fonte-muito-grande-size);
+  font-weight: 700;
+  color: #0A1E3C;
+}
+
+/* Desenhando o traço que separa os nomes do período */
+.evolucao-identificacao__separador {
+  color: var(--cor-texto-suave);
+}
+
+/* Exibindo o período em tom suave */
+.evolucao-identificacao__periodo {
+  color: var(--cor-texto-suave);
+}
+
 /* Marcando a hierarquia do palco principal e do comparado */
 .palco-rotulo {
   display: inline-block;
@@ -1823,6 +1851,21 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 }
 
 /* ----------------------------------------- esqueleto da evolução */
+
+/* Reservando a linha da identificação da evolução durante o carregamento */
+.esqueleto-slot--identificacao {
+  min-height: 1.75rem;
+}
+
+/* Desenhando a barra da identificação no lugar do nome dos municípios */
+.esqueleto--identificacao {
+  align-self: start;
+  margin-top: 0.55rem;
+  width: 16rem;
+  max-width: 90%;
+  height: 1.1em;
+  border-radius: 6px;
+}
 
 /* Reservando a mesma área desenhada pelos gráficos de evolução */
 /* A altura de cada cartão é aplicada em linha pelo próprio esqueleto */

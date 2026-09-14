@@ -135,6 +135,17 @@ esqueleto_texto <- function() {
   )
 }
 
+#' Montando o esqueleto da identificação da evolução
+#'
+#' @return Elemento HTML com a barra que ocupa o lugar do nome e do período.
+#' @noRd
+esqueleto_identificacao <- function() {
+  htmltools::tags$span(
+    class = "esqueleto esqueleto__barra esqueleto--identificacao",
+    `aria-hidden` = "true"
+  )
+}
+
 #' Montando a célula do esqueleto da tabela do ranking
 #'
 #' @param largura Largura fixa da coluna; NULL usa a coluna flexível.

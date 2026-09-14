@@ -248,14 +248,26 @@ test_that("a evolução usa pisos de eixo por grupo de medidas", {
       expect_length(series_bloco, 2)
       expect_equal(series_bloco[[2]]$lineStyle$type, "dotted")
 
+      # A identificação reúne os dois municípios e o período dos gráficos
+      identificacao <- as.character(output$evolucao_identificacao$html)
+      expect_true(grepl("Dois (RO) e Quatro (SP)", identificacao, fixed = TRUE))
+      expect_true(grepl("2020", identificacao, fixed = TRUE))
+      expect_true(grepl("2021", identificacao, fixed = TRUE))
+
       # Sem comparação o eixo do IBISMA segue apenas o município principal
       session$setInputs(comparar = "nenhum")
       expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 80)
       expect_length(opcoes_do_grafico(output$grafico_bloco1)$series, 1)
 
+      # A identificação cita apenas o município principal
+      identificacao <- as.character(output$evolucao_identificacao$html)
+      expect_true(grepl("Dois (RO)", identificacao, fixed = TRUE))
+      expect_false(grepl("Quatro (SP)", identificacao, fixed = TRUE))
+
       # Com o principal sem dado, os gráficos ficam suspensos na grade
       session$setInputs(comparar = "350002", municipio = "999999")
       expect_error(output$grafico_indice_final, class = "shiny.silent.error")
+      expect_error(output$evolucao_identificacao, class = "shiny.silent.error")
     }
   )
 })
@@ -698,6 +710,11 @@ test_that("esqueletos preservam a estrutura de cada output", {
   )
   # O esqueleto não deve repetir nenhum valor do conteúdo real
   expect_false(grepl("IBISMA em", palco))
+
+  # A identificação da evolução reserva a linha do nome e do período
+  identificacao <- as.character(esqueleto_identificacao())
+  expect_true(grepl("esqueleto--identificacao", identificacao, fixed = TRUE))
+  expect_true(grepl("esqueleto__barra", identificacao, fixed = TRUE))
 
   # A evolução reserva os sete cartões com eixos e traços abstratos
   evolucao <- as.character(esqueleto_grade_evolucao())
