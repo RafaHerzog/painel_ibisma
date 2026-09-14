@@ -997,3 +997,105 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   nota com a largura do container (1376 px e 358 px).
 - Evidências em `dev/smoke/rodape/` (ignorado pelo git).
 
+---
+
+# Sessão 10 — Seletores refinados e fendas da malha do mapa (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** refinar o comportamento e o visual dos seletores slimSelect e
+  eliminar os espaços em branco do mapa, causados por fendas internas da malha
+  municipal.
+
+## 1. Seletores slimSelect
+
+- `seletor_inline()` ganhou o argumento `busca`: medida e nível (poucas opções)
+  passam a abrir sem campo de busca; ano e escopo continuam com busca. Os
+  textos do plugin foram traduzidos (`searchText = "Nenhum resultado"`) e o
+  realce do trecho encontrado foi ligado (`searchHighlight = TRUE`).
+- `atualizar_seletor()` remove nomes do valor com `unname()`, evitando que o
+  vetor nomeado viaje na mensagem JSON.
+- O dropdown virou um cartão próprio: raio de 14 px, duas camadas de sombra,
+  entrada animada com `opacity` + `visibility` + `pointer-events` (sem caixa
+  invisível clicável), busca integrada com lupa desenhada por máscara SVG e
+  botão de limpar no mesmo traço, lista com opções arredondadas, seleção em
+  azul médio cheio, realce do trecho buscado em amarelo suave e fichas em
+  pílula para a seleção múltipla.
+- O posicionamento do dropdown foi reescrito no JavaScript: a posição do
+  plugin não é mais sobrescrita (o `translate` faz o ajuste), com margem de
+  10 px e respiro de 6 px (invertido quando abre acima), centralização quando
+  o cartão é maior que a janela e reavaliação em `resize`, após digitar na
+  busca e a cada mutação relevante (agendada por `requestAnimationFrame`).
+
+## 2. Mensagem de atualização do mapa
+
+- `atualizar_municipios()` passou a enviar `cores` e `labels` como **listas
+  nomeadas** (`as.list(setNames(...))`), no lugar de vetores nomeados — o
+  `jsonlite` emitia aviso ao serializar. Um teste captura a mensagem em uma
+  sessão simulada e confirma que o `toJSON` do Shiny não gera aviso.
+
+## 3. Diagnóstico das fendas
+
+- O mapa abria "buracos" brancos entre municípios porque a malha era
+  simplificada **polígono a polígono** (`st_simplify(dTolerance = 2000)`, em
+  metros por causa do CRS geodésico). A mesma divisa era simplificada de
+  formas diferentes dos dois lados: onde ambos recuavam abria fenda; onde
+  ambos avançavam, sobreposição.
+- Medições na malha antiga: **15.901 fendas**, **144.494 km² (1,70% do
+  território)**, maior fenda de 713 km², além de 67.482 km² de sobreposições.
+- Concentração por UF (% da área do estado em fendas): PB 5,41%, SP 4,77%,
+  SC 4,57%, PR 3,80%, SE 3,61%, AL 3,43%, RS 3,34%, RN 3,22%, MG 3,03%,
+  RJ 2,89% — contra 0,37% no AM: onde os municípios são pequenos, a tolerância
+  de 2 km consome uma fração muito maior da área.
+- `st_simplify(preserveTopology = TRUE)` foi testado e **não resolveu**: ele
+  preserva a topologia dentro de cada polígono, não entre vizinhos
+  (resultado idêntico).
+- No zoom afastado, dois fatores agravavam o esbranquiçado: o traço branco de
+  0,25 px sobre 5.570 polígonos minúsculos e o `fillOpacity = 0.88`, que
+  deixava o fundo claro atravessar as cores.
+
+## 4. Malha regenerada com topologia compartilhada
+
+- `data-raw/prepara_malha.R` passou a usar `rmapshaper::ms_simplify(keep =
+  0.01, keep_shapes = TRUE)`: cada divisa é simplificada **uma única vez** e
+  reaproveitada pelos dois municípios vizinhos, sem abrir fendas. As colunas
+  (`codmunres`, `sigla_uf`, `geometry`) e a conversão para EPSG:4326 foram
+  mantidas; a malha de UFs (apenas contornos) não mudou.
+- Resultado: 5.570 municípios, cobertura de 100% dos códigos da base,
+  **8.283 fendas / 8.201 km² (0,10% do território)** e maior fenda de
+  60,5 km² — melhora de ~18× na área total. Custo: 383 mil pontos e RDS de
+  1,50 MB (antes: 190 mil pontos e 1,04 MB), com primeiro carregamento um
+  pouco maior.
+- O script exige o `rmapshaper` (V8; a instalação pode atualizar o `Rcpp`
+  para >= 1.1.0). A geração foi feita com o V8 já instalado.
+
+## 5. Estilo dos municípios
+
+- `desenhar_municipios()` passou a desenhar o traço com a **própria cor do
+  município** (`color = ~cor`, `weight = 0.5`), o que fecha as fendas
+  residuais no zoom afastado sem o esbranquiçado do traço branco.
+- `fillOpacity` subiu de 0,88 para 0,95 e o `smoothFactor` caiu de 1 para 0
+  (a malha já chega simplificada; o cliente não simplifica de novo).
+- O handler JavaScript da mensagem repinta `fillColor`, `color` e
+  `fillOpacity`, para a troca de medida/ano manter o traço coerente.
+- Os contornos brancos das UFs continuam por cima, garantindo a leitura
+  política do mapa.
+
+## 6. Testes e validação
+
+- `devtools::test()`: **182 asserções verdes** (incluindo os testes novos de
+  `seletor_inline` e da serialização da mensagem do mapa). A suíte rodou com
+  `rlang` 1.2.0 de uma biblioteca temporária, porque o `rlang` 1.1.4 instalado
+  está abaixo do exigido pelo testthat.
+- Smoke headless em 1600×950: zoom-out inicial com as cores saturadas e sem o
+  pontilhado branco no NE/SE/S; zoom-in no Nordeste (zoom 8) sem fendas
+  internas — os contornos visíveis são os das UFs.
+- Evidências em `dev/smoke/` (ignorado pelo git).
+
+## 7. Limitações
+
+- Restam 8.283 fendas de 8.201 km² no total (0,10% do território); a maior
+  (60,5 km²) só aparece em zoom muito aproximado.
+- O RDS da malha cresceu ~45% (1,04 MB → 1,50 MB), o que deixa o primeiro
+  carregamento do mapa um pouco mais lento.
+
+
