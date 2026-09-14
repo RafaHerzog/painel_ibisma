@@ -213,31 +213,37 @@ mod_como_server <- function(id, dados, municipio) {
       tem_comparacao() && series_tem_valor(series_comparacao())
     })
 
-    # Calculando o piso do eixo Y de um grupo de medidas nos dois municípios
-    piso_do_grupo <- function(medidas) {
-      # Reunindo o piso apenas dos gráficos que têm dado para desenhar
+    # Calculando os limites do eixo Y de um grupo de medidas nos dois municípios
+    limites_do_grupo <- function(medidas) {
+      # Reunindo os limites apenas dos gráficos que têm dado para desenhar
       pisos <- numeric(0)
+      tetos <- numeric(0)
       if (series_tem_valor(series_principal())) {
         pisos <- c(pisos, piso_eixo_y(series_principal(), medidas))
+        tetos <- c(tetos, teto_eixo_y(series_principal(), medidas))
       }
       if (comparacao_tem_serie()) {
         pisos <- c(pisos, piso_eixo_y(series_comparacao(), medidas))
+        tetos <- c(tetos, teto_eixo_y(series_comparacao(), medidas))
       }
       if (length(pisos) == 0) {
-        return(0)
+        return(list(min = 0, max = 100))
       }
-      min(pisos)
+      # Abrindo a faixa ao máximo para nenhuma das duas séries ser cortada
+      list(min = min(pisos), max = max(tetos))
     }
 
     # Dando ao IBISMA uma escala própria, mais estreita que a dos blocos
-    piso_ibisma <- shiny::reactive(piso_do_grupo("indice_final"))
+    limites_ibisma <- shiny::reactive(limites_do_grupo("indice_final"))
     # Compartilhando a escala dos seis blocos para os cartões serem comparáveis
-    piso_blocos <- shiny::reactive(piso_do_grupo(BLOCOS$medida))
+    limites_blocos <- shiny::reactive(limites_do_grupo(BLOCOS$medida))
 
     # Montando o gráfico de evolução de uma medida
     grafico_da_medida <- function(medida) {
       # Desenhando a linha comparada apenas quando ela tem algum valor
       comparacao <- if (comparacao_tem_serie()) series_comparacao() else NULL
+      # Usando a escala compartilhada do grupo de medidas do gráfico
+      limites <- if (identical(medida, "indice_final")) limites_ibisma() else limites_blocos()
       grafico_evolucao(
         series_principal(),
         medida = medida,
@@ -246,7 +252,8 @@ mod_como_server <- function(id, dados, municipio) {
         nome_comparacao = if (is.null(comparacao)) NULL else {
           nome_municipio(dados, cod_comparacao())
         },
-        minimo_y = if (identical(medida, "indice_final")) piso_ibisma() else piso_blocos()
+        minimo_y = limites$min,
+        maximo_y = limites$max
       )
     }
 

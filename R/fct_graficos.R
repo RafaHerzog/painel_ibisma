@@ -70,6 +70,25 @@ piso_eixo_y <- function(series, medidas = MEDIDAS$medida) {
   max(0, min(piso, 90))
 }
 
+#' Calculando o teto do eixo Y de um conjunto de séries
+#'
+#' @param series Data frame retornado por series_municipio().
+#' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
+#' @return Teto em dezena para o eixo terminar perto dos dados (10 a 100).
+#' @noRd
+teto_eixo_y <- function(series, medidas = MEDIDAS$medida) {
+  # Reunindo os valores das medidas pedidas em um único vetor
+  colunas <- intersect(medidas, names(series))
+  valores <- unlist(series[, colunas, drop = FALSE], use.names = FALSE)
+  if (all(is.na(valores))) {
+    return(100)
+  }
+
+  # Arredondando o maior valor para cima na dezena e respeitando o limite do índice
+  teto <- ceiling(max(valores, na.rm = TRUE) / 10) * 10
+  min(100, max(10, teto))
+}
+
 #' Obtendo o último valor válido de uma série
 #'
 #' @param valores Vetor numérico de uma série.
@@ -92,11 +111,12 @@ ultimo_valor <- function(valores) {
 #'
 #' @param dados Data frame com as colunas principal e comparacao (opcional).
 #' @param minimo_y Piso do eixo Y.
+#' @param maximo_y Teto do eixo Y.
 #' @return Lista com lado e afastamento vertical do rótulo de cada série.
 #' @noRd
-lados_rotulos <- function(dados, minimo_y) {
+lados_rotulos <- function(dados, minimo_y, maximo_y) {
   # Calculando a posição relativa do fim de cada série dentro do eixo
-  faixa <- 100 - minimo_y
+  faixa <- maximo_y - minimo_y
   posicao <- function(valores) {
     valor <- ultimo_valor(valores)
     if (is.na(valor) || faixa <= 0) {
@@ -197,11 +217,12 @@ opcoes_rotulo_serie <- function(rotulo, cor, opacidade = 1) {
 #' @param comparacao Data frame do município comparado (opcional).
 #' @param nome_comparacao Nome do município comparado (opcional).
 #' @param minimo_y Piso do eixo Y; quando NULL, calculado das próprias séries.
+#' @param maximo_y Teto do eixo Y; quando NULL, calculado das próprias séries.
 #' @return Objeto echarts4r pronto para renderização.
 #' @noRd
 grafico_evolucao <- function(series, medida, nome = NULL,
                              comparacao = NULL, nome_comparacao = NULL,
-                             minimo_y = NULL) {
+                             minimo_y = NULL, maximo_y = NULL) {
   # Identificando a cor e o destaque da medida desenhada
   cor <- cor_medida(medida)
   eh_indice <- identical(medida, "indice_final")
@@ -209,6 +230,14 @@ grafico_evolucao <- function(series, medida, nome = NULL,
   # Calculando o piso do eixo quando o módulo não impõe um valor compartilhado
   if (is.null(minimo_y)) {
     minimo_y <- piso_eixo_y(series, medida)
+  }
+  # Calculando o teto do eixo quando o módulo não impõe um valor compartilhado
+  if (is.null(maximo_y)) {
+    maximo_y <- teto_eixo_y(series, medida)
+  }
+  # Evitando um eixo degenerado quando piso e teto caem na mesma dezena
+  if (maximo_y <= minimo_y) {
+    maximo_y <- min(100, minimo_y + 10)
   }
 
   # Montando a tabela do gráfico com uma coluna por localidade
@@ -218,7 +247,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
   }
 
   # Descobrindo em que lado cada nome de localidade aparece no fim da linha
-  lados <- lados_rotulos(dados, minimo_y)
+  lados <- lados_rotulos(dados, minimo_y, maximo_y)
 
   # Reservando ao IBISMA a linha mais espessa e o símbolo maior
   largura <- if (eh_indice) 3 else 2
@@ -291,7 +320,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
     ) |>
     echarts4r::e_y_axis(
       min = minimo_y,
-      max = 100,
+      max = maximo_y,
       name = NULL,
       axisLabel = list(color = "#5A6472", fontSize = 11),
       axisLine = list(show = FALSE),

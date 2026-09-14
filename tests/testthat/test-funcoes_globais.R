@@ -120,11 +120,22 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_s3_class(formatter, "JS_EVAL")
   expect_true(grepl("Math.round", as.character(formatter)))
 
-  # O eixo Y começa no piso da medida e pode ser fixado pelo módulo
+  # O eixo Y começa no piso e termina no teto calculados da própria medida
   expect_equal(grafico$x$opts$yAxis[[1]]$min, 80)
-  expect_equal(grafico$x$opts$yAxis[[1]]$max, 100)
-  compartilhado <- grafico_evolucao(series, "indice_final", minimo_y = 90)
-  expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 90)
+  expect_equal(grafico$x$opts$yAxis[[1]]$max, 90)
+
+  # Os dois limites podem ser fixados pelo módulo na comparação
+  compartilhado <- grafico_evolucao(
+    series, "indice_final",
+    minimo_y = 70, maximo_y = 95
+  )
+  expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 70)
+  expect_equal(compartilhado$x$opts$yAxis[[1]]$max, 95)
+
+  # Um piso colado no teto sobe o topo para o eixo não degenerar
+  degenerado <- grafico_evolucao(series, "indice_final", minimo_y = 90)
+  expect_equal(degenerado$x$opts$yAxis[[1]]$min, 90)
+  expect_equal(degenerado$x$opts$yAxis[[1]]$max, 100)
 
   # O desenho em SVG evita o borrão do canvas sob zoom ou escala fracionária
   expect_equal(grafico$x$renderer, "svg")
@@ -174,30 +185,33 @@ test_that("grafico_evolucao destaca a comparação com traço pontilhado", {
 
 test_that("lados_rotulos separa rótulos próximos e respeita as bordas do eixo", {
   # Fins bem separados mantêm cada rótulo no lado natural do próprio ponto
-  lados <- lados_rotulos(data.frame(principal = c(1, 95), comparacao = c(1, 60)), 50)
+  lados <- lados_rotulos(data.frame(principal = c(1, 95), comparacao = c(1, 60)), 50, 100)
   expect_equal(lados$principal$lado, "abaixo")
   expect_equal(lados$comparacao$lado, "acima")
 
   # Fins próximos e longe do topo ficam em lados opostos
-  lados <- lados_rotulos(data.frame(principal = c(60, 70), comparacao = c(60, 68)), 50)
+  lados <- lados_rotulos(data.frame(principal = c(60, 70), comparacao = c(60, 68)), 50, 100)
   expect_equal(lados$principal$lado, "acima")
   expect_equal(lados$comparacao$lado, "abaixo")
 
   # Fins próximos e perto do topo descem juntos, com afastamentos diferentes
-  lados <- lados_rotulos(data.frame(principal = c(60, 99), comparacao = c(60, 98.5)), 90)
+  lados <- lados_rotulos(data.frame(principal = c(60, 99), comparacao = c(60, 98.5)), 90, 100)
   expect_equal(lados$principal$lado, "abaixo")
   expect_equal(lados$comparacao$lado, "abaixo")
   expect_true(lados$principal$afastamento != lados$comparacao$afastamento)
 
   # Fins próximos e no piso do eixo sobem juntos, com afastamentos diferentes
-  lados <- lados_rotulos(data.frame(principal = c(95, 91), comparacao = c(1, 90.5)), 90)
+  lados <- lados_rotulos(data.frame(principal = c(95, 91), comparacao = c(1, 90.5)), 90, 100)
   expect_equal(lados$principal$lado, "acima")
   expect_equal(lados$comparacao$lado, "acima")
   expect_true(lados$principal$afastamento != lados$comparacao$afastamento)
 
   # Sem comparação o rótulo sobe, a menos que a série termine no topo
-  expect_equal(lados_rotulos(data.frame(principal = c(60, 70)), 50)$principal$lado, "acima")
-  expect_equal(lados_rotulos(data.frame(principal = c(60, 95)), 50)$principal$lado, "abaixo")
+  expect_equal(lados_rotulos(data.frame(principal = c(60, 70)), 50, 100)$principal$lado, "acima")
+  expect_equal(lados_rotulos(data.frame(principal = c(60, 95)), 50, 100)$principal$lado, "abaixo")
+
+  # O teto menor encolhe a faixa e aproxima o corte de "perto do topo"
+  expect_equal(lados_rotulos(data.frame(principal = c(60, 78)), 50, 80)$principal$lado, "abaixo")
 })
 
 test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
@@ -225,7 +239,32 @@ test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
   expect_equal(piso_eixo_y(vazio), 0)
 })
 
-test_that("a evolução usa pisos de eixo por grupo de medidas", {
+test_that("teto_eixo_y arredonda o maior valor para cima na dezena", {
+  series <- series_municipio(preparado_teste, 110002)
+  # O maior valor do município fica em 90, então o eixo termina em 90
+  expect_equal(teto_eixo_y(series), 90)
+
+  # O teto pode ser calculado apenas com um grupo de medidas
+  expect_equal(teto_eixo_y(series, "indice_final"), 90)
+  expect_equal(teto_eixo_y(series, BLOCOS$medida), 80)
+
+  # Valores baixos mantêm uma dezena mínima para o eixo não degenerar
+  baixo <- series
+  baixo[, MEDIDAS$medida] <- 5
+  expect_equal(teto_eixo_y(baixo), 10)
+
+  # Valores no topo da escala param no limite do índice
+  alto <- series
+  alto[, MEDIDAS$medida] <- 95
+  expect_equal(teto_eixo_y(alto), 100)
+
+  # Série sem valor algum mantém o eixo na escala completa
+  vazio <- series
+  vazio[, MEDIDAS$medida] <- NA_real_
+  expect_equal(teto_eixo_y(vazio), 100)
+})
+
+test_that("a evolução usa limites de eixo por grupo de medidas", {
   municipio <- shiny::reactiveVal(110002)
   shiny::testServer(
     mod_como_server,
@@ -238,10 +277,12 @@ test_that("a evolução usa pisos de eixo por grupo de medidas", {
         jsonlite::fromJSON(saida, simplifyVector = FALSE)$x$opts
       }
 
-      # O IBISMA tem escala própria, partindo do menor índice entre os dois
+      # O IBISMA tem escala própria, cobrindo os dois índices sem cortá-los
       expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 10)
-      # Os seis blocos compartilham o piso da menor série de bloco
+      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max, 90)
+      # Os seis blocos compartilham piso e teto das duas séries de bloco
       expect_equal(opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$min, 20)
+      expect_equal(opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$max, 100)
 
       # Cada gráfico desenha a localidade principal e a comparação
       series_bloco <- opcoes_do_grafico(output$grafico_bloco1)$series
@@ -257,6 +298,7 @@ test_that("a evolução usa pisos de eixo por grupo de medidas", {
       # Sem comparação o eixo do IBISMA segue apenas o município principal
       session$setInputs(comparar = "nenhum")
       expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 80)
+      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max, 90)
       expect_length(opcoes_do_grafico(output$grafico_bloco1)$series, 1)
 
       # A identificação cita apenas o município principal
