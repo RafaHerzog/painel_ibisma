@@ -289,7 +289,7 @@ input:focus-visible,
 /* Alinhando o cabeçalho editorial das seções */
 .secao-cabecalho {
   max-width: 62rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
 }
 
 /* Estilizando o rótulo curto acima do título */
@@ -329,7 +329,7 @@ input:focus-visible,
   align-items: center;
   gap: 0.5rem 0.75rem;
   padding: 0.85rem 1.15rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
   background-color: #F4F8FF;
   border-radius: 16px;
 }
