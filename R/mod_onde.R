@@ -58,15 +58,17 @@ mod_onde_ui <- function(id) {
               )
             )
           ),
-          # Área do mapa com altura responsiva
-          htmltools::tags$div(
-            class = "mapa-area",
-            leaflet::leafletOutput(ns("mapa"), height = "100%")
+          # Área do mapa com altura responsiva e esqueleto empilhado
+          esqueleto_slot(
+            leaflet::leafletOutput(ns("mapa"), height = "100%"),
+            esqueleto_mapa(),
+            classe = "mapa-area"
           ),
           # Legenda das cinco categorias, recalculada por medida
-          htmltools::tags$div(
-            class = "mapa-legenda",
-            shiny::uiOutput(ns("legenda"))
+          esqueleto_slot(
+            shiny::uiOutput(ns("legenda")),
+            esqueleto_legenda(),
+            classe = "mapa-legenda"
           )
         ),
         # ----- Bloco do ranking -----
@@ -75,15 +77,26 @@ mod_onde_ui <- function(id) {
           htmltools::tags$div(
             class = "bloco-cabecalho",
             htmltools::tags$h3(class = "bloco-titulo", "Ranking dos munic\u00edpios"),
-            htmltools::tags$p(class = "bloco-descricao", shiny::textOutput(ns("ranking_resumo"), inline = TRUE))
+            htmltools::tags$p(
+              class = "bloco-descricao",
+              esqueleto_slot(
+                shiny::textOutput(ns("ranking_resumo"), inline = TRUE),
+                esqueleto_texto(),
+                classe = "esqueleto-slot--texto"
+              )
+            )
           ),
           # Controle de escopo do ranking (Brasil ou uma UF)
           frase_controles(
             htmltools::tags$span(class = "controle-texto", "Ranking em"),
             seletor_inline(ns("escopo"), opcoes_escopo_ranking(), selected = "nacional")
           ),
-          # Tabela interativa com a lista de municípios
-          reactable::reactableOutput(ns("ranking")),
+          # Tabela interativa com a lista de municípios e esqueleto empilhado
+          esqueleto_slot(
+            reactable::reactableOutput(ns("ranking")),
+            esqueleto_ranking(),
+            classe = "esqueleto-slot--ranking"
+          ),
           htmltools::tags$p(
             class = "bloco-nota",
             "Valores de 0 a 100. A posi\u00e7\u00e3o 1\u00ba indica o munic\u00edpio mais vulner\u00e1vel do escopo escolhido."

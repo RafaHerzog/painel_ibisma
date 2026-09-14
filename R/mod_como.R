@@ -52,11 +52,19 @@ mod_como_ui <- function(id) {
         id = ns("palcos"),
         htmltools::tags$div(
           class = "dupla__item dupla__item--principal",
-          shiny::uiOutput(ns("palco_principal"))
+          esqueleto_slot(
+            shiny::uiOutput(ns("palco_principal")),
+            esqueleto_palco(),
+            classe = "esqueleto-slot--palco esqueleto-slot--principal"
+          )
         ),
         htmltools::tags$div(
           class = "dupla__item dupla__item--comparado",
-          shiny::uiOutput(ns("palco_comparado"))
+          esqueleto_slot(
+            shiny::uiOutput(ns("palco_comparado")),
+            esqueleto_palco(),
+            classe = "esqueleto-slot--palco esqueleto-slot--comparado"
+          )
         )
       ),
       # Evolução temporal do IBISMA e dos seis blocos
@@ -78,17 +86,29 @@ mod_como_ui <- function(id) {
           id = ns("evolucoes"),
           htmltools::tags$div(
             class = "dupla__item dupla__item--principal",
-            shiny::uiOutput(ns("evolucao_principal"))
+            esqueleto_slot(
+              shiny::uiOutput(ns("evolucao_principal")),
+              esqueleto_evolucao(),
+              classe = "esqueleto-slot--evolucao"
+            )
           ),
           htmltools::tags$div(
             class = "dupla__item dupla__item--comparado",
-            shiny::uiOutput(ns("evolucao_comparada"))
+            esqueleto_slot(
+              shiny::uiOutput(ns("evolucao_comparada")),
+              esqueleto_evolucao(),
+              classe = "esqueleto-slot--evolucao"
+            )
           )
         ),
         # Legenda nativa compartilhada, centralizada abaixo dos gráficos
         htmltools::tags$div(
           class = "evolucao-legenda",
-          echarts4r::echarts4rOutput(ns("legenda_evolucao"), height = "64px")
+          esqueleto_slot(
+            echarts4r::echarts4rOutput(ns("legenda_evolucao"), height = "64px"),
+            esqueleto_legenda_evolucao(),
+            classe = "esqueleto-slot--legenda-evolucao"
+          )
         )
       )
     )
@@ -226,7 +246,11 @@ mod_como_server <- function(id, dados, municipio) {
           class = "evolucao-titulo",
           nome_municipio(dados, municipio())
         ),
-        echarts4r::echarts4rOutput(ns("grafico_principal"), height = "330px")
+        esqueleto_slot(
+          echarts4r::echarts4rOutput(ns("grafico_principal"), height = "330px"),
+          esqueleto_grafico(),
+          classe = "esqueleto-slot--grafico"
+        )
       )
     })
 
@@ -260,7 +284,11 @@ mod_como_server <- function(id, dados, municipio) {
           class = "evolucao-titulo",
           nome_municipio(dados, cod)
         ),
-        echarts4r::echarts4rOutput(ns("grafico_comparado"), height = "330px")
+        esqueleto_slot(
+          echarts4r::echarts4rOutput(ns("grafico_comparado"), height = "330px"),
+          esqueleto_grafico(),
+          classe = "esqueleto-slot--grafico"
+        )
       )
     })
 
