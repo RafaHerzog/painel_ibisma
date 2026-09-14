@@ -19,13 +19,20 @@ cor_medida <- function(medida) {
 #' Obtendo o nome de exibição de uma ou mais medidas
 #'
 #' @param medida Vetor de identificadores de medida.
+#' @param prefixo_bloco Se TRUE, prefixa os blocos com a palavra "Bloco".
 #' @return Vetor de nomes legíveis, na mesma ordem da entrada.
 #' @noRd
-nome_medida <- function(medida) {
+nome_medida <- function(medida, prefixo_bloco = FALSE) {
   # Casando cada medida com seu nome configurado
   nomes <- MEDIDAS$nome[match(medida, MEDIDAS$medida)]
   # Usando o próprio identificador como padrão para medidas desconhecidas
-  ifelse(is.na(nomes), medida, nomes)
+  nomes <- ifelse(is.na(nomes), medida, nomes)
+  # Prefixando os blocos com a palavra "Bloco" quando pedido
+  if (prefixo_bloco) {
+    blocos <- !is.na(medida) & medida != "indice_final"
+    nomes <- ifelse(blocos, paste("Bloco", nomes), nomes)
+  }
+  nomes
 }
 
 #' Misturando duas cores em hexadecimal

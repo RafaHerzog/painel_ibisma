@@ -744,6 +744,11 @@ input:focus-visible,
   max-width: 46rem;
 }
 
+/* Separando levemente a dica da tabela do ranking logo abaixo dela */
+.painel-bloco--ranking .bloco-descricao--tabela {
+  margin-bottom: 0.9rem;
+}
+
 /* Estilizando as notas de rodapé dos blocos */
 .bloco-nota {
   font-size: var(--fonte-pequena-size);
@@ -911,10 +916,54 @@ input:focus-visible,
   font-size: var(--fonte-media-size);
 }
 
-/* Compactando a busca da tabela de ranking */
+/* Aplicando a cor da medida exibida ao hover das linhas do ranking */
+/* O reactable usa a classe -sticky quando existe coluna fixa (Pos.) */
+.painel-bloco--ranking .rt-tr-highlight-sticky:hover {
+  background-color: var(--cor-hover-ranking, #F2F2F2);
+}
+
+/* Mantendo a cor de seleção da medida na linha destacada sob o mouse */
+.painel-bloco--ranking .rt-tr-selected:hover {
+  background-color: var(--cor-selecao-ranking, #EDE8F1);
+}
+
+/* Aplicando à busca do ranking o mesmo visual da busca dos seletores */
+/* O campo recebe a lupa da busca em segundo plano, à esquerda do texto */
 .painel-bloco--ranking .rt-search {
   margin-bottom: 0.75rem;
   max-width: 320px;
+  height: 2.4rem;
+  padding: 0 0.7rem 0 2.25rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background-color: rgba(10, 30, 60, 0.04);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A1E3C' stroke-opacity='0.45' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 0.7rem center;
+  background-size: 0.9rem 0.9rem;
+  color: #0A1E3C;
+  font-size: var(--fonte-media-size);
+  line-height: 1;
+  transition: background-color 0.16s ease, border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.painel-bloco--ranking .rt-search::placeholder {
+  color: rgba(10, 30, 60, 0.45);
+}
+
+.painel-bloco--ranking .rt-search:hover {
+  background-color: rgba(10, 30, 60, 0.07);
+}
+
+/* Reforçando o estado de foco com o anel azul e a lupa na cor do painel */
+.painel-bloco--ranking .rt-search:focus,
+.painel-bloco--ranking .rt-search:active {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: rgba(50, 160, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(50, 160, 255, 0.16);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231E5AA0' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E");
 }
 
 /* Diminuindo o espaço dos controles de página do reactable */
@@ -1619,13 +1668,20 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 /* Reproduzindo a busca, o cabeçalho, as linhas e a paginação da tabela */
 .esqueleto--ranking .esqueleto__busca {
-  width: 170px;
+  width: 196px;
   max-width: 100%;
-  height: 34px;
+  height: 2.4rem;
   margin-left: auto;
   margin-bottom: 12px;
   border-radius: 10px;
   background-color: var(--cor-esqueleto-base);
+}
+
+/* Acompanhando a largura reduzida da busca real nas telas pequenas */
+@media (max-width: 768px) {
+  .esqueleto--ranking .esqueleto__busca {
+    width: 173px;
+  }
 }
 
 /* Reproduzindo a rolagem horizontal e a largura mínima da tabela real */

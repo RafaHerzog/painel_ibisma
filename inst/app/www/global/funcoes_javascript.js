@@ -255,6 +255,69 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
   });
 })();
 
+/* =============================================================================
+   BUSCA DOS SELETORES
+   Ignorando maiúsculas, acentos e sinais nas buscas dos slimSelect, no mesmo
+   padrão usado pelas demais buscas do painel.
+   ============================================================================= */
+(function () {
+  /* Normalizando o texto como na busca do ranking */
+  function normalizar(texto) {
+    return String(texto)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+  }
+
+  /* Trocando o filtro padrão do slimSelect pelo filtro normalizado */
+  function ajustar(select) {
+    if (select.dataset.buscaNormalizada === "sim") return;
+    var instancia = select.slim;
+    if (!instancia || !instancia.events) return;
+    instancia.events.searchFilter = function (opcao, busca) {
+      return normalizar(opcao.text).indexOf(normalizar(busca)) !== -1;
+    };
+    select.dataset.buscaNormalizada = "sim";
+  }
+
+  /* Percorrendo os seletores e contando quantos ainda não foram ajustados */
+  function ajustarTodos() {
+    document.querySelectorAll("select.slim-select").forEach(ajustar);
+    return document.querySelectorAll(
+      "select.slim-select:not([data-busca-normalizada])"
+    ).length;
+  }
+
+  /* Repetindo algumas vezes até o Shiny criar todas as instâncias do plugin */
+  var tentativas = 0;
+  (function tentar() {
+    var pendentes = ajustarTodos();
+    if (pendentes > 0 && tentativas < 20) {
+      tentativas += 1;
+      setTimeout(tentar, 250);
+    }
+  })();
+
+  /* Garantindo o ajuste quando a página terminar de carregar */
+  window.addEventListener("load", ajustarTodos);
+})();
+
+/* =============================================================================
+   BUSCA DO RANKING
+   Avisando o servidor quando o campo de busca da tabela é esvaziado, para a
+   tabela voltar à página do município em foco.
+   ============================================================================= */
+document.addEventListener("input", function (evento) {
+  var alvo = evento.target;
+  if (!alvo || !alvo.classList || !alvo.classList.contains("rt-search")) return;
+  if (alvo.value !== "") return;
+  /* O nome do input segue o namespace do módulo Onde? do painel */
+  Shiny.setInputValue("onde-ranking_busca_limpa", Date.now(), {
+    priority: "event"
+  });
+});
+
 /* Posicionando as seções exatamente abaixo da navbar ao clicar nas âncoras */
 (function () {
   var navbar = document.querySelector(".navbar-ibisma");

@@ -81,19 +81,22 @@ mod_onde_ui <- function(id) {
           htmltools::tags$div(
             class = "bloco-cabecalho",
             htmltools::tags$h3(class = "bloco-titulo", "Ranking dos munic\u00edpios"),
-            htmltools::tags$p(
-              class = "bloco-descricao",
-              esqueleto_slot(
-                shiny::textOutput(ns("ranking_resumo"), inline = TRUE),
-                esqueleto_texto(),
-                classe = "esqueleto-slot--texto"
-              )
+            # Mantendo o resumo com o próprio estilo, sem classe de descrição
+            esqueleto_slot(
+              shiny::textOutput(ns("ranking_resumo"), inline = TRUE),
+              esqueleto_texto(),
+              classe = "esqueleto-slot--texto"
             )
           ),
           # Controle de escopo do ranking (Brasil ou uma UF)
           frase_controles(
             htmltools::tags$span(class = "controle-texto", "Ranking para"),
             seletor_inline(ns("escopo"), opcoes_escopo_ranking(), selected = "nacional")
+          ),
+          # Explicando o clique na tabela logo acima dela, com leve respiro
+          htmltools::tags$p(
+            class = "bloco-descricao bloco-descricao--tabela",
+            "Clique em um munic\u00edpio para destac\u00e1-lo em todo o painel."
           ),
           # Tabela interativa com a lista de municípios e esqueleto empilhado
           esqueleto_slot(
@@ -225,6 +228,19 @@ mod_onde_server <- function(id, dados, municipio) {
       base
     })
 
+    # Mantendo o município em foco quando ele segue no ranking após a troca
+    shiny::observeEvent(list(input$medida, input$escopo), {
+      tabela <- tabela_ranking()
+      selecionado <- municipio()
+      # Verificando se o município em foco continua presente no novo ranking
+      presente <- !is.null(selecionado) && !is.na(selecionado) &&
+        selecionado %in% tabela$codmunres
+      # Resetando para a primeira colocada quando o município sai do ranking
+      if (!presente && nrow(tabela) > 0) {
+        municipio(tabela$codmunres[1])
+      }
+    }, ignoreInit = TRUE)
+
     # Escrevendo o texto com o total de municípios do ranking
     output$ranking_resumo <- shiny::renderText({
       tabela <- tabela_ranking()
@@ -237,7 +253,7 @@ mod_onde_server <- function(id, dados, municipio) {
       }
       paste0(
         formatar_inteiro(total), " munic\u00edpios ", local,
-        " em ", input$ano, " \u00b7 ", nome_medida(input$medida)
+        " em ", input$ano, " \u00b7 ", nome_medida(input$medida, prefixo_bloco = TRUE)
       )
     })
 
@@ -257,6 +273,9 @@ mod_onde_server <- function(id, dados, municipio) {
       )
       # Montando os selos de categoria de uma vez, com a rampa da medida exibida
       exibicao$categoria_html <- montar_selos(exibicao$categoria, input$medida)
+
+      # Localizando a linha do município em foco para marcar já na montagem
+      destaque <- which(exibicao$codmunres == shiny::isolate(municipio()))
 
       reactable::reactable(
         exibicao,
@@ -281,6 +300,8 @@ mod_onde_server <- function(id, dados, municipio) {
         bordered = FALSE,
         onClick = "select",
         selection = "single",
+        # Marcando o município em foco já na montagem, junto com a tabela
+        defaultSelected = if (length(destaque) > 0) destaque else NULL,
         columns = list(
           posicao = reactable::colDef(
             name = "Pos.", width = 62, align = "right", sticky = "left",
@@ -305,7 +326,7 @@ mod_onde_server <- function(id, dados, municipio) {
           categoria = reactable::colDef(show = FALSE),
           codmunres = reactable::colDef(show = FALSE)
         ),
-        theme = tema_reactable()
+        theme = tema_reactable(input$medida)
       )
     })
 
@@ -321,22 +342,40 @@ mod_onde_server <- function(id, dados, municipio) {
       }
     })
 
-    # Acompanhando o município selecionado para posicionar o ranking nele
+    # Destacando no ranking o município em foco escolhido fora da tabela
     shiny::observeEvent(municipio(), {
       selecionado <- municipio()
       if (is.null(selecionado) || is.na(selecionado)) return()
       tabela <- tabela_ranking()
       linha <- match(selecionado, tabela$codmunres)
       if (is.na(linha)) return()
-      pagina <- ceiling(linha / 12)
       if (!identical(reactable::getReactableState("ranking", "selected"), linha)) {
-        reactable::updateReactable("ranking", selected = linha, page = pagina)
+        reactable::updateReactable("ranking", selected = linha)
       }
     }, ignoreInit = TRUE)
+
+    # Movendo a página para exibir a linha em foco quando ela fica fora da página
+    shiny::observeEvent(reactable::getReactableState("ranking", "selected"), {
+      selecionada <- reactable::getReactableState("ranking", "selected")
+      if (length(selecionada) == 0) return()
+      alvo <- ceiling(selecionada[1] / 12)
+      pagina <- reactable::getReactableState("ranking", "page")
+      if (!is.null(pagina) && !identical(as.integer(pagina), as.integer(alvo))) {
+        reactable::updateReactable("ranking", page = alvo)
+      }
+    }, ignoreInit = TRUE)
+
+    # Voltando à página do município em foco quando a busca da tabela é limpa
+    shiny::observeEvent(input$ranking_busca_limpa, {
+      tabela <- tabela_ranking()
+      linha <- match(municipio(), tabela$codmunres)
+      if (is.na(linha)) return()
+      reactable::updateReactable("ranking", page = ceiling(linha / 12))
+    })
   })
 }
 
-# Definindo a busca do reactable que ignora acentos e maiúsculas
+# Definindo a busca do reactable que ignora acentos, sinais e maiúsculas
 # O reactable entrega objetos de linha e os valores ficam em linha.values
 busca_sem_acento <- reactable::JS(
   "function (rows, colunas, busca) {
@@ -344,9 +383,10 @@ busca_sem_acento <- reactable::JS(
        return String(texto)
          .normalize('NFD')
          .replace(/[\\u0300-\\u036f]/g, '')
-         .toLowerCase();
+         .toLowerCase()
+         .replace(/[^a-z0-9]+/g, '');
      };
-     var alvo = normalizar(busca).trim();
+     var alvo = normalizar(busca);
      if (alvo === '') return rows;
      return rows.filter(function (linha) {
        var valores = linha.values || {};
@@ -358,12 +398,15 @@ busca_sem_acento <- reactable::JS(
 
 #' Definindo o tema visual das tabelas reactable
 #'
+#' @param medida Identificador da medida exibida no ranking.
 #' @return Objeto reactableTheme com as cores do projeto.
 #' @noRd
-tema_reactable <- function() {
-  # Derivando os tons suaves do roxo do IBISMA usados nos destaques da tabela
-  destaque <- misturar_cores(COR_IBISMA, "#FFFFFF", 0.90)
-  hover <- misturar_cores(COR_IBISMA, "#FFFFFF", 0.94)
+tema_reactable <- function(medida = "indice_final") {
+  # Obtendo a cor de identificação da medida exibida no ranking
+  base <- cor_medida(medida)[1]
+  # Derivando os tons suaves da cor da medida usados nos destaques da tabela
+  destaque <- misturar_cores(base, "#FFFFFF", 0.90)
+  hover <- misturar_cores(base, "#FFFFFF", 0.94)
 
   reactable::reactableTheme(
     color = COR_AZUL_ESCURO,
@@ -372,7 +415,13 @@ tema_reactable <- function() {
     stripedColor = "#F8F9FB",
     highlightColor = hover,
     cellPadding = "8px 10px",
-    style = list(fontFamily = "'Source Sans Pro', system-ui, sans-serif", fontSize = "0.8125rem"),
+    style = list(
+      fontFamily = "'Source Sans Pro', system-ui, sans-serif",
+      fontSize = "0.8125rem",
+      # Expondo as cores da medida para o CSS das linhas com coluna fixa
+      "--cor-hover-ranking" = hover,
+      "--cor-selecao-ranking" = destaque
+    ),
     headerStyle = list(
       backgroundColor = "#FFFFFF",
       borderBottom = "1px solid #DDE1E8",
@@ -384,16 +433,12 @@ tema_reactable <- function() {
     ),
     rowSelectedStyle = list(
       backgroundColor = destaque,
-      boxShadow = paste0("inset 3px 0 0 0 ", COR_IBISMA)
-    ),
-    searchInputStyle = list(
-      backgroundColor = "#F8F9FB",
-      border = "1px solid #DDE1E8",
-      borderRadius = "10px",
-      padding = "6px 10px",
-      fontSize = "0.8125rem"
+      boxShadow = paste0("inset 3px 0 0 0 ", base)
     ),
     pageButtonHoverStyle = list(backgroundColor = hover),
-    pageButtonActiveStyle = list(backgroundColor = COR_IBISMA, color = "#FFFFFF")
+    pageButtonActiveStyle = list(
+      backgroundColor = base,
+      color = cor_texto_sobre(base)
+    )
   )
 }

@@ -301,6 +301,145 @@ test_that("opções de medida, ano e escopo do ranking estão completas", {
   expect_equal(length(escopos), 28)
 })
 
+test_that("nome_medida prefixa os blocos com Bloco quando pedido", {
+  # O IBISMA nunca recebe o prefixo
+  expect_equal(nome_medida("indice_final", prefixo_bloco = TRUE), "IBISMA")
+  expect_equal(
+    nome_medida("bloco2", prefixo_bloco = TRUE),
+    "Bloco Planejamento Reprodutivo"
+  )
+  # Sem o prefixo, os nomes continuam como configurados
+  expect_equal(
+    nome_medida(c("indice_final", "bloco2")),
+    c("IBISMA", "Planejamento Reprodutivo")
+  )
+})
+
+test_that("tema_reactable adapta os destaques à cor da medida", {
+  # No IBISMA os destaques continuam roxos e com texto branco
+  ibisma <- tema_reactable("indice_final")
+  expect_equal(ibisma$highlightColor, misturar_cores(COR_IBISMA, "#FFFFFF", 0.94))
+  expect_equal(
+    ibisma$rowSelectedStyle$backgroundColor,
+    misturar_cores(COR_IBISMA, "#FFFFFF", 0.90)
+  )
+  expect_equal(ibisma$pageButtonActiveStyle$backgroundColor, COR_IBISMA)
+  expect_equal(ibisma$pageButtonActiveStyle$color, "#FFFFFF")
+
+  # Em um bloco, hover, linha selecionada e paginação usam a cor do bloco
+  bloco <- tema_reactable("bloco1")
+  base <- cor_medida("bloco1")
+  expect_equal(bloco$highlightColor, misturar_cores(base, "#FFFFFF", 0.94))
+  expect_equal(
+    bloco$rowSelectedStyle$backgroundColor,
+    misturar_cores(base, "#FFFFFF", 0.90)
+  )
+  expect_true(grepl(base, bloco$rowSelectedStyle$boxShadow, fixed = TRUE))
+  expect_equal(
+    bloco$pageButtonHoverStyle$backgroundColor,
+    misturar_cores(base, "#FFFFFF", 0.94)
+  )
+  expect_equal(bloco$pageButtonActiveStyle$backgroundColor, base)
+  # O amarelo do bloco Social pede texto escuro no botão de página ativo
+  expect_equal(bloco$pageButtonActiveStyle$color, COR_AZUL_ESCURO)
+  # A cor de hover também viaja como variável CSS usada pelas linhas com coluna fixa
+  expect_equal(
+    bloco$style[["--cor-hover-ranking"]],
+    misturar_cores(base, "#FFFFFF", 0.94)
+  )
+  expect_equal(
+    bloco$style[["--cor-selecao-ranking"]],
+    misturar_cores(base, "#FFFFFF", 0.90)
+  )
+})
+
+test_that("o ranking marca o município em foco na montagem e mantém o foco", {
+  municipio <- shiny::reactiveVal(110002)
+  chamadas <- new.env(parent = emptyenv())
+  chamadas$registro <- list()
+
+  # Capturando as chamadas de atualização do reactable sem depender do cliente
+  testthat::local_mocked_bindings(
+    updateReactable = function(outputId, selected = NULL, page = NULL, ...) {
+      chamadas$registro[[length(chamadas$registro) + 1]] <- list(
+        selected = selected, page = page
+      )
+      invisible(NULL)
+    },
+    .package = "reactable"
+  )
+
+  shiny::testServer(
+    mod_onde_server,
+    args = list(dados = preparado_teste, municipio = municipio),
+    {
+      # Lendo o destaque marcado já na montagem do widget (índice 0-based)
+      destaque_do_render <- function() {
+        widget <- jsonlite::fromJSON(output$ranking, simplifyVector = FALSE)
+        unlist(widget$x$tag$attribs$defaultSelected)
+      }
+
+      session$setInputs(ano = "2020", medida = "indice_final", escopo = "nacional")
+      # Dois (90) lidera o índice final e já vem marcado no próprio render
+      expect_equal(destaque_do_render(), 0)
+
+      # Trocando o município em foco fora da tabela, a seleção acompanha
+      municipio(350002)
+      session$flushReact()
+      ultima <- tail(chamadas$registro, 1)[[1]]
+      expect_equal(ultima$selected, 4L)
+
+      # Ao trocar a dimensão, o foco é mantido porque segue no ranking
+      # Quatro está no bloco6 de 2020 (4º lugar) e já sai marcado no render
+      session$setInputs(medida = "bloco6")
+      session$flushReact()
+      expect_equal(municipio(), 350002)
+      expect_equal(destaque_do_render(), 3)
+
+      # Ao mudar o escopo para fora do ranking, o foco vai para o 1º colocado
+      # Quatro não está em RO; Um (110001) lidera o bloco6 no estado
+      session$setInputs(escopo = "RO")
+      session$flushReact()
+      expect_equal(municipio(), 110001)
+      expect_equal(destaque_do_render(), 0)
+
+      # Voltando ao Brasil, o foco é mantido porque Um segue no ranking (2º)
+      session$setInputs(escopo = "nacional")
+      session$flushReact()
+      expect_equal(municipio(), 110001)
+      expect_equal(destaque_do_render(), 1)
+
+      # Quando a seleção chega fora da página exibida, a tabela salta para ela
+      session$setInputs(`ranking__reactable__selected` = 22L, `ranking__reactable__page` = 1L)
+      ultima <- tail(chamadas$registro, 1)[[1]]
+      expect_null(ultima$selected)
+      expect_equal(ultima$page, 2)
+
+      # Ao limpar a busca da tabela, a página volta para o município em foco
+      chamadas$registro <- list()
+      session$setInputs(`ranking_busca_limpa` = 1)
+      expect_length(chamadas$registro, 1)
+      expect_null(chamadas$registro[[1]]$selected)
+      expect_equal(chamadas$registro[[1]]$page, 1)
+    }
+  )
+})
+
+test_that("o ranking descreve o clique na tabela logo acima dela", {
+  ui <- as.character(mod_onde_ui("onde"))
+  # A dica usa a classe de descrição com o modificador de respiro da tabela
+  expect_true(grepl(
+    paste0(
+      'class="bloco-descricao bloco-descricao--tabela"',
+      ">Clique em um munic\u00edpio para destac\u00e1-lo em todo o painel.</p>"
+    ),
+    ui,
+    fixed = TRUE
+  ))
+  # O resumo fica sem a classe de descrição
+  expect_false(grepl("esqueleto-slot--texto bloco-descricao", ui, fixed = TRUE))
+})
+
 test_that("seletor_inline controla a busca e traduz os textos", {
   # O seletor padrão liga a busca e usa os textos em português
   com_busca <- as.character(seletor_inline("teste", c("A" = "a", "B" = "b")))
