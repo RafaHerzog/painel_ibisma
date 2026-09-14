@@ -1194,3 +1194,111 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - O eixo adaptativo não começa em 0; o recorte fica visível apenas nos rótulos
   do próprio eixo (a frase que explicava o ajuste foi retirada da descrição).
 
+---
+
+# Sessão 12 — Evolução temporal em pequenos múltiplos (14/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** reformular a visualização "Evolução ao longo do tempo" — que
+  concentrava IBISMA e seis blocos em um único gráfico por município — em uma
+  grade com um gráfico para o índice e seis para os blocos, com identificação
+  direta das localidades e comparação dentro de cada gráfico.
+
+## 1. Estrutura
+
+- A seção passou a ter um cartão de largura total para o **IBISMA** e o título
+  intermediário **"Blocos do IBISMA"** (mantendo a linguagem de "blocos" usada
+  pelas pétalas e pelos seletores) sobre seis cartões em pequenos múltiplos.
+- A grade usa CSS Grid: 3 colunas em telas largas (3 × 2), 2 colunas até
+  1100 px (alinhado ao breakpoint da comparação de palcos) e 1 coluna até
+  768 px. O cartão do IBISMA ocupa a largura toda em qualquer largura.
+- Alturas fixas: 270 px para o IBISMA e 160 px para os blocos, evitando que os
+  cartões fiquem estreitos demais sem depender de recálculo de tamanho.
+- `grade_evolucao_ui()` (em `fct_graficos.R`) monta os sete cartões; o servidor
+  registra os sete outputs em um laço sobre `MEDIDAS`, sem repetição de código.
+- O grid do ECharts usa `left = 28` (sem `containLabel`), de modo que os
+  números do eixo Y começam junto da borda esquerda do cartão, alinhados ao
+  título (medido em 3,6 px de folga).
+- O esqueleto da seção (`esqueleto_grade_evolucao()`) reproduz a mesma grade e
+  as mesmas alturas, com a coluna de 28 px dos números do eixo Y
+  (`.esqueleto__grafico` em grid): `esqueleto_grafico_margem()` desenha barras
+  claras e de tamanho único (16 × 4 px, início em 4 px, como o "100" real em
+  3,6 px) na posição exata em que os números aparecem, e
+  `esqueleto_grafico_svg(altura)` traça a grade e os
+  traços nas margens do ECharts (topo 16 px, base `altura - 28 px`), sem a
+  linha vertical de eixo Y que o gráfico real não tem.
+
+## 2. Uma medida por gráfico, até duas localidades
+
+- `grafico_evolucao()` passou a desenhar **uma única medida** ("indice_final"
+  ou um bloco) com uma ou duas séries: principal (linha cheia) e comparada
+  (linha **pontilhada**, mesma cor e opacidade 0,55, desenhada abaixo).
+- Os pisos do eixo Y passaram a ser calculados por grupo com
+  `piso_eixo_y(series, medidas)`: o IBISMA usa o piso da própria série e os
+  seis blocos **compartilham** o piso da menor série de bloco entre os dois
+  municípios, para os cartões serem comparáveis entre si. O topo segue em 100.
+- A legenda foi eliminada: cada série leva o nome da localidade no fim da
+  linha (`endLabel` nativo do ECharts, formatter `{a}`), com `align: "right"` e
+  halo branco (`textBorderColor`) para leitura sobre as linhas.
+- `lados_rotulos()` decide o lado e o afastamento de cada nome: acima por
+  padrão, abaixo perto do topo do eixo, e em lados opostos (ou com
+  afastamentos diferentes) quando os dois fins estão próximos — evitando
+  rótulos sobrepostos sem truncar nomes, inclusive nos mais longos da base
+  ("Vila Bela da Santíssima Trindade (MT)", 178 px).
+- A legenda nativa não é mais usada em lugar nenhum da seção: saíram o widget
+  compartilhado (`grafico_legenda()`), o `estilo_echarts()` e o sincronismo de
+  grupo do ECharts; o `e_legend(show = FALSE)` é explícito porque o echarts4r
+  cria uma legenda padrão quando as séries têm nome.
+- O hover não apaga a série vizinha: nenhuma das linhas usa `focus` no
+  `emphasis`, então as duas permanecem visíveis enquanto o mouse está sobre o
+  gráfico; a comparação mantém o traço pontilhado mais claro mesmo sob o
+  cursor. O retorno visual do hover fica com o realce padrão do ECharts e com
+  a tooltip.
+- Hierarquia dos títulos dentro dos cartões: "IBISMA" em
+  `--fonte-muito-grande-size` e os seis blocos em `--fonte-grande-size`
+  (`.evolucao-card--ibisma .evolucao-card__titulo`).
+
+## 3. Tooltip
+
+- Trigger por eixo, uma tooltip por gráfico (a sincronização entre gráficos
+  deixou de existir porque as duas localidades convivem no mesmo gráfico).
+- Cabeçalho apenas com o ano (`2024`); cada linha traz o nome da localidade à
+  esquerda e o valor à direita (`display:flex; align-items:center;
+  justify-content:space-between`) e uma marca própria no lugar do `p.marker`:
+  um traço curto na cor do bloco com um ponto pequeno no centro, contínuo na
+  série principal e pontilhado na comparação; na comparação a cor é clareada em
+  direção ao branco (mistura opaca de 55%, e não rgba) para o pontilhado não
+  aparecer dentro da bolinha. A cor identifica a dimensão e o tipo de traço
+  identifica a localidade.
+
+## 4. Módulo e JavaScript
+
+- `mod_como.R` perdeu a dupla de colunas da evolução e a legenda inferior; a
+  seção virou um único slot (`uiOutput(ns("evolucoes"))`) que mostra a grade ou
+  um estado vazio quando não há série temporal.
+- O piso compartilhado `piso_y` foi substituído por `piso_ibisma` e
+  `piso_blocos`; a comparação é desenhada apenas quando o comparado tem série.
+- O handler `ibisma_comparacao` deixou de tratar a antiga coluna de evolução e
+  de disparar `resize` (os gráficos da grade não mudam de largura com a
+  comparação); continua aplicando `dupla--comparando` nos palcos.
+
+## 5. Testes e validação
+
+- `devtools::test()`: **222 asserções verdes** — testes reescritos de
+  `grafico_evolucao` (uma medida, cores, traço pontilhado, rótulos, tooltip e
+  ausência de `focus` no hover), `lados_rotulos` (separação dos rótulos e
+  bordas do eixo), `piso_eixo_y` por grupo, pisos por grupo no `testServer` e
+  esqueleto da grade com sete cartões, coluna de margem e 28 barras de número.
+- Smoke headless em 1600, 1024 e 390 px, com e sem comparação, hover real
+  (tooltip `Social — 2019 / Jutaí (AM) 99,7`), alternância liga/desliga da
+  comparação (2 → 1 séries), cenário Borá/2023 (lacuna no ano ausente), nome
+  longo (rótulos dentro dos cartões), palcos ainda lado a lado na comparação e
+  esqueleto da grade com a mesma geometria final (936 px). Sem erros de
+  JavaScript e sem estouro horizontal.
+- Alinhamento e esqueleto conferidos por medição: número real em 3,6 px e
+  grade em 28/16/`altura - 28`; esqueleto com barras de 16 × 4 px em 4,0 px,
+  grade idêntica e sem a linha vertical que o gráfico não tem.
+- Evidências em `dev/smoke/evolucao_v2/`, `evolucao_v3/` e `evolucao_v4/`
+  (ignorados pelo git): a v3 registra as alturas menores e o novo tooltip; a
+  v4, o alinhamento do eixo e as barras uniformes do esqueleto.
+
