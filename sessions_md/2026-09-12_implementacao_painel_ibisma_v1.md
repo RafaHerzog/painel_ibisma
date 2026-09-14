@@ -839,3 +839,105 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - Smoke headless: navbar com `Onde?->#onde` e `Como?->#como`, seções `#onde`
   e `#como` presentes e módulos `#onde-mapa` e `#como-palcos` renderizando,
   sem erros de JavaScript ou de servidor.
+
+---
+
+# Sessão 8 — Esqueletos de carregamento (13/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** adicionar esqueletos de carregamento a todos os outputs,
+  preservando o espaço do conteúdo, com o visual do painel hospitalar e sem
+  mudanças bruscas de layout.
+
+## 1. Arquitetura em slots empilhados
+
+- `R/fct_esqueleto.R` passou a montar os esqueletos e o helper
+  `esqueleto_slot(output, esqueleto)`, que cria `div.esqueleto-slot` com
+  `display: grid` e os dois na mesma célula (`grid-area: stack`).
+- O CSS exibe o esqueleto apenas enquanto o output está `:empty`
+  (``.esqueleto-slot > :not(.esqueleto):empty + .esqueleto``) e o esconde
+  assim que o conteúdo renderiza; como os dois ocupam a mesma célula, a
+  altura é sempre `max(esqueleto, conteúdo)`.
+- Os wrappers de `uiOutput` (que o Shiny deixa `display: contents`) viram
+  blocos dentro dos slots para permitir a sobreposição.
+- A primeira versão usava templates clonados por JavaScript; a versão final
+  adotou a arquitetura de slot do painel hospitalar e **removeu o controlador
+  JavaScript** (o arquivo `funcoes_javascript.js` só recebeu o marcador de
+  carga inicial).
+
+## 2. Cores e animação iguais às do painel hospitalar
+
+- Gradiente e animação copiados literalmente do
+  `painel_hospitalar_copilot`: `linear-gradient(90deg, rgb(224 233 242 / 68%)
+  24%, rgb(246 249 252 / 82%) 50%, rgb(224 233 242 / 68%) 76%)`,
+  `background-size: 210% 100%` e `animation: loading-shimmer 1.7s infinite
+  ease` (`background-position: 200% → -200%`).
+- O hospitalar não tem guarda de `prefers-reduced-motion` para o shimmer; a
+  primeira versão do painel desligava a animação nesse caso e o brilho
+  parecia parado (o Windows do usuário está com os efeitos de animação
+  desligados). A guarda foi removida para manter a paridade.
+- Mapas, pétalas e curvas (SVG) não aceitam `background` animado; receberam
+  uma camada `::after` com as mesmas cores e o mesmo `loading-shimmer` sobre
+  o desenho.
+
+## 3. Esqueleto do mapa
+
+- Saíram as formas circulares abstratas; entrou a **silhueta do Brasil**
+  gerada a partir da malha real: `st_union` das UFs, `st_simplify` de 20 km
+  (184 pontos) e normalização para um viewBox `0 0 100 100`.
+- O caminho foi embutido como constante `ESQUELETO_MAPA_BRASIL` e o SVG usa
+  `preserveAspectRatio="xMidYMid meet"`, com o controle de zoom reservado.
+
+## 4. Esqueletos apenas no carregamento inicial
+
+- `funcoes_javascript.js`: no primeiro `shiny:idle` (que fecha a primeira
+  fila de recálculos), espera 700 ms, confirma que não há `.recalculating` e
+  adiciona `pagina-carregada` ao `<html>`; se houver recálculo atrasado,
+  tenta de novo a cada 250 ms.
+- O CSS `html.pagina-carregada .esqueleto-slot > .esqueleto` esconde os
+  esqueletos definitivamente, inclusive em elementos recriados (gráficos de
+  evolução na troca de município) e no palco comparado.
+
+## 5. Diagnóstico do flash de rodapé
+
+- Um gravador por `requestAnimationFrame` mediu a altura da página durante a
+  carga: ela caía de **2819 px para 1777 px por ~150 ms** quando os
+  esqueletos eram removidos (o controlador JavaScript os removia no início
+  do flush, antes de os valores renderizarem).
+- Com os slots empilhados, a janela vazia deixou de existir: a altura fica
+  estável (`quedas: []`) e a troca de filtro com a página rolada não gera
+  quedas nem saltos de scroll (`min = max = 2819`).
+
+## 6. Ajustes do esqueleto da tabela do ranking
+
+- Busca alinhada à direita (`margin-left: auto`), na mesma posição do
+  `.rt-search` real (`x1287 w170`).
+- Cabeçalho com uma barra por coluna, na largura e no alinhamento dos
+  rótulos reais (Pos. e Valor à direita), com 7 px de altura.
+- Paginação com a sequência real: Anterior, botões de página unificados,
+  reticências, última página e Próxima — quebrando linha no mobile como o
+  reactable (o "Próxima" desce para a segunda linha, à esquerda).
+- Barra do resumo (`onde-ranking_resumo`) passou de `0.65em` para `0.85em`.
+
+## 7. Testes e validação
+
+- `devtools::test()`: **172 asserções verdes**, incluindo a estrutura dos
+  esqueletos e do slot.
+- Geometria real × esqueleto com delta 0 em 1600×900 (com e sem comparação)
+  e em 390×844: mapa 540/490, ranking 476/506, palco 610/609, evolução
+  357/354; altura da página idêntica antes/durante/depois da carga.
+- Ciclo CSS verificado nas trocas de ano, medida, escopo e comparação:
+  nenhum esqueleto aparece depois de `pagina-carregada` (`maxEsq = 0`) e
+  nenhum fica preso.
+- `prefers-reduced-motion`: o shimmer permanece ativo, como no hospitalar.
+
+## 8. Limitações
+
+- O esqueleto da tabela reserva sempre as 12 linhas da página padrão, mesmo
+  quando o escopo tem menos municípios (só o DF tem 1 linha).
+- Elementos recriados depois da carga (gráfico de evolução na troca de
+  município) ficam com o espaço reservado vazio por ~80 ms, sem esqueleto,
+  por decisão de exibi-los apenas no carregamento inicial.
+- O esqueleto do palco reserva a altura cheia; em anos sem dado (Borá/2023)
+  o palco vira estado vazio depois da carga inicial, como antes.
+
