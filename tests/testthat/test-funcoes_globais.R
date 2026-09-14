@@ -112,7 +112,13 @@ test_that("grafico_evolucao desenha as sete séries com as cores das medidas", {
   simbolos <- vapply(grafico$x$opts$series, function(s) s$symbol, character(1))
   expect_true(all(simbolos == "circle"))
   tamanhos <- vapply(grafico$x$opts$series, function(s) s$symbolSize, numeric(1))
-  expect_true(all(tamanhos == 6))
+  expect_equal(tamanhos[1], 8)
+  expect_true(all(tamanhos[-1] == 5))
+
+  # Somente o IBISMA exibe a bolinha fixa; nos blocos ela aparece no hover
+  mostrar <- vapply(grafico$x$opts$series, function(s) s$showSymbol, logical(1))
+  expect_true(mostrar[1])
+  expect_true(all(!mostrar[-1]))
 
   # A legenda nativa aparece e o grupo sincroniza os dois gráficos
   expect_true(grafico$x$opts$legend$show)
@@ -124,10 +130,22 @@ test_that("grafico_evolucao desenha as sete séries com as cores das medidas", {
   expect_s3_class(formatter, "JS_EVAL")
   expect_true(grepl("Math.round", as.character(formatter)))
 
-  # A série do IBISMA deve ser a mais espessa do gráfico
+  # O IBISMA deve ser a série mais espessa, mais opaca e desenhada por cima
   larguras <- vapply(grafico$x$opts$series, function(s) s$lineStyle$width, numeric(1))
-  expect_equal(larguras[1], 3)
-  expect_true(all(larguras[-1] == 2))
+  expect_equal(larguras[1], 3.5)
+  expect_true(all(larguras[-1] == 1.8))
+  opacidades <- vapply(grafico$x$opts$series, function(s) s$lineStyle$opacity, numeric(1))
+  expect_equal(opacidades[1], 1)
+  expect_true(all(opacidades[-1] == 0.7))
+  zs <- vapply(grafico$x$opts$series, function(s) s$z, numeric(1))
+  expect_equal(zs[1], 10)
+  expect_true(all(zs[-1] == 2))
+
+  # O eixo Y começa no piso dos dados e pode ser fixado pelo módulo
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 20)
+  expect_equal(grafico$x$opts$yAxis[[1]]$max, 100)
+  compartilhado <- grafico_evolucao(series, minimo_y = 90)
+  expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 90)
 
   # O tooltip leva o nome do município com aspas escapadas para o JavaScript
   formatter <- as.character(grafico$x$opts$tooltip$formatter)
@@ -137,6 +155,56 @@ test_that("grafico_evolucao desenha as sete séries com as cores das medidas", {
   com_apostrofo <- grafico_evolucao(series, nome = "Olho d'\u00c1gua do Borges (RN)")
   escapado <- as.character(com_apostrofo$x$opts$tooltip$formatter)
   expect_true(grepl("Olho d\\'\u00c1gua do Borges (RN)", escapado, fixed = TRUE))
+})
+
+test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
+  series <- series_municipio(preparado_teste, 110002)
+  # O menor valor do município fica em 25, então o eixo começa em 20
+  expect_equal(piso_eixo_y(series), 20)
+
+  # Valores altos aproximam o piso de 100, sem criar um eixo degenerado
+  alto <- series
+  alto[, MEDIDAS$medida] <- 95
+  alto$indice_final[alto$ano == 2021] <- 91
+  expect_equal(piso_eixo_y(alto), 90)
+
+  cem <- series
+  cem[, MEDIDAS$medida] <- 100
+  expect_equal(piso_eixo_y(cem), 90)
+
+  # Série sem valor algum mantém o eixo na escala completa
+  vazio <- series
+  vazio[, MEDIDAS$medida] <- NA_real_
+  expect_equal(piso_eixo_y(vazio), 0)
+})
+
+test_that("a comparação usa o mesmo piso de eixo Y nos dois gráficos", {
+  municipio <- shiny::reactiveVal(110002)
+  shiny::testServer(
+    mod_como_server,
+    args = list(dados = preparado_teste, municipio = municipio),
+    {
+      session$setInputs(municipio = "110002", ano = "2020", comparar = "350002")
+
+      # Lendo o piso diretamente do JSON do widget renderizado
+      piso_do_grafico <- function(saida) {
+        jsonlite::fromJSON(saida, simplifyVector = FALSE)$x$opts$yAxis[[1]]$min
+      }
+
+      # O comparado tem os menores valores, então o eixo dos dois começa em 10
+      expect_equal(piso_do_grafico(output$grafico_principal), 10)
+      expect_equal(piso_do_grafico(output$grafico_comparado), 10)
+
+      # Sem comparação o eixo volta a acompanhar apenas o município principal
+      session$setInputs(comparar = "nenhum")
+      expect_equal(piso_do_grafico(output$grafico_principal), 20)
+
+      # Com o principal sem dado, o eixo do comparado segue apenas o comparado
+      session$setInputs(comparar = "350002", municipio = "999999")
+      expect_error(output$grafico_principal, class = "shiny.silent.error")
+      expect_equal(piso_do_grafico(output$grafico_comparado), 10)
+    }
+  )
 })
 
 test_that("grafico_legenda monta a legenda nativa compartilhada das sete séries", {

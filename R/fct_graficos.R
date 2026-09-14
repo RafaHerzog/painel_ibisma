@@ -81,6 +81,23 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
   do.call(echarts4r::e_tooltip, c(list(grafico), opcoes))
 }
 
+#' Calculando o piso do eixo Y das séries temporais
+#'
+#' @param series Data frame retornado por series_municipio().
+#' @return Piso em dezena para o eixo começar perto dos dados (0 a 90).
+#' @noRd
+piso_eixo_y <- function(series) {
+  # Reunindo todos os valores das sete medidas em um único vetor
+  valores <- unlist(series[, MEDIDAS$medida], use.names = FALSE)
+  if (all(is.na(valores))) {
+    return(0)
+  }
+
+  # Arredondando o menor valor para baixo na dezena e evitando eixo degenerado
+  piso <- floor(min(valores, na.rm = TRUE) / 10) * 10
+  max(0, min(piso, 90))
+}
+
 #' Montando o gráfico de evolução temporal de um município
 #'
 #' @param series Data frame retornado por series_municipio().
@@ -88,30 +105,54 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
 #' @param legenda Exibir a legenda nativa do echarts no topo (opcional).
 #' @param grupo Nome do grupo que sincroniza a legenda entre dois gráficos.
 #' @param selecao Lista com as séries visíveis na legenda (opcional).
+#' @param minimo_y Piso do eixo Y; quando NULL, calculado das próprias séries.
 #' @return Objeto echarts4r pronto para renderização.
 #' @noRd
 grafico_evolucao <- function(series, nome = NULL, legenda = TRUE, grupo = NULL,
-                             selecao = NULL) {
+                             selecao = NULL, minimo_y = NULL) {
+  # Calculando o piso do eixo quando o módulo não impõe um valor compartilhado
+  if (is.null(minimo_y)) {
+    minimo_y <- piso_eixo_y(series)
+  }
+
   # Criando o gráfico e acrescentando uma linha para cada uma das sete medidas
   grafico <- echarts4r::e_charts(series, ano)
   for (i in seq_len(nrow(MEDIDAS))) {
     medida <- MEDIDAS$medida[i]
-    # Destacando o IBISMA com a linha mais espessa do gráfico
-    largura <- if (identical(medida, "indice_final")) 3 else 2
+    # Reservando ao IBISMA a linha mais espessa, o maior ponto e o topo do desenho
+    eh_indice <- identical(medida, "indice_final")
+    largura <- if (eh_indice) 3.5 else 1.8
+    tamanho <- if (eh_indice) 8 else 5
+    z <- if (eh_indice) 10 else 2
+    # Esmaecendo os blocos para o índice se destacar entre as sete linhas
+    opacidade <- if (eh_indice) 1 else 0.7
     grafico <- grafico |>
       echarts4r::e_line_(
         serie = medida,
         name = MEDIDAS$nome[i],
         symbol = "circle",
-        symbolSize = 6,
+        symbolSize = tamanho,
+        # Mostrando a bolinha só no IBISMA; nos blocos ela surge no hover
+        showSymbol = eh_indice,
+        # Colocando o IBISMA acima das demais linhas na ordem de desenho
+        z = z,
         connectNulls = FALSE,
         # Apagando as demais linhas ao passar o mouse para facilitar a leitura
-        emphasis = list(focus = "series"),
-        lineStyle = list(width = largura, color = MEDIDAS$cor[i]),
+        emphasis = list(
+          focus = "series",
+          lineStyle = list(opacity = 1),
+          itemStyle = list(opacity = 1)
+        ),
+        lineStyle = list(
+          width = largura,
+          color = MEDIDAS$cor[i],
+          opacity = opacidade
+        ),
         itemStyle = list(
           color = MEDIDAS$cor[i],
           borderColor = "#FFFFFF",
-          borderWidth = 1.2
+          borderWidth = 1.2,
+          opacity = opacidade
         )
       )
   }
@@ -133,7 +174,7 @@ grafico_evolucao <- function(series, nome = NULL, legenda = TRUE, grupo = NULL,
       splitLine = list(show = FALSE)
     ) |>
     echarts4r::e_y_axis(
-      min = 0,
+      min = minimo_y,
       max = 100,
       name = NULL,
       axisLabel = list(color = "#5A6472", fontSize = 11),
@@ -176,7 +217,7 @@ grafico_legenda <- function(grupo = NULL) {
   # Montando as sete séries invisíveis que dão nome e cor a cada item
   grafico <- echarts4r::e_charts(vazio, ano)
   for (i in seq_len(nrow(MEDIDAS))) {
-    largura <- if (identical(MEDIDAS$medida[i], "indice_final")) 3 else 2
+    largura <- if (identical(MEDIDAS$medida[i], "indice_final")) 3.5 else 1.5
     grafico <- grafico |>
       echarts4r::e_line_(
         serie = MEDIDAS$medida[i],

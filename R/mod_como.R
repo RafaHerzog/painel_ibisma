@@ -76,8 +76,8 @@ mod_como_ui <- function(id) {
           htmltools::tags$p(
             class = "bloco-descricao",
             paste(
-              "Cada linha acompanha o IBISMA ou um dos seis blocos ao longo dos anos;",
-              "clique na legenda para ocultar ou mostrar uma s\u00e9rie."
+              "Cada linha acompanha o IBISMA ou um dos seis blocos ao longo dos anos.",
+              "Clique na legenda para ocultar ou mostrar uma s\u00e9rie."
             )
           )
         ),
@@ -227,6 +227,22 @@ mod_como_server <- function(id, dados, municipio) {
       series_municipio(dados, cod_comparacao())
     })
 
+    # Calculando o piso do eixo Y comum aos dois gráficos para as linhas casarem
+    piso_y <- shiny::reactive({
+      # Reunindo o piso apenas dos gráficos que têm dado para desenhar
+      pisos <- numeric(0)
+      if (series_tem_valor(series_principal())) {
+        pisos <- c(pisos, piso_eixo_y(series_principal()))
+      }
+      if (tem_comparacao() && series_tem_valor(series_comparacao())) {
+        pisos <- c(pisos, piso_eixo_y(series_comparacao()))
+      }
+      if (length(pisos) == 0) {
+        return(0)
+      }
+      min(pisos)
+    })
+
     # Montando a legenda compartilhada, conectada aos dois gráficos
     output$legenda_evolucao <- echarts4r::renderEcharts4r({
       grafico_legenda(grupo = ns("evolucao"))
@@ -264,7 +280,8 @@ mod_como_server <- function(id, dados, municipio) {
         legenda = FALSE,
         grupo = ns("evolucao"),
         # Lendo a seleção da legenda sem criar dependência reativa
-        selecao = shiny::isolate(input$legenda_evolucao_legend_selected)
+        selecao = shiny::isolate(input$legenda_evolucao_legend_selected),
+        minimo_y = piso_y()
       )
     })
 
@@ -303,7 +320,8 @@ mod_como_server <- function(id, dados, municipio) {
         nome = nome_municipio(dados, cod),
         legenda = FALSE,
         grupo = ns("evolucao"),
-        selecao = shiny::isolate(input$legenda_evolucao_legend_selected)
+        selecao = shiny::isolate(input$legenda_evolucao_legend_selected),
+        minimo_y = piso_y()
       )
     })
   })
