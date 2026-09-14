@@ -140,6 +140,14 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   # O desenho em SVG evita o borrão do canvas sob zoom ou escala fracionária
   expect_equal(grafico$x$renderer, "svg")
 
+  # Os rótulos de ano giram conforme a largura do cartão no cliente
+  hook <- as.character(grafico$jsHooks$render[[1]]$code)
+  expect_match(hook, "getBoundingClientRect")
+  expect_match(hook, "setOption")
+  expect_match(hook, "rotate: estreito ? 45 : 0", fixed = TRUE)
+  expect_match(hook, as.character(LARGURA_ROTULOS_ANOS), fixed = TRUE)
+  expect_match(hook, "addEventListener('resize'", fixed = TRUE)
+
   # O tooltip mostra apenas o ano e cada localidade com a marca da série
   tooltip <- as.character(grafico$x$opts$tooltip$formatter)
   expect_true(grepl("Math.round", tooltip))

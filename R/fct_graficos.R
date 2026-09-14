@@ -19,6 +19,9 @@ CSS_TOOLTIP <- paste0(
 ALTURA_GRAFICO_IBISMA <- 270L
 ALTURA_GRAFICO_BLOCO <- 160L
 
+# Definindo a largura mínima para manter os rótulos de ano na horizontal
+LARGURA_ROTULOS_ANOS <- 340L
+
 #' Aplicando o tooltip padrão do IBISMA a um gráfico echarts4r
 #'
 #' @param grafico Objeto echarts4r.
@@ -209,6 +212,35 @@ opcoes_rotulo_serie <- function(rotulo, cor, opacidade = 1) {
   )
 }
 
+#' Montando o JavaScript que rotaciona os rótulos de ano conforme a largura
+#'
+#' @return Texto de função JavaScript executada pelo htmlwidgets no cliente.
+#' @noRd
+rotulos_anos_js <- function() {
+  paste0(
+    "function (el) {
+       /* Inclinando os anos quando o cartão fica estreito, com mais espaço embaixo */
+       var ajustar = function () {
+         var widget = window.HTMLWidgets && HTMLWidgets.find('#' + el.id);
+         if (!widget || typeof widget.getChart !== 'function') return;
+         var grafico = widget.getChart();
+         if (!grafico) return;
+         var estreito = el.getBoundingClientRect().width < ", LARGURA_ROTULOS_ANOS, ";
+         grafico.setOption({
+           xAxis: { axisLabel: { rotate: estreito ? 45 : 0 } },
+           grid: { bottom: estreito ? 40 : 28 }
+         });
+       };
+       ajustar();
+       /* Registrando o acompanhamento de resize uma única vez por elemento */
+       if (!el.dataset.rotulosAnos) {
+         el.dataset.rotulosAnos = 'sim';
+         window.addEventListener('resize', ajustar);
+       }
+     }"
+  )
+}
+
 #' Montando o gráfico de evolução temporal de uma medida
 #'
 #' @param series Data frame retornado por series_municipio().
@@ -344,7 +376,8 @@ grafico_evolucao <- function(series, medida, nome = NULL,
     echarts4r::e_grid(left = 28, right = 12, top = 16, bottom = 28) |>
     echarts4r::e_animation(duration = 350)
 
-  grafico
+  # Espaçando os rótulos de ano conforme a largura, sem passar pelo servidor
+  htmlwidgets::onRender(grafico, rotulos_anos_js())
 }
 
 #' Montando o JavaScript do tooltip da evolução temporal
