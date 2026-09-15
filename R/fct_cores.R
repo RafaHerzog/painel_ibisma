@@ -66,18 +66,31 @@ paleta_bloco <- function(base) {
   )
 }
 
+# Guardando as rampas já montadas para não redescobrir as cores a cada uso
+.paleta_cache <- new.env(parent = emptyenv())
+
 #' Montando a paleta nomeada das cinco categorias de uma medida
 #'
 #' @param medida Identificador da medida ("indice_final", "bloco1"...).
 #' @return Vetor nomeado de cores, em que os nomes são as categorias.
 #' @noRd
 paleta_medida <- function(medida) {
-  # Usando a paleta roxa do IBISMA quando a medida é o índice final
-  if (identical(medida, "indice_final")) {
-    return(PALETA_IBISMA)
+  # Montando a rampa uma única vez por medida e reaproveitando depois
+  chave <- if (identical(medida, "indice_final")) {
+    "indice_final"
+  } else {
+    cor_medida(medida)[1]
   }
-  # Derivando a rampa de cinco tons a partir da cor do bloco selecionado
-  stats::setNames(paleta_bloco(cor_medida(medida)[1]), CATEGORIAS)
+  if (is.null(.paleta_cache[[chave]])) {
+    .paleta_cache[[chave]] <- if (identical(medida, "indice_final")) {
+      # Usando a paleta roxa do IBISMA quando a medida é o índice final
+      PALETA_IBISMA
+    } else {
+      # Derivando a rampa de cinco tons a partir da cor do bloco selecionado
+      stats::setNames(paleta_bloco(cor_medida(medida)[1]), CATEGORIAS)
+    }
+  }
+  .paleta_cache[[chave]]
 }
 
 #' Montando a paleta nomeada das cinco categorias (padrão do IBISMA)

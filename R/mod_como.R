@@ -100,7 +100,7 @@ mod_como_ui <- function(id) {
 #' Server do módulo Como?
 #'
 #' @param id Identificador do módulo.
-#' @param dados Lista retornada por preparar_dados().
+#' @param dados Lista lida por dados_ibisma().
 #' @param municipio Reativo compartilhado com o município selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
 #' @noRd

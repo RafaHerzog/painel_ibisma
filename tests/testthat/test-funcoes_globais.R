@@ -1,107 +1,170 @@
 # Testes das funções globais do painel (dados, categorias, rankings e cores)
 
-# Criando uma base pequena e previsível para os testes de cálculo
-base_teste <- data.frame(
-  ano = c(2020, 2020, 2020, 2020, 2021, 2021, 2021, 2021),
-  codmunres = c(110001, 110002, 350001, 350002, 110001, 110002, 350001, 350002),
-  bloco1 = c(0.10, 0.80, 0.40, 0.90, 0.20, 0.70, 0.50, 0.95),
-  bloco2 = c(0.20, 0.70, 0.50, 0.60, 0.25, 0.65, 0.55, 0.85),
-  bloco3 = c(0.30, 0.60, 0.55, 0.50, 0.35, 0.55, 0.60, 0.75),
-  bloco4 = c(0.40, 0.50, 0.60, 0.40, 0.45, 0.45, 0.65, 0.65),
-  bloco5 = c(0.50, 0.40, 0.65, 0.30, 0.55, 0.35, 0.70, 0.55),
-  bloco6 = c(0.60, 0.30, 0.70, 0.20, 0.65, 0.25, 0.75, 0.45),
-  indice_final = c(0.70, 0.90, 0.30, 0.10, 0.75, 0.85, 0.35, 0.15),
-  municipio = c("Um", "Dois", "Tres", "Quatro", "Um", "Dois", "Tres", "Quatro"),
-  uf = c("Rondonia", "Rondonia", "Sao Paulo", "Sao Paulo",
-         "Rondonia", "Rondonia", "Sao Paulo", "Sao Paulo"),
-  sigla_uf = c("RO", "RO", "SP", "SP", "RO", "RO", "SP", "SP"),
-  regiao = c("Norte", "Norte", "Sudeste", "Sudeste",
-             "Norte", "Norte", "Sudeste", "Sudeste"),
-  cod_r_saude = 1:4,
-  r_saude = c("A", "B", "C", "D"),
-  cod_macro_r_saude = 1:4,
-  macro_r_saude = c("M1", "M2", "M3", "M4"),
+# Série pequena e previsível para os testes de gráficos e eixos
+series_teste <- data.frame(
+  ano = 2020:2021,
+  indice_final = c(90, 70),
+  bloco1 = c(85, 25),
+  bloco2 = c(75, 30),
+  bloco3 = c(65, 35),
+  bloco4 = c(55, 40),
+  bloco5 = c(45, 45),
+  bloco6 = c(35, 50),
   stringsAsFactors = FALSE
 )
 
-preparado_teste <- preparar_dados(base_teste)
+# Base bruta de referência, lida direto do CSV de entrada (fora do build)
+caminho_base <- testthat::test_path(
+  "..", "..", "data-raw", "databases", "base_exemplo_ibisma.csv"
+)
+tem_base <- file.exists(caminho_base)
+if (tem_base) {
+  base_referencia <- unique(read.csv(caminho_base))
+}
 
-test_that("preparar_dados monta o formato longo com as sete medidas", {
-  # Conferindo a quantidade de linhas e a escala dos valores
-  expect_equal(nrow(preparado_teste$longo), 8 * 7)
-  expect_setequal(unique(preparado_teste$longo$medida), c("indice_final", BLOCOS$medida))
-  expect_true(all(preparado_teste$longo$valor >= 0 & preparado_teste$longo$valor <= 100))
-  expect_equal(preparado_teste$anos, c(2020, 2021))
-  expect_equal(nrow(preparado_teste$municipios), 4)
+# Pulando os testes da base quando o CSV do data-raw não está presente
+exigir_base <- function() {
+  testthat::skip_if_not(tem_base, "CSV da base bruta n\u00e3o dispon\u00edvel")
+}
+
+test_that("os dados prontos têm cadastro, anos e séries completos", {
+  exigir_base()
+  dados <- dados_ibisma()
+
+  # O cadastro tem os municípios e os anos da base bruta
+  expect_equal(dados$anos, sort(unique(base_referencia$ano)))
+  expect_equal(nrow(dados$municipios), length(unique(base_referencia$codmunres)))
+  expect_setequal(names(dados$municipios), c(
+    "codmunres", "municipio", "sigla_uf", "uf",
+    "regiao", "r_saude", "macro_r_saude"
+  ))
+
+  # As séries têm uma linha por município e ano, com as sete medidas
+  expect_equal(nrow(dados$series), length(dados$anos) * nrow(dados$municipios))
+  expect_equal(names(dados$series), c("codmunres", "ano", MEDIDAS$medida))
 })
 
-test_that("categorizar usa os quintis e preserva valores ausentes", {
-  cortes <- c(20, 40, 60, 80)
-  categorias <- categorizar(c(10, 30, 50, 70, 90, NA), cortes)
-  expect_equal(
-    as.character(categorias),
-    c("Muito baixo", "Baixo", "Médio", "Alto", "Muito alto", NA)
-  )
-  expect_true(is.ordered(categorias))
+test_that("as séries prontas batem com a base bruta", {
+  exigir_base()
+  dados <- dados_ibisma()
+
+  # Ligando cada linha da série à linha correspondente da base bruta
+  chave_serie <- paste(dados$series$ano, dados$series$codmunres)
+  chave_base <- paste(base_referencia$ano, base_referencia$codmunres)
+  posicao <- match(chave_serie, chave_base)
+
+  for (medida in MEDIDAS$medida) {
+    expect_equal(
+      dados$series[[medida]],
+      100 * base_referencia[[medida]][posicao],
+      tolerance = 1e-12
+    )
+  }
 })
 
-test_that("cortes_categorias devolve os quatro quintis", {
-  cortes <- cortes_categorias(1:100)
-  expect_length(cortes, 4)
-  expect_equal(unname(cortes), unname(stats::quantile(1:100, PROBS_CORTES)))
+test_that("as tabelas anuais usam as medidas e as categorias do painel", {
+  dados <- dados_ibisma()
+
+  for (ano in dados$anos) {
+    tabela <- tabela_ano(dados, ano)
+    expect_setequal(unique(tabela$medida), MEDIDAS$medida)
+    expect_equal(levels(tabela$categoria), CATEGORIAS)
+    expect_true(is.ordered(tabela$categoria))
+  }
 })
 
-test_that("valores_ano classifica e ranqueia corretamente", {
-  valores <- valores_ano(preparado_teste, 2020, "indice_final")
-  expect_equal(nrow(valores), 4)
+test_that("as categorias seguem os quintis e os rankings do ano", {
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
 
-  # A posição 1 deve ser o município mais vulnerável
-  mais_vulneravel <- valores[valores$pos_nac == 1, ]
-  expect_equal(mais_vulneravel$municipio, "Dois")
-  expect_equal(mais_vulneravel$total_nac, 4)
+  for (medida in MEDIDAS$medida) {
+    base <- valores_ano(dados, ano, medida)
 
-  # O ranking dentro da UF deve ser calculado por grupo
-  ro <- valores[valores$sigla_uf == "RO", ]
-  expect_equal(ro$municipio[ro$pos_uf == 1], "Dois")
-  expect_equal(ro$total_uf, c(2, 2))
+    # A categoria de cada município é a faixa dos quintis do ano
+    cortes <- stats::quantile(base$valor, PROBS_CORTES, na.rm = TRUE)
+    expect_equal(
+      as.integer(base$categoria),
+      findInterval(base$valor, cortes) + 1L
+    )
+    expect_setequal(unique(base$categoria), CATEGORIAS)
+
+    # A posição 1 é o município mais vulnerável, com empates pelo mínimo
+    expect_equal(
+      base$pos_nac,
+      rank(-base$valor, ties.method = "min", na.last = "keep")
+    )
+    expect_equal(unique(base$total_nac), sum(!is.na(base$valor)))
+
+    # O ranking da UF é calculado dentro de cada estado
+    iguais <- base[base$sigla_uf == "RO", ]
+    expect_equal(
+      iguais$pos_uf,
+      rank(-iguais$valor, ties.method = "min", na.last = "keep")
+    )
+    expect_equal(unique(iguais$total_uf), sum(!is.na(iguais$valor)))
+  }
 })
 
 test_that("resumo_municipio reúne índice, categoria, rankings e blocos", {
-  resumo <- resumo_municipio(preparado_teste, 110002, 2020)
-  expect_equal(resumo$municipio, "Dois")
-  expect_equal(resumo$valor, 90)
-  expect_equal(resumo$categoria, "Muito alto")
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
+  cod <- municipio_padrao(dados)
+  resumo <- resumo_municipio(dados, cod, ano)
+
+  # Conferindo os dados do índice final contra a tabela do ano
+  linha <- valores_ano(dados, ano, "indice_final")
+  linha <- linha[linha$codmunres == cod, ]
+  expect_equal(resumo$codmunres, cod)
+  expect_equal(resumo$valor, linha$valor)
+  expect_equal(resumo$categoria, as.character(linha$categoria))
+  expect_equal(resumo$pos_nac, linha$pos_nac)
+  expect_equal(resumo$pos_uf, linha$pos_uf)
+
+  # O município padrão é o mais vulnerável do último ano
   expect_equal(resumo$pos_nac, 1)
-  expect_equal(resumo$pos_uf, 1)
+  expect_equal(resumo$valor, max(valores_ano(dados, ano, "indice_final")$valor))
+
+  # Os seis blocos vêm na ordem configurada, com nome e cor
   expect_equal(nrow(resumo$blocos), 6)
   expect_equal(resumo$blocos$nome, BLOCOS$nome)
   expect_type(resumo$blocos$cor, "character")
 })
 
 test_that("resumo_municipio devolve NULL quando não há dado no ano", {
-  resumo <- resumo_municipio(preparado_teste, 999999, 2020)
-  expect_null(resumo)
+  dados <- dados_ibisma()
+
+  # Código que não existe na base
+  expect_null(resumo_municipio(dados, 999999, max(dados$anos)))
+
+  # Município com ano faltante (Borá em 2023)
+  lacuna <- dados$series[is.na(dados$series$indice_final), c("codmunres", "ano")][1, ]
+  expect_null(resumo_municipio(dados, lacuna$codmunres, lacuna$ano))
 })
 
 test_that("series_municipio monta as sete medidas em colunas", {
-  series <- series_municipio(preparado_teste, 110002)
+  dados <- dados_ibisma()
+  cod <- dados$municipios$codmunres[1]
+
+  series <- series_municipio(dados, cod)
   expect_equal(names(series), c("ano", MEDIDAS$medida))
-  expect_equal(nrow(series), 2)
-  expect_equal(series$indice_final[series$ano == 2020], 90)
-  expect_equal(series$bloco1[series$ano == 2021], 70)
+  expect_equal(nrow(series), length(dados$anos))
   expect_true(series_tem_valor(series))
 
-  # Município sem dado no ano deve continuar com os anos e colunas esperados
-  vazio <- series_municipio(preparado_teste, 999999)
+  # Município fora da base não tem linhas na tabela pronta de séries
+  vazio <- series_municipio(dados, 999999)
   expect_equal(names(vazio), c("ano", MEDIDAS$medida))
+  expect_equal(nrow(vazio), 0)
   expect_false(series_tem_valor(vazio))
+
+  # O município com ano faltante mantém a linha do ano, mas com NA
+  lacuna <- dados$series[is.na(dados$series$indice_final), c("codmunres", "ano")][1, ]
+  serie_lacuna <- series_municipio(dados, lacuna$codmunres)
+  expect_true(is.na(serie_lacuna$indice_final[serie_lacuna$ano == lacuna$ano]))
 })
 
 test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
-  series <- series_municipio(preparado_teste, 110002)
-
   # Sem comparação existe apenas a série principal, com a cor da medida
-  grafico <- grafico_evolucao(series, "indice_final", nome = "Dois (RO)")
+  grafico <- grafico_evolucao(series_teste, "indice_final", nome = "Dois (RO)")
   expect_length(grafico$x$opts$series, 1)
   serie <- grafico$x$opts$series[[1]]
   expect_equal(serie$name, "Dois (RO)")
@@ -121,19 +184,19 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_true(grepl("Math.round", as.character(formatter)))
 
   # O eixo Y começa no piso e termina no teto calculados da própria medida
-  expect_equal(grafico$x$opts$yAxis[[1]]$min, 80)
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 70)
   expect_equal(grafico$x$opts$yAxis[[1]]$max, 90)
 
   # Os dois limites podem ser fixados pelo módulo na comparação
   compartilhado <- grafico_evolucao(
-    series, "indice_final",
+    series_teste, "indice_final",
     minimo_y = 70, maximo_y = 95
   )
   expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 70)
   expect_equal(compartilhado$x$opts$yAxis[[1]]$max, 95)
 
   # Um piso colado no teto sobe o topo para o eixo não degenerar
-  degenerado <- grafico_evolucao(series, "indice_final", minimo_y = 90)
+  degenerado <- grafico_evolucao(series_teste, "indice_final", minimo_y = 90)
   expect_equal(degenerado$x$opts$yAxis[[1]]$min, 90)
   expect_equal(degenerado$x$opts$yAxis[[1]]$max, 100)
 
@@ -162,10 +225,10 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
 })
 
 test_that("grafico_evolucao destaca a comparação com traço pontilhado", {
-  principal <- series_municipio(preparado_teste, 110002)
-  comparacao <- series_municipio(preparado_teste, 350002)
+  comparacao <- series_teste
+  comparacao$bloco1 <- c(40, 90)
   grafico <- grafico_evolucao(
-    principal, "bloco1",
+    series_teste, "bloco1",
     nome = "Dois (RO)",
     comparacao = comparacao,
     nome_comparacao = "Quatro (SP)"
@@ -223,62 +286,83 @@ test_that("lados_rotulos separa rótulos próximos e respeita as bordas do eixo"
 })
 
 test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
-  series <- series_municipio(preparado_teste, 110002)
-  # O menor valor do município fica em 25, então o eixo começa em 20
-  expect_equal(piso_eixo_y(series), 20)
+  # O menor valor da série fica em 25, então o eixo começa em 20
+  expect_equal(piso_eixo_y(series_teste), 20)
 
   # O piso pode ser calculado apenas com um grupo de medidas
-  expect_equal(piso_eixo_y(series, "indice_final"), 80)
-  expect_equal(piso_eixo_y(series, BLOCOS$medida), 20)
+  expect_equal(piso_eixo_y(series_teste, "indice_final"), 70)
+  expect_equal(piso_eixo_y(series_teste, BLOCOS$medida), 20)
 
   # Valores altos aproximam o piso de 100, sem criar um eixo degenerado
-  alto <- series
+  alto <- series_teste
   alto[, MEDIDAS$medida] <- 95
   alto$indice_final[alto$ano == 2021] <- 91
   expect_equal(piso_eixo_y(alto), 90)
 
-  cem <- series
+  cem <- series_teste
   cem[, MEDIDAS$medida] <- 100
   expect_equal(piso_eixo_y(cem), 90)
 
   # Série sem valor algum mantém o eixo na escala completa
-  vazio <- series
+  vazio <- series_teste
   vazio[, MEDIDAS$medida] <- NA_real_
   expect_equal(piso_eixo_y(vazio), 0)
 })
 
 test_that("teto_eixo_y arredonda o maior valor para cima na dezena", {
-  series <- series_municipio(preparado_teste, 110002)
-  # O maior valor do município fica em 90, então o eixo termina em 90
-  expect_equal(teto_eixo_y(series), 90)
+  # O maior valor da série fica em 90, então o eixo termina em 90
+  expect_equal(teto_eixo_y(series_teste), 90)
 
   # O teto pode ser calculado apenas com um grupo de medidas
-  expect_equal(teto_eixo_y(series, "indice_final"), 90)
-  expect_equal(teto_eixo_y(series, BLOCOS$medida), 80)
+  expect_equal(teto_eixo_y(series_teste, "indice_final"), 90)
+  expect_equal(teto_eixo_y(series_teste, BLOCOS$medida), 90)
 
   # Valores baixos mantêm uma dezena mínima para o eixo não degenerar
-  baixo <- series
+  baixo <- series_teste
   baixo[, MEDIDAS$medida] <- 5
   expect_equal(teto_eixo_y(baixo), 10)
 
   # Valores no topo da escala param no limite do índice
-  alto <- series
+  alto <- series_teste
   alto[, MEDIDAS$medida] <- 95
   expect_equal(teto_eixo_y(alto), 100)
 
   # Série sem valor algum mantém o eixo na escala completa
-  vazio <- series
+  vazio <- series_teste
   vazio[, MEDIDAS$medida] <- NA_real_
   expect_equal(teto_eixo_y(vazio), 100)
 })
 
 test_that("a evolução usa limites de eixo por grupo de medidas", {
-  municipio <- shiny::reactiveVal(110002)
+  dados <- dados_ibisma()
+  principal <- municipio_padrao(dados)
+  comparado <- dados$municipios$codmunres[dados$municipios$codmunres != principal][1]
+  ano_ref <- max(dados$anos)
+
+  # Calculando os limites esperados para conferir o que o módulo entrega
+  series_principal_ref <- series_municipio(dados, principal)
+  series_comparacao_ref <- series_municipio(dados, comparado)
+  limites_indice <- c(
+    min(
+      piso_eixo_y(series_principal_ref, "indice_final"),
+      piso_eixo_y(series_comparacao_ref, "indice_final")
+    ),
+    max(
+      teto_eixo_y(series_principal_ref, "indice_final"),
+      teto_eixo_y(series_comparacao_ref, "indice_final")
+    )
+  )
+
+  municipio <- shiny::reactiveVal(principal)
   shiny::testServer(
     mod_como_server,
-    args = list(dados = preparado_teste, municipio = municipio),
+    args = list(dados = dados, municipio = municipio),
     {
-      session$setInputs(municipio = "110002", ano = "2020", comparar = "350002")
+      session$setInputs(
+        municipio = as.character(principal),
+        ano = as.character(ano_ref),
+        comparar = as.character(comparado)
+      )
 
       # Lendo as opções diretamente do JSON do widget renderizado
       opcoes_do_grafico <- function(saida) {
@@ -286,11 +370,17 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
       }
 
       # O IBISMA tem escala própria, cobrindo os dois índices sem cortá-los
-      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 10)
-      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max, 90)
-      # Os seis blocos compartilham piso e teto das duas séries de bloco
-      expect_equal(opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$min, 20)
-      expect_equal(opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$max, 100)
+      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, limites_indice[1])
+      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max, limites_indice[2])
+
+      # Os seis blocos compartilham a mesma escala entre os cartões
+      min_blocos <- opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$min
+      max_blocos <- opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$max
+      for (medida in BLOCOS$medida[-1]) {
+        opcoes <- opcoes_do_grafico(output[[paste0("grafico_", medida)]])
+        expect_equal(opcoes$yAxis[[1]]$min, min_blocos)
+        expect_equal(opcoes$yAxis[[1]]$max, max_blocos)
+      }
 
       # Cada gráfico desenha a localidade principal e a comparação
       series_bloco <- opcoes_do_grafico(output$grafico_bloco1)$series
@@ -299,23 +389,29 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
 
       # A identificação reúne os dois municípios e o período dos gráficos
       identificacao <- as.character(output$evolucao_identificacao$html)
-      expect_true(grepl("Dois (RO) e Quatro (SP)", identificacao, fixed = TRUE))
-      expect_true(grepl("2020", identificacao, fixed = TRUE))
-      expect_true(grepl("2021", identificacao, fixed = TRUE))
+      expect_true(grepl(nome_municipio(dados, principal), identificacao, fixed = TRUE))
+      expect_true(grepl(nome_municipio(dados, comparado), identificacao, fixed = TRUE))
+      expect_true(grepl(as.character(ano_ref), identificacao, fixed = TRUE))
 
       # Sem comparação o eixo do IBISMA segue apenas o município principal
       session$setInputs(comparar = "nenhum")
-      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, 80)
-      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max, 90)
+      expect_equal(
+        opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min,
+        piso_eixo_y(series_principal_ref, "indice_final")
+      )
+      expect_equal(
+        opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max,
+        teto_eixo_y(series_principal_ref, "indice_final")
+      )
       expect_length(opcoes_do_grafico(output$grafico_bloco1)$series, 1)
 
       # A identificação cita apenas o município principal
       identificacao <- as.character(output$evolucao_identificacao$html)
-      expect_true(grepl("Dois (RO)", identificacao, fixed = TRUE))
-      expect_false(grepl("Quatro (SP)", identificacao, fixed = TRUE))
+      expect_true(grepl(nome_municipio(dados, principal), identificacao, fixed = TRUE))
+      expect_false(grepl(nome_municipio(dados, comparado), identificacao, fixed = TRUE))
 
       # Com o principal sem dado, os gráficos ficam suspensos na grade
-      session$setInputs(comparar = "350002", municipio = "999999")
+      session$setInputs(comparar = as.character(comparado), municipio = "999999")
       expect_error(output$grafico_indice_final, class = "shiny.silent.error")
       expect_error(output$evolucao_identificacao, class = "shiny.silent.error")
     }
@@ -373,10 +469,11 @@ test_that("paletas e cores seguem a configuração do projeto", {
 })
 
 test_that("opções de medida, ano e escopo do ranking estão completas", {
+  exigir_base()
   medidas <- opcoes_medidas()
   expect_equal(unname(medidas), MEDIDAS$medida)
   expect_true(all(grepl("^Bloco", names(medidas)[-1])))
-  expect_equal(anos_disponiveis(), sort(unique(df_ibisma$ano)))
+  expect_equal(anos_disponiveis(), sort(unique(base_referencia$ano)))
   escopos <- opcoes_escopo_ranking()
   expect_equal(escopos[[1]], "nacional")
   expect_equal(length(escopos), 28)
@@ -435,7 +532,20 @@ test_that("tema_reactable adapta os destaques à cor da medida", {
 })
 
 test_that("o ranking marca o município em foco na montagem e mantém o foco", {
-  municipio <- shiny::reactiveVal(110002)
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
+  foco <- municipio_padrao(dados)
+
+  # Ordenando os rankings como o módulo faz, para conferir as posições
+  base_indice <- valores_ano(dados, ano, "indice_final")
+  ranking_indice <- base_indice[order(base_indice$valor, decreasing = TRUE, na.last = TRUE), ]
+  outro <- ranking_indice$codmunres[2]
+
+  # Escolhendo uma UF que não contém o segundo colocado
+  uf_outro <- dados$municipios$sigla_uf[dados$municipios$codmunres == outro]
+  uf_fora <- setdiff(dados$municipios$sigla_uf, uf_outro)[1]
+
+  municipio <- shiny::reactiveVal(foco)
   chamadas <- new.env(parent = emptyenv())
   chamadas$registro <- list()
 
@@ -452,7 +562,7 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
 
   shiny::testServer(
     mod_onde_server,
-    args = list(dados = preparado_teste, municipio = municipio),
+    args = list(dados = dados, municipio = municipio),
     {
       # Lendo o destaque marcado já na montagem do widget (índice 0-based)
       destaque_do_render <- function() {
@@ -460,35 +570,47 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
         unlist(widget$x$tag$attribs$defaultSelected)
       }
 
-      session$setInputs(ano = "2020", medida = "indice_final", escopo = "nacional")
-      # Dois (90) lidera o índice final e já vem marcado no próprio render
+      session$setInputs(
+        ano = as.character(ano),
+        medida = "indice_final",
+        escopo = "nacional"
+      )
+      # O município padrão lidera o índice final e já vem marcado no próprio render
       expect_equal(destaque_do_render(), 0)
 
       # Trocando o município em foco fora da tabela, a seleção acompanha
-      municipio(350002)
+      municipio(outro)
       session$flushReact()
       ultima <- tail(chamadas$registro, 1)[[1]]
-      expect_equal(ultima$selected, 4L)
+      expect_equal(ultima$selected, which(ranking_indice$codmunres == outro))
 
       # Ao trocar a dimensão, o foco é mantido porque segue no ranking
-      # Quatro está no bloco6 de 2020 (4º lugar) e já sai marcado no render
       session$setInputs(medida = "bloco6")
       session$flushReact()
-      expect_equal(municipio(), 350002)
-      expect_equal(destaque_do_render(), 3)
+      expect_equal(municipio(), outro)
+
+      base_bloco <- valores_ano(dados, ano, "bloco6")
+      ranking_bloco <- base_bloco[order(base_bloco$valor, decreasing = TRUE, na.last = TRUE), ]
+      expect_equal(
+        destaque_do_render(),
+        which(ranking_bloco$codmunres == outro) - 1L
+      )
 
       # Ao mudar o escopo para fora do ranking, o foco vai para o 1º colocado
-      # Quatro não está em RO; Um (110001) lidera o bloco6 no estado
-      session$setInputs(escopo = "RO")
+      session$setInputs(escopo = uf_fora)
       session$flushReact()
-      expect_equal(municipio(), 110001)
+      ranking_uf <- ranking_bloco[ranking_bloco$sigla_uf == uf_fora, ]
+      expect_equal(municipio(), ranking_uf$codmunres[1])
       expect_equal(destaque_do_render(), 0)
 
-      # Voltando ao Brasil, o foco é mantido porque Um segue no ranking (2º)
+      # Voltando ao Brasil, o foco é mantido porque segue no ranking
       session$setInputs(escopo = "nacional")
       session$flushReact()
-      expect_equal(municipio(), 110001)
-      expect_equal(destaque_do_render(), 1)
+      expect_equal(municipio(), ranking_uf$codmunres[1])
+      expect_equal(
+        destaque_do_render(),
+        which(ranking_bloco$codmunres == ranking_uf$codmunres[1]) - 1L
+      )
 
       # Quando a seleção chega fora da página exibida, a tabela salta para ela
       session$setInputs(`ranking__reactable__selected` = 22L, `ranking__reactable__page` = 1L)
@@ -496,12 +618,19 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
       expect_null(ultima$selected)
       expect_equal(ultima$page, 2)
 
+      # A linha escolhida na tabela vira o município em foco
+      foco_clique <- ranking_bloco$codmunres[22]
+      expect_equal(municipio(), foco_clique)
+
       # Ao limpar a busca da tabela, a página volta para o município em foco
       chamadas$registro <- list()
       session$setInputs(`ranking_busca_limpa` = 1)
       expect_length(chamadas$registro, 1)
       expect_null(chamadas$registro[[1]]$selected)
-      expect_equal(chamadas$registro[[1]]$page, 1)
+      expect_equal(
+        chamadas$registro[[1]]$page,
+        ceiling(which(ranking_bloco$codmunres == foco_clique) / 12)
+      )
     }
   )
 })
@@ -541,7 +670,8 @@ test_that("atualizar_municipios envia listas nomeadas que serializam sem aviso",
     capturada$tipo <- tipo
     capturada$mensagem <- mensagem
   })
-  base <- dados_mapa(preparado_teste, 2020, "indice_final")
+  dados <- dados_ibisma()
+  base <- dados_mapa(dados, max(dados$anos), "indice_final")
   atualizar_municipios(sessao, "mapa", base)
 
   expect_equal(capturada$tipo, "ibisma_mapa_atualiza")
@@ -571,24 +701,35 @@ test_that("montar_selos gera o HTML dos selos de categoria", {
 })
 
 test_that("dados_mapa monta cores e tooltips para o ano", {
-  base <- dados_mapa(preparado_teste, 2020, "indice_final")
-  expect_equal(nrow(base), 4)
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
+  base <- dados_mapa(dados, ano, "indice_final")
+  expect_equal(nrow(base), nrow(dados$municipios))
   expect_true(all(nzchar(base$tooltip)))
   expect_true(all(base$cor %in% unname(PALETA_IBISMA)))
   expect_true(all(grepl("tooltip-mapa", base$tooltip)))
 
-  base_bloco <- dados_mapa(preparado_teste, 2020, "bloco3")
+  base_bloco <- dados_mapa(dados, ano, "bloco3")
   expect_false(identical(unique(base_bloco$cor), unname(PALETA_IBISMA)))
 })
 
 test_that("municipio_padrao escolhe o mais vulnerável do último ano", {
-  padrao <- municipio_padrao(preparado_teste)
-  expect_true(padrao %in% preparado_teste$municipios$codmunres)
+  dados <- dados_ibisma()
+  base <- valores_ano(dados, max(dados$anos), "indice_final")
+  expect_equal(
+    municipio_padrao(dados),
+    base$codmunres[which.max(base$valor)]
+  )
 })
 
 test_that("nome_municipio devolve nome e sigla", {
-  expect_equal(nome_municipio(preparado_teste, 110002), "Dois (RO)")
-  expect_equal(nome_municipio(preparado_teste, 999999), "Município")
+  dados <- dados_ibisma()
+  info <- dados$municipios[1, ]
+  expect_equal(
+    nome_municipio(dados, info$codmunres),
+    paste0(info$municipio, " (", info$sigla_uf, ")")
+  )
+  expect_equal(nome_municipio(dados, 999999), "Município")
 })
 
 test_that("mapa_base limita o zoom e o arrasto ao enquadramento do Brasil", {
@@ -638,13 +779,16 @@ test_that("cor_categoria e montar_selos respeitam a medida informada", {
 })
 
 test_that("tooltip do mapa usa a cor da medida exibida", {
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
+
   # A chip do IBISMA usa a paleta roxa
-  base_indice <- dados_mapa(preparado_teste, 2020, "indice_final")
+  base_indice <- dados_mapa(dados, ano, "indice_final")
   cor_indice <- cor_categoria("Muito alto")
   expect_true(any(grepl(paste0("--cor-cat:", cor_indice), base_indice$tooltip, fixed = TRUE)))
 
   # A chip de um bloco usa a rampa daquele bloco
-  base_bloco <- dados_mapa(preparado_teste, 2020, "bloco3")
+  base_bloco <- dados_mapa(dados, ano, "bloco3")
   cor_bloco <- cor_categoria("Muito alto", "bloco3")
   expect_true(any(grepl(paste0("--cor-cat:", cor_bloco), base_bloco$tooltip, fixed = TRUE)))
   expect_false(any(grepl(paste0("--cor-cat:", cor_indice), base_bloco$tooltip, fixed = TRUE)))
@@ -713,16 +857,23 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
 })
 
 test_that("perfil_palco monta identificação, pétalas e placar", {
-  resumo <- resumo_municipio(preparado_teste, 110002, 2020)
-  municipio <- preparado_teste$municipios[preparado_teste$municipios$codmunres == 110002, ]
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
+  cod <- municipio_padrao(dados)
+  resumo <- resumo_municipio(dados, cod, ano)
+  municipio <- dados$municipios[dados$municipios$codmunres == cod, ]
   html <- as.character(perfil_palco(
-    municipio, resumo, ano = 2020,
+    municipio, resumo, ano = ano,
     rotulo = "Município principal"
   ))
-  expect_true(grepl("Dois, RO", html, fixed = TRUE))
+  expect_true(grepl(
+    paste0(resumo$municipio, ", ", resumo$sigla_uf),
+    html,
+    fixed = TRUE
+  ))
   expect_true(grepl("Município principal", html, fixed = TRUE))
   expect_true(grepl("svg-petalas", html, fixed = TRUE))
-  expect_true(grepl("IBISMA em 2020", html, fixed = TRUE))
+  expect_true(grepl(paste0("IBISMA em ", ano), html, fixed = TRUE))
   expect_true(grepl("perfil-placar", html, fixed = TRUE))
   # O ranking estadual não repete o nome da UF no título
   expect_true(grepl("Ranking na UF", html, fixed = TRUE))
@@ -733,7 +884,7 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
 
   # O palco do comparado usa a classe própria, sem o rótulo do principal
   html_b <- as.character(perfil_palco(
-    municipio, resumo, ano = 2020,
+    municipio, resumo, ano = ano,
     comparado = TRUE, rotulo = "Município comparado"
   ))
   expect_true(grepl("painel-bloco--comparado", html_b, fixed = TRUE))
@@ -741,8 +892,10 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
 })
 
 test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
-  municipio <- preparado_teste$municipios[preparado_teste$municipios$codmunres == 110002, ]
-  html <- as.character(perfil_palco(municipio, NULL, ano = 2020))
+  dados <- dados_ibisma()
+  cod <- municipio_padrao(dados)
+  municipio <- dados$municipios[dados$municipios$codmunres == cod, ]
+  html <- as.character(perfil_palco(municipio, NULL, ano = max(dados$anos)))
   expect_true(grepl("não possui dados no ano selecionado", html, fixed = TRUE))
   expect_false(grepl("perfil-placar", html, fixed = TRUE))
 })

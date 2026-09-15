@@ -1,0 +1,50 @@
+# Medindo o custo de inicialização do painel
+# Executar na raiz do pacote: Rscript dev/bench_inicializacao.R
+# Números de referência (antes das otimizações, sessão de 15/09/2026):
+#   preparar_dados .............. 0,48 s por processo
+#   tabela_ano (10 anos) ........ 0,57 s no total
+#   juntar a malha .............. 0,39 s por sessão
+#   readRDS da malha ............ 0,06 s por processo
+#   series_municipio ............ 0,02 s por seleção
+#   nome_uf ..................... 0,03 s por render
+#   payload do mapa ............. 7,51 MB / 1,94 s de serialização
+
+suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
+
+medir <- function(nome, expressao) {
+  tempo <- system.time(invisible(force(expressao)))
+  cat(sprintf("%-42s %.3f s\n", nome, tempo[["elapsed"]]))
+}
+
+# Leitura do arquivo pequeno com cadastro, anos e séries
+medir("dados_ibisma() (arquivo pronto)", dados <- dados_ibisma())
+
+# Leitura da tabela do primeiro ano e de um ano ainda não visitado
+medir("tabela_ano(2024) (primeira leitura)", tabela_ano(dados, 2024L))
+medir("tabela_ano(2015) (ano novo)", tabela_ano(dados, 2015L))
+
+# Município padrão e recortes usados nos controles e no perfil
+medir("municipio_padrao()", municipio_padrao(dados))
+medir("series_municipio() de um município", series_municipio(dados, 1302405L))
+medir("opcoes_municipios()", opcoes_municipios(dados))
+medir("opcoes_escopo_ranking()", opcoes_escopo_ranking(dados))
+medir("nome_uf(\"SP\")", nome_uf("SP"))
+
+# Junção da malha com os dados do ano
+medir("malha_do_ano(2024, indice_final)", malha_do_ano(dados, 2024L, "indice_final"))
+
+# Payload enviado na primeira render do mapa (sem tooltips na carga)
+malha <- malha_do_ano(dados, 2024L, "indice_final")
+mapa <- desenhar_ufs(desenhar_municipios(mapa_base(), malha))
+i <- which(vapply(mapa$x$calls, function(ch) ch$method, "") == "addPolygons")[1]
+args_mapa <- mapa$x$calls[[i]]$args
+tempo_json <- system.time(json <- jsonlite::toJSON(
+  args_mapa,
+  auto_unbox = TRUE, force = TRUE, digits = NA
+))
+cat(sprintf(
+  "%-42s %.3f s | %.2f MB\n",
+  "serialização do mapa (addPolygons)",
+  tempo_json[["elapsed"]],
+  nchar(json) / 1024^2
+))

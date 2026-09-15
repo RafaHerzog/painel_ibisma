@@ -40,6 +40,12 @@ habituadas com a codebase.
 - Rodar todos os testes: `devtools::test()`.
 - Rodar um grupo de testes: `devtools::test(filter = "funcoes_globais")`
   (ex.: `"cascata"`, `"app"`, `"parquet_io"`).
+- Regenerar os dados do painel (depois de mudar a base bruta):
+  `data-raw/cria_rda.R` é um script linear, rodável passo a passo (botão Source
+  do RStudio ou `Rscript`), que lê os CSVs de `data-raw/databases/` e gera os
+  arquivos prontos (`inst/app/data/dados_ibisma.rds` e `tabela_ano_*.rds`) e a
+  malha (chave `gerar_malha`, desligada por padrão). O script não carrega o
+  pacote, o app apenas lê `inst/app/data/` e o pacote não tem dado próprio.
 
 > IMPORTANTE: SEMPRE use `devtools::test()` (faz `pkgload::load_all()`).
 > `testthat::test_file(...)` direto NÃO carrega as funções internas do pacote e

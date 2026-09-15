@@ -14,7 +14,6 @@ License: What license is it under?
 Imports: 
     config,
     golem,
-    pkgload,
     shiny,
     bslib,
     shinyWidgets,
@@ -22,7 +21,6 @@ Imports:
     htmlwidgets,
     leaflet,
     sf,
-    tidyr,
     reactable,
     echarts4r,
     fontawesome
@@ -30,9 +28,10 @@ Suggests:
     testthat (>= 3.0.0),
     chromote,
     callr,
-    jsonlite
+    jsonlite,
+    tidyr,
+    pkgload
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.3.2
 Depends: 
     R (>= 3.5)

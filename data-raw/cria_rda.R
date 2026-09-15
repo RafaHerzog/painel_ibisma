@@ -1,55 +1,328 @@
-# Lendo a base de exemplo com os valores dos blocos e do índice para 2015 a 2024
+# =============================================================================
+#   GERANDO OS DADOS DO PAINEL IBISMA
+#   Rode na raiz do pacote, com o projeto aberto: botão Source do RStudio.
+#   O script está em ordem de execução e imprime uma conferência a cada passo,
+#   então também dá para rodar linha por linha (Ctrl+Enter) e ir acompanhando.
+#
+#   Etapas:
+#     1. Base bruta (a partir dos CSVs de data-raw/databases)
+#     2. Constantes do índice
+#     3. Base longa (memória)
+#     4. Tabelas por ano (inst/app/data/tabela_ano_*.rds)
+#     5. Cadastro, anos e séries (inst/app/data/dados_ibisma.rds)
+#     6. Malha geográfica
+# =============================================================================
+
+library(dplyr)
+library(tidyr)
+
+# =============================================================================
+#   1. BASE BRUTA
+# =============================================================================
+
+# Lendo os valores do índice e dos seis blocos, de 2015 a 2024
 df_ibisma <- read.csv("data-raw/databases/base_exemplo_ibisma.csv")
+print(head(df_ibisma))
+cat("Linhas lidas:", nrow(df_ibisma), "\n")
 
-# Verificando se existem duplicatas
-janitor::get_dupes(df_ibisma)
-
-# Removendo as duplicatas
+# Conferindo se existem duplicatas e removendo
+print(janitor::get_dupes(df_ibisma))
 df_ibisma <- df_ibisma |>
-  dplyr::distinct()
+  distinct()
 
-# Lendo uma base auxiliar de municípios
+# Lendo a tabela auxiliar com nome, UF, região e regiões de saúde
 df_aux_municipios <- read.csv("data-raw/databases/tabela_aux_municipios.csv")
+print(head(df_aux_municipios))
 
-## Adionando uma coluna de sigla da UF
+# Adicionando a sigla da UF em uma coluna nova
 df_aux_municipios <- df_aux_municipios |>
-  dplyr::mutate(
-    sigla_uf = dplyr::case_when(
-    uf == "Acre" ~ "AC",
-    uf == "Alagoas" ~ "AL",
-    uf == "Amapá" ~ "AP",
-    uf == "Amazonas" ~ "AM",
-    uf == "Bahia" ~ "BA",
-    uf == "Ceará" ~ "CE",
-    uf == "Distrito Federal" ~ "DF",
-    uf == "Espírito Santo" ~ "ES",
-    uf == "Goiás" ~ "GO",
-    uf == "Maranhão" ~ "MA",
-    uf == "Mato Grosso" ~ "MT",
-    uf == "Mato Grosso do Sul" ~ "MS",
-    uf == "Minas Gerais" ~ "MG",
-    uf == "Pará" ~ "PA",
-    uf == "Paraíba" ~ "PB",
-    uf == "Paraná" ~ "PR",
-    uf == "Pernambuco" ~ "PE",
-    uf == "Piauí" ~ "PI",
-    uf == "Rio de Janeiro" ~ "RJ",
-    uf == "Rio Grande do Norte" ~ "RN",
-    uf == "Rio Grande do Sul" ~ "RS",
-    uf == "Rondônia" ~ "RO",
-    uf == "Roraima" ~ "RR",
-    uf == "Santa Catarina" ~ "SC",
-    uf == "São Paulo" ~ "SP",
-    uf == "Sergipe" ~ "SE",
-    uf == "Tocantins" ~ "TO",
-    TRUE ~ NA_character_
-  ),
-  .after = "uf"
+  mutate(
+    sigla_uf = case_when(
+      uf == "Acre" ~ "AC",
+      uf == "Alagoas" ~ "AL",
+      uf == "Amapá" ~ "AP",
+      uf == "Amazonas" ~ "AM",
+      uf == "Bahia" ~ "BA",
+      uf == "Ceará" ~ "CE",
+      uf == "Distrito Federal" ~ "DF",
+      uf == "Espírito Santo" ~ "ES",
+      uf == "Goiás" ~ "GO",
+      uf == "Maranhão" ~ "MA",
+      uf == "Mato Grosso" ~ "MT",
+      uf == "Mato Grosso do Sul" ~ "MS",
+      uf == "Minas Gerais" ~ "MG",
+      uf == "Pará" ~ "PA",
+      uf == "Paraíba" ~ "PB",
+      uf == "Paraná" ~ "PR",
+      uf == "Pernambuco" ~ "PE",
+      uf == "Piauí" ~ "PI",
+      uf == "Rio de Janeiro" ~ "RJ",
+      uf == "Rio Grande do Norte" ~ "RN",
+      uf == "Rio Grande do Sul" ~ "RS",
+      uf == "Rondônia" ~ "RO",
+      uf == "Roraima" ~ "RR",
+      uf == "Santa Catarina" ~ "SC",
+      uf == "São Paulo" ~ "SP",
+      uf == "Sergipe" ~ "SE",
+      uf == "Tocantins" ~ "TO",
+      TRUE ~ NA_character_
+    ),
+    .after = "uf"
+  )
+
+# Juntando os dados dos municípios na base do IBISMA
+df_ibisma <- df_ibisma |>
+  left_join(df_aux_municipios, by = c("codmunres" = "codmun"))
+
+# Conferindo o resultado
+cat(
+  "Base bruta:", nrow(df_ibisma), "linhas |",
+  n_distinct(df_ibisma$codmunres), "municípios |",
+  paste(range(df_ibisma$ano), collapse = " a "), "|",
+  sum(is.na(df_ibisma$sigla_uf)), "linhas sem UF", "\n"
+)
+print(colnames(df_ibisma))
+
+# =============================================================================
+#   2. CONSTANTES DO ÍNDICE
+#   Precisam ser iguais às de R/fct_config.R, que o app usa
+# =============================================================================
+
+# Nomes das colunas que viram medidas no formato longo
+medidas <- c(
+  "indice_final",
+  "bloco1", "bloco2", "bloco3",
+  "bloco4", "bloco5", "bloco6"
 )
 
-# Enriquecendo a base do IBISMA com informações dos municípios
-df_ibisma <- df_ibisma |>
-  dplyr::left_join(df_aux_municipios, by = c("codmunres" = "codmun"))
+# Rótulos das cinco categorias, do menos para o mais vulnerável
+categorias <- c("Muito baixo", "Baixo", "Médio", "Alto", "Muito alto")
 
-# Criando o RDA
-usethis::use_data(df_ibisma, overwrite = TRUE)
+# Percentis que cortam as cinco categorias
+cortes_percentis <- c(0.2, 0.4, 0.6, 0.8)
+
+# =============================================================================
+#   3. BASE LONGA
+#   Uma linha por município, ano e medida, com os valores de 0 a 100
+# =============================================================================
+
+ibisma_longo <- df_ibisma |>
+  # Transformando as sete colunas de medidas em duas (medida e valor)
+  pivot_longer(
+    cols = all_of(medidas),
+    names_to = "medida",
+    values_to = "valor"
+  ) |>
+  # Convertendo os valores de 0 a 1 para 0 a 100
+  mutate(valor = 100 * valor) |>
+  # Mantendo só as colunas usadas pelo painel
+  select(
+    ano, codmunres, medida, valor,
+    municipio, sigla_uf, uf, regiao, r_saude, macro_r_saude
+  ) |>
+  # Ordenando para facilitar a conferência
+  arrange(ano, codmunres, medida)
+
+# Conferindo: cada linha da base bruta vira sete linhas na base longa
+cat("Linhas na base longa:", nrow(ibisma_longo), "\n")
+cat("Faixa dos valores:", paste(range(ibisma_longo$valor), collapse = " a "), "\n")
+print(head(ibisma_longo))
+
+# =============================================================================
+#   4. TABELAS POR ANO
+#   Para cada ano e medida: categoria (quintis do ano) e rankings Brasil/UF
+# =============================================================================
+
+# Criando a pasta que guarda os arquivos lidos pelo painel
+dir.create("inst/app/data", showWarnings = FALSE, recursive = TRUE)
+
+# Percorrendo os dez anos da base
+for (ano_atual in sort(unique(df_ibisma$ano))) {
+  # Filtrando o ano
+  base_ano <- filter(ibisma_longo, ano == ano_atual)
+
+  # Classificando nas cinco categorias pelos quintis de cada medida no ano
+  tabela_ano <- base_ano |>
+    group_by(medida) |>
+    mutate(
+      corte = findInterval(valor, quantile(valor, cortes_percentis, na.rm = TRUE)),
+      categoria = factor(categorias[corte + 1], levels = categorias, ordered = TRUE)
+    ) |>
+    ungroup() |>
+    select(-corte)
+
+  # Ranqueando os municípios no Brasil (posição 1 = mais vulnerável)
+  tabela_ano <- tabela_ano |>
+    group_by(medida) |>
+    mutate(
+      pos_nac = rank(-valor, ties.method = "min", na.last = "keep"),
+      total_nac = sum(!is.na(valor))
+    ) |>
+    ungroup()
+
+  # Ranqueando os municípios dentro da própria UF
+  tabela_ano <- tabela_ano |>
+    group_by(medida, sigla_uf) |>
+    mutate(
+      pos_uf = rank(-valor, ties.method = "min", na.last = "keep"),
+      total_uf = sum(!is.na(valor))
+    ) |>
+    ungroup()
+
+  # Salvando a tabela do ano
+  arquivo <- sprintf("inst/app/data/tabela_ano_%d.rds", ano_atual)
+  saveRDS(tabela_ano, arquivo, compress = "xz")
+
+  # Conferindo a tabela do ano
+  cat(
+    ano_atual, "->", basename(arquivo), "|",
+    nrow(tabela_ano), "linhas |",
+    n_distinct(tabela_ano$medida), "medidas\n"
+  )
+}
+
+# =============================================================================
+#   5. CADASTRO, ANOS E SÉRIES
+# =============================================================================
+
+# Montando o cadastro de municípios (uma linha por município)
+municipios <- df_ibisma |>
+  distinct(
+    codmunres, municipio, sigla_uf, uf,
+    regiao, r_saude, macro_r_saude
+  ) |>
+  arrange(municipio)
+
+# Lista dos anos disponíveis
+anos <- sort(unique(df_ibisma$ano))
+
+# Montando as séries: uma linha por município e ano, uma coluna por medida
+series <- ibisma_longo |>
+  select(ano, codmunres, medida, valor) |>
+  pivot_wider(names_from = medida, values_from = valor) |>
+  # Preenchendo os anos que faltam em cada município (Borá não tem 2023)
+  group_by(codmunres) |>
+  complete(ano = anos) |>
+  ungroup() |>
+  arrange(codmunres, ano) |>
+  select(codmunres, ano, all_of(medidas))
+
+# Conferindo: os anos sem dado aparecem com NA (Borá em 2023)
+print(filter(series, is.na(indice_final)))
+
+# Salvando o cadastro, os anos e as séries em um arquivo único
+saveRDS(
+  list(
+    municipios = municipios,
+    anos = anos,
+    series = series
+  ),
+  "inst/app/data/dados_ibisma.rds",
+  compress = "xz"
+)
+
+# Conferindo os arquivos gerados
+arquivos <- list.files("inst/app/data", pattern = "\\.rds$", full.names = TRUE)
+cat(
+  "Arquivos em inst/app/data:", length(arquivos),
+  "| total:", round(sum(file.size(arquivos)) / 1024^2, 2), "MB\n"
+)
+cat(
+  "Séries:", nrow(series), "linhas |",
+  nrow(municipios), "municípios |",
+  length(anos), "anos\n"
+)
+
+# =============================================================================
+#   6. MALHA GEOGRÁFICA
+# =============================================================================
+
+library(geobr)
+library(sf)
+library(rmapshaper)
+
+# Arredondando as coordenadas para 5 casas (cerca de 1 metro), sem perda
+# visual no zoom máximo do painel e com um volume bem menor para o navegador
+arredondar_coordenadas <- function(geometria, casas = 5) {
+  # Percorrendo matrizes e listas da geometria até chegar nas coordenadas
+  arredondar <- function(x) {
+    if (is.matrix(x)) return(round(x, casas))
+    if (is.list(x)) {
+      x[] <- lapply(x, arredondar)
+      return(x)
+    }
+    x
+  }
+  st_sfc(lapply(geometria, arredondar), crs = st_crs(geometria))
+}
+
+# ---------------------------------------------------------------- municípios
+
+# Baixando a malha municipal (já vem simplificada pelo geobr)
+malha_municipios <- read_municipality(year = 2020, showProgress = FALSE)
+
+# Criando a chave de 6 dígitos usada pela base do IBISMA (padrão DATASUS)
+malha_municipios <- malha_municipios |>
+  mutate(
+    codmunres = as.integer(substr(as.character(code_muni), 1, 6)),
+    .before = "geometry"
+  ) |>
+  # Mantendo apenas as colunas necessárias para o painel
+  select(codmunres, sigla_uf = abbrev_state, geometry)
+
+# Simplificando cada divisa uma única vez, sem abrir fendas entre vizinhos
+malha_municipios <- ms_simplify(
+  malha_municipios,
+  keep = 0.01,
+  keep_shapes = TRUE
+)
+
+# Convertendo para WGS84, o sistema esperado pelo leaflet
+malha_municipios <- st_transform(malha_municipios, 4326)
+
+# Arredondando as coordenadas antes de salvar
+malha_municipios <- st_set_geometry(
+  malha_municipios,
+  arredondar_coordenadas(st_geometry(malha_municipios))
+)
+
+# Removendo geometrias vazias que possam ter surgido na simplificação
+malha_municipios <- malha_municipios[!st_is_empty(malha_municipios), ]
+
+# ------------------------------------------------- unidades da federação
+
+# Baixando e simplificando a malha estadual (contorno sobre o mapa)
+malha_ufs <- read_state(year = 2020, showProgress = FALSE)
+malha_ufs <- st_simplify(malha_ufs, dTolerance = 2000)
+malha_ufs <- st_transform(malha_ufs, 4326)
+malha_ufs <- malha_ufs |>
+  select(sigla_uf = abbrev_state, geometry)
+malha_ufs <- malha_ufs[!st_is_empty(malha_ufs), ]
+
+# Arredondando as coordenadas antes de salvar
+malha_ufs <- st_set_geometry(
+  malha_ufs,
+  arredondar_coordenadas(st_geometry(malha_ufs))
+)
+
+# ---------------------------------------------------------------- conferências
+
+# Conferindo a cobertura dos códigos de município da base do IBISMA
+cat(
+  "Cobertura da malha:",
+  round(100 * mean(municipios$codmunres %in% malha_municipios$codmunres), 2),
+  "% dos códigos\n"
+)
+cat("Municípios na malha:", nrow(malha_municipios), "\n")
+cat("UFs na malha:", nrow(malha_ufs), "\n")
+
+# ---------------------------------------------------------------- salvamento
+
+saveRDS(malha_municipios, "inst/app/data/malha_municipios.rds", compress = "xz")
+saveRDS(malha_ufs, "inst/app/data/malha_ufs.rds", compress = "xz")
+cat(
+  "Malha salva:",
+  round(file.size("inst/app/data/malha_municipios.rds") / 1024^2, 2), "MB",
+  "(municípios) e",
+  round(file.size("inst/app/data/malha_ufs.rds") / 1024^2, 2), "MB (UFs)\n"
+)
