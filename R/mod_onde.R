@@ -117,7 +117,7 @@ mod_onde_ui <- function(id) {
 #' Server do módulo Onde?
 #'
 #' @param id Identificador do módulo.
-#' @param dados Lista retornada por preparar_dados().
+#' @param dados Lista lida por dados_ibisma().
 #' @param municipio Reativo compartilhado com o município selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
 #' @noRd
@@ -167,6 +167,11 @@ mod_onde_server <- function(id, dados, municipio) {
     shiny::observeEvent(list(input$ano, input$medida), {
       atualizar_municipios(session, ns("mapa"), base_mapa())
     }, ignoreInit = TRUE)
+
+    # Enviando cores e tooltips assim que o mapa termina de desenhar
+    shiny::observeEvent(input$mapa_pronto, {
+      atualizar_municipios(session, ns("mapa"), base_mapa())
+    }, once = TRUE)
 
     # Destacando no mapa o município selecionado em qualquer parte do painel
     shiny::observe({

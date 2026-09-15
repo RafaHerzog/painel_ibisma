@@ -73,7 +73,7 @@ tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida
 
 #' Preparando os dados anuais que alimentam o mapa
 #'
-#' @param dados Lista retornada por preparar_dados().
+#' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida exibida.
 #' @return Data frame com categoria, cor e tooltip prontos para o mapa.
@@ -106,7 +106,7 @@ dados_mapa <- function(dados, ano, medida) {
 
 #' Juntando a malha municipal aos valores do ano e da medida
 #'
-#' @param dados Lista retornada por preparar_dados().
+#' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida exibida.
 #' @return Objeto sf com geometria, cor e tooltip de cada município.
@@ -116,22 +116,14 @@ malha_do_ano <- function(dados, ano, medida) {
   malha <- carregar_malha_municipios()
   base <- dados_mapa(dados, ano, medida)
 
-  # Acrescentando cor e tooltip à malha, mantendo todos os municípios
-  malha_completa <- merge(
-    malha,
-    base[, c("codmunres", "cor", "tooltip")],
-    by = "codmunres",
-    all.x = TRUE,
-    sort = FALSE
-  )
-
-  # Garantindo a ordem original dos municípios após a junção
-  malha_completa <- malha_completa[match(malha$codmunres, malha_completa$codmunres), ]
-  row.names(malha_completa) <- NULL
+  # Ligando cor e tooltip a cada município pela posição do código na malha
+  indice <- match(malha$codmunres, base$codmunres)
+  malha$cor <- base$cor[indice]
+  malha$tooltip <- base$tooltip[indice]
 
   # Criando o identificador em texto exigido pelo leaflet para indexar as camadas
-  malha_completa$codmunres_txt <- as.character(malha_completa$codmunres)
-  malha_completa
+  malha$codmunres_txt <- as.character(malha$codmunres)
+  malha
 }
 
 #' Criando o mapa-base do painel
@@ -162,6 +154,9 @@ mapa_base <- function() {
 
 #' Desenhando os municípios no mapa
 #'
+#' As cores e os tooltips ficam fora da carga inicial e chegam logo depois,
+#' pela mensagem tratada em funcoes_javascript.js, para o mapa abrir mais leve.
+#'
 #' @param mapa Objeto leaflet.
 #' @param base Objeto sf retornado por malha_do_ano().
 #' @return Objeto leaflet com a camada de municípios.
@@ -181,13 +176,6 @@ desenhar_municipios <- function(mapa, base) {
       opacity = 0.65,
       # Desenhando a malha já simplificada, sem nova simplificação no cliente
       smoothFactor = 0,
-      label = lapply(base$tooltip, htmltools::HTML),
-      labelOptions = leaflet::labelOptions(
-        direction = "auto",
-        sticky = TRUE,
-        opacity = 1,
-        className = "tooltip-ibisma"
-      ),
       highlightOptions = leaflet::highlightOptions(
         weight = 1.2,
         color = COR_AZUL_ESCURO,

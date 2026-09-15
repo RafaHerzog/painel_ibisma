@@ -33,8 +33,18 @@ Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
     camada.setStyle({ fillColor: cor, fillOpacity: 0.95 });
 
     var rotulo = mensagem.labels ? mensagem.labels[id] : null;
-    if (rotulo !== null && rotulo !== undefined && camada.setTooltipContent) {
-      camada.setTooltipContent(rotulo);
+    if (rotulo !== null && rotulo !== undefined) {
+      /* Amarrando o tooltip na primeira mensagem, já que o mapa abre sem ele */
+      if (camada.getTooltip && camada.getTooltip()) {
+        camada.setTooltipContent(rotulo);
+      } else if (camada.bindTooltip) {
+        camada.bindTooltip(rotulo, {
+          direction: "auto",
+          sticky: true,
+          opacity: 1,
+          className: "tooltip-ibisma"
+        });
+      }
     }
   });
 });
