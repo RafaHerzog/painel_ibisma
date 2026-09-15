@@ -1479,4 +1479,161 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `53df2dd` Rotaciona os rotulos de ano no mobile
 - `b74bba9` Coloca os rankings do placar lado a lado no mobile
 
+---
+
+# Sessão 15 — Otimização da inicialização (15/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** tirar do app as contas determinísticas (preparação da base,
+  categorias, rankings e séries), consumir arquivos prontos em `inst/app/data/`,
+  aliviar o payload da primeira carga do mapa e consertar a junção da malha.
+
+## 1. Diagnóstico (medições na base real)
+
+| Tratamento (antes) | Custo medido |
+| --- | --- |
+| `preparar_dados()` (55.699 → 389.893 linhas) | 0,48 s por processo |
+| `tabela_ano()` (quintis, rank, ave) | 0,06 s por ano visitado |
+| `merge()` da malha + reordenação | 0,39 s por sessão |
+| `series_municipio()` (pivot) | 0,02 s por seleção |
+| `nome_uf()` (unique em 55.699 linhas) | 0,03 s por render |
+| Payload da primeira render | 7,51 MB (só a geometria, 9 casas) + 1,85 MB de tooltips |
+
+## 2. Arquivos prontos em `inst/app/data/`
+
+- `data-raw/calculos_painel.R` (novo): funções de cálculo (`preparar_dados`,
+  `cortes_categorias`, `categorizar`, `calcular_tabela_ano`,
+  `calcular_series_municipio`) que saíram de `R/fct_dados.R` e agora servem
+  apenas à geração dos arquivos e aos testes.
+- `data-raw/prepara_painel.R` (novo): gera `dados_ibisma.rds` (cadastro, anos e
+  55.700 linhas de séries) e `tabela_ano_2015.rds` … `tabela_ano_2024.rds`.
+- `R/fct_dados.R`: passou a só ler; `dados_ibisma()` guarda o arquivo na memória
+  do processo, `tabela_ano()` lê um arquivo por ano (com erro claro se faltar) e
+  `series_municipio()`, `opcoes_*()`, `nome_uf()` e `anos_disponiveis()` usam os
+  campos prontos, sem tocar em `df_ibisma`.
+- `tidyr` saiu de Imports (foi para Suggests), pois só o data-raw usa.
+
+## 3. Junção da malha
+
+- `malha_do_ano()` deixou o `merge()` + reordenação e passou a ligar cor e
+  tooltip por `match()`: 0,39 s → ~0 ms.
+
+## 4. Fase 2 — payload do mapa
+
+- `desenhar_municipios()` não envia mais os tooltips na carga inicial; a mesma
+  mensagem `ibisma_mapa_atualiza` (disparada quando o mapa fica pronto) liga os
+  tooltips com `bindTooltip` quando a camada ainda não tem um.
+- `data-raw/prepara_malha.R` passou a arredondar as coordenadas para 5 casas
+  (cerca de 1 m, invisível no zoom máximo 10) e as malhas existentes foram
+  arredondadas sem novo download: 1,50 → 0,94 MB (municípios) e 0,09 → 0,06 MB
+  (UFs), sem geometrias inválidas.
+- Payload do `addPolygons` comparado na mesma malha: 8,10 MB com tooltips vs
+  6,25 MB sem tooltips; somando o arredondamento (7,51 → 6,15 MB só na
+  geometria), a primeira carga cai de ~9,4 MB para 6,25 MB (−33%).
+
+## 5. Testes e validação
+
+- `devtools::test()`: **300 asserções verdes** (era 281), incluindo o novo teste
+  que compara os arquivos prontos com o recálculo da base, ano a ano, e as
+  séries (inclusive o município com ano faltante).
+- Os testes que usam a base de brinquedo passaram a montar as tabelas numa pasta
+  temporária com as funções de `data-raw/calculos_painel.R` (pulados quando o
+  arquivo não está disponível, como no `R CMD check`, que ignora `data-raw`).
+- Smoke headless: mapa com 5.570 tooltips ligados após a carga
+  (`RESULTADO: 5570|5598`), sem erros de JavaScript; evidência em
+  `dev/smoke/otimizacao.png`.
+- `dev/bench_inicializacao.R` (novo) mede o roteiro de abertura a cada execução.
+  Depois: `dados_ibisma()` 0,04 s, tabela anual 0,06 s, `malha_do_ano` 0,07 s,
+  `series_municipio`/`opcoes_*`/`nome_uf` ~0 s.
+
+## 6. Como regenerar os dados
+
+```r
+Rscript data-raw/cria_rda.R   # base bruta e arquivos prontos (ver Sessão 16)
+```
+
+> Nota de ambiente: a suíte rodou com `rlang` 1.3.0 de uma biblioteca
+> temporária, pois o `rlang` 1.1.4 instalado está abaixo do exigido pelo
+> testthat.
+
+---
+
+# Sessão 16 — Roteiro de dados unificado e legível no cria_rda.R (15/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** concentrar todo o roteiro de geração em um único arquivo
+  linear, em R comum, que possa ser lido e rodado passo a passo por uma
+  pessoa — sem funções empacotadas, atalhos nem carregamento do pacote.
+
+## 1. Estrutura final de data-raw
+
+```
+data-raw/
+├── cria_rda.R        roteiro linear, em seis etapas
+└── databases/        CSVs de entrada
+```
+
+- `cria_rda.R` está em ordem de execução, com uma conferência impressa a cada
+  etapa (cabeçalhos, contagens, duplicatas, amostras e faixas de valores):
+  1. base bruta (`data/df_ibisma.rda`);
+  2. constantes do índice (`medidas`, `categorias`, `cortes_percentis`);
+  3. base longa (uma linha por município, ano e medida);
+  4. tabelas por ano (`inst/app/data/tabela_ano_*.rds`);
+  5. cadastro, anos e séries (`inst/app/data/dados_ibisma.rds`);
+  6. malha geográfica, sob a chave `gerar_malha <- FALSE` (baixa do geobr e
+     demora, então só roda quando a geografia muda).
+- O script não depende do pacote carregado (sem `pkgload::load_all()`) e pode
+  ser rodado com o botão Source do RStudio, `source()` ou Rscript.
+- O roteiro passou a usar dplyr/tidyr direto (base longa, quintis e rankings
+  em `mutate` por grupo), no lugar dos laços e funções auxiliares.
+
+## 2. Testes reescritos
+
+- Como o roteiro virou um script linear, os testes deixaram de carregá-lo e
+  passaram a conferir os **arquivos gerados** contra a base bruta e a
+  configuração do app:
+  - as séries batem valor a valor com `df_ibisma` (100×), inclusive o ano
+    faltante de Borá;
+  - as tabelas usam as medidas e as categorias de `R/fct_config.R`;
+  - as categorias conferem com os quintis do ano e os rankings nacional/UF
+    conferem com `rank(-valor, ties.method = "min")`;
+  - `resumo_municipio`, `series_municipio` e `municipio_padrao` conferidos com
+    os dados reais;
+  - os testes dos gráficos e eixos usam uma série pequena montada no próprio
+    teste (antes vinha de uma base sintética).
+- `R/fct_dados.R` e `AGENTS.md` apontam para o comando único do `cria_rda.R`.
+- `pkgload` e `tidyr` saíram de Imports (foram para Suggests), já que só o
+  roteiro de dados os usa.
+
+## 3. Arquivos removidos
+
+- `calculos_painel.R`, `prepara_painel.R` e `prepara_malha.R`: conteúdo
+  absorvido pelo `cria_rda.R`.
+- `otimiza_logos.R`: a otimização dos logos já está aplicada aos PNGs do
+  repositório e não fazia parte da geração de dados.
+
+## 4. Validação
+
+- `source("data-raw/cria_rda.R")` sem o pacote carregado: 13 arquivos /
+  4,72 MB, 55.700 linhas de séries, 38.990 linhas por ano (38.983 em 2023,
+  sem Borá), sem avisos.
+- `devtools::test()`: **363 asserções verdes**.
+- Smoke headless: mapa com as 5.570 tooltips ligadas após a carga, sem erros
+  de JavaScript.
+
+## 5. Remoção do df_ibisma.rda
+
+- O app não usava mais o dado de pacote e o roteiro nunca lia o `.rda` (só
+  escrevia): saíram o `usethis::use_data()` do `cria_rda.R`, o arquivo
+  `data/df_ibisma.rda` e o `LazyData: true` do DESCRIPTION.
+- Os testes que usavam `df_ibisma` como referência passaram a ler direto o CSV
+  `data-raw/databases/base_exemplo_ibisma.csv` (com `skip_if_not` para o
+  `R CMD check`, que ignora `data-raw`).
+- A única cópia da base bruta passa a ser o CSV em `data-raw/databases/`.
+
+## 6. Commits da sessão
+
+- `aaf1e2b` Pré-computa os dados do painel e remove a base bruta do pacote
+- `ddda749` Alivia a primeira carga do mapa
+
 
