@@ -1636,4 +1636,81 @@ data-raw/
 - `aaf1e2b` Pré-computa os dados do painel e remove a base bruta do pacote
 - `ddda749` Alivia a primeira carga do mapa
 
+---
+
+# Sessão 17 — Refatoração para leitura: definições, componentes e paletas (15/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** facilitar a leitura do código do painel — ao abrir um módulo, saber de onde vem cada função auxiliar e
+  onde ela é usada —, reduzindo os auxiliares com funções de um só dono.
+
+## 1. Diagnóstico e princípio
+
+- O mapa de definições × usos mostrou que `fct_mapa`, `fct_perfil`, `fct_petalas` e `fct_graficos` serviam a uma única
+  seção, e que o `utils_ui` misturava componentes da casca, compartilhados e de um só módulo.
+- Princípio adotado: cada arquivo é dono do que só ele usa; função usada por um único módulo mora nele (ou no auxiliar
+  da sua seção); só sobe para arquivo compartilhado o que tem mais de um usuário.
+- A refatoração foi feita por partes (`fct_config`, componentes da casca, `utils_ui`, paletas), com a suíte verde e
+  smoke headless a cada etapa.
+
+## 2. fct_config: fusão com o fct_cores e simplificações
+
+- O `fct_cores.R` foi absorvido pelo `fct_config.R`, que passou a reunir o dicionário e as funções de cor.
+- Ficou uma única função de rampa: `paleta_categorias()` e `paleta_mapa()` (apelidos) saíram.
+- O cache `.paleta_cache` foi removido: `paleta_medida()` virou consulta pura.
+- O prefixo "Bloco" ganhou um dono só: nova coluna `rotulo` no dicionário; `opcoes_medidas()` perdeu o parâmetro e a
+  lógica, e `nome_medida()` virou consulta direta.
+- Saíram os fallbacks silenciosos de `cor_medida()` e `nome_medida()`, a `PROBS_CORTES` (usada só em teste) e a
+  `TEXTO_CATEGORIAS` (morta).
+
+## 3. Cada componente no seu dono
+
+- `NIVEIS_ANALISE` foi para o `mod_onde.R` e o `TEXTO_ESCALA` virou o próprio texto do cabeçalho da seção, sem variável.
+- `tema_ibisma()`, `navbar_ibisma()` e `rodape_ibisma()` saíram do `utils_ui` para o `app_ui.R`, junto de seus textos;
+  `TITULO_PAINEL` e `SUBTITULO_PAINEL` deixaram de existir como variáveis (texto direto no título, na meta e na navbar).
+- O `utils_ui.R` ficou com os componentes das seções: `titulo_secao()`, `seletor_inline()`, `badge_categoria()`,
+  `badge_categoria_html()` (ex-`montar_selos()`) e `estado_vazio()`.
+- Saíram as indireções de uma linha: `atualizar_seletor()` virou `shinyWidgets::updateSlimSelect()` direto e
+  `frase_controles()` virou `htmltools::tags$div(class = "controles-inline", ...)` nos três usos.
+- `legenda_categorias()` foi para o `fct_mapa.R` e `metrica_hero()` para o `fct_perfil.R`, ao lado do palco.
+
+## 4. Convenções de comentários (AGENTS.md)
+
+- O `AGENTS.md` ganhou três regras, aplicadas ao longo do painel:
+  1. comentário de função auxiliar começa com "Definindo uma função que...";
+  2. funções de `fct_*.R` e `utils_ui.R` trazem a linha `Usada em: {arquivos e contextos}`;
+  3. cada bloco de um módulo registra de quais arquivos auxiliares depende, no formato
+     `## Obs.: este bloco usa funções auxiliares de {arquivos}.`
+- Foram ajustadas 73 funções (começo do comentário), 70 linhas de uso e 12 blocos (5 no `mod_onde.R`, 5 no
+  `mod_como.R` e 2 no `fct_perfil.R`).
+
+## 5. Paletas construídas juntas
+
+- As rampas das 7 medidas passaram a viver numa lista única, `PALETAS`, com os 5 tons nomeados pelas `CATEGORIAS`; a cor
+  de identificação fica no tom central dos blocos e no tom mais alto do índice.
+- A cor de identificação passou a ser derivada da rampa (`MEDIDAS$cor`); a `PALETA_IBISMA` foi absorvida por
+  `PALETAS$indice_final`, e a `paleta_bloco()` e a `paleta_medida()` deixaram de existir.
+- Os tons foram conferidos um a um contra a geração anterior: idênticos, sem mudança visual.
+- A `cor_categoria()` concentrou a regra "categoria → tom, ausente → cinza": o `dados_mapa()` e o `tooltip_municipio()`
+  passaram a usá-la (o tooltip recebe a medida em vez da paleta) e o `fct_mapa` deixou de carregar a rampa inteira.
+- Sobraram quatro funções de cor, todas com uso real: `cor_medida()`, `cor_categoria()`, `cor_texto_sobre()` e
+  `misturar_cores()` (tema do ranking).
+
+## 6. Testes e validação
+
+- `devtools::test()`: **363 asserções verdes** ao fim de cada etapa.
+- Smoke headless: controles, selos do ranking, legenda, evolução e mapa com as 5.570 tooltips ligadas; a sincronização
+  do seletor de município (com o `updateSlimSelect` direto) foi conferida clicando na 2ª linha do ranking.
+
+## 7. Próximos passos
+
+- Os demais arquivos auxiliares ainda têm funções usadas por um só módulo (`fct_dados`, `fct_esqueleto`, `fct_graficos`,
+  `fct_mapa`, `fct_perfil` e `fct_petalas`); a continuidade da refatoração fica para a próxima sessão.
+- Usos entre arquivos auxiliares (ex.: `fct_mapa` chamando funções do `fct_dados`) ainda não recebem observação de bloco.
+
+## 8. Commits da sessão
+
+- `a657e4e` Reorganiza os auxiliares e centraliza as definições de medidas e cores
+- `e85e625` Documenta as convenções de comentários das funções auxiliares
+
 
