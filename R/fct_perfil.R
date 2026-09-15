@@ -11,7 +11,39 @@ TEXTO_PETALAS <- paste(
   "maior a insegurança naquele bloco."
 )
 
-#' Montando o palco de um município
+#' Definindo uma função que cria uma métrica do cabeçalho do perfil
+#'
+#' @param rotulo Rótulo da métrica.
+#' @param valor Valor principal já formatado.
+#' @param detalhe Texto auxiliar (opcional).
+#' @param tooltip Guarda o texto completo para o tooltip exibido quando cortado.
+#' @return Elemento HTML da métrica.
+#' Usada em: perfil_palco() (métricas territoriais) e perfil_placar() (rankings).
+#' @noRd
+metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
+  # Montando um campo que expõe o próprio texto para o tooltip condicional
+  montar_campo <- function(classe, texto) {
+    if (!tooltip) {
+      return(htmltools::tags$span(class = classe, texto))
+    }
+    htmltools::tags$span(
+      class = paste(classe, "metrica-tooltip"),
+      `data-tooltip-texto` = texto,
+      texto
+    )
+  }
+
+  htmltools::tags$div(
+    class = "metrica",
+    montar_campo("metrica-rotulo", rotulo),
+    montar_campo("metrica-valor", valor),
+    if (!is.null(detalhe)) {
+      htmltools::tags$span(class = "metrica-detalhe", detalhe)
+    }
+  )
+}
+
+#' Definindo uma função que monta o palco de um município
 #'
 #' @param municipio Linha do cadastro de municípios (nome, UF e território).
 #' @param resumo Lista retornada por resumo_municipio() ou NULL sem dado no ano.
@@ -19,9 +51,11 @@ TEXTO_PETALAS <- paste(
 #' @param comparado Indica se o palco é o do município de comparação.
 #' @param rotulo Rótulo de hierarquia exibido acima do nome (opcional).
 #' @return Elemento HTML com o palco completo.
+#' Usada em: mod_como.R (palcos principal e comparado).
 #' @noRd
 perfil_palco <- function(municipio, resumo, ano,
                          comparado = FALSE, rotulo = NULL) {
+  ## Obs.: este bloco usa funções auxiliares de utils_ui e fct_petalas.
   # Reunindo as classes do palco e marcando quando ele é o comparado
   classes <- c("painel-bloco", "painel-bloco--palco")
   if (comparado) {
@@ -79,13 +113,15 @@ perfil_palco <- function(municipio, resumo, ano,
   )
 }
 
-#' Montando o placar do IBISMA de um município
+#' Definindo uma função que monta o placar do IBISMA de um município
 #'
 #' @param resumo Lista retornada por resumo_municipio().
 #' @param ano Ano de referência exibido no rótulo do valor.
 #' @return Elemento HTML com valor, categoria e rankings.
+#' Usada em: fct_perfil.R (perfil_palco).
 #' @noRd
 perfil_placar <- function(resumo, ano) {
+  ## Obs.: este bloco usa funções auxiliares de utils_ui e fct_dados.
   htmltools::tags$div(
     class = "perfil-placar",
     # Valor do IBISMA nomeado, com categoria e leitura do percentil

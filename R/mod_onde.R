@@ -5,6 +5,17 @@
 #   circula entre o mapa, o ranking e o perfil.
 # =============================================================================
 
+# Definindo o nível de análise geográfica usado pela seção
+# Habilitando novos níveis ao acrescentar linhas com a variável geográfica do nível
+NIVEIS_ANALISE <- data.frame(
+  id            = "municipio",
+  rotulo        = "municípios",
+  singular      = "município",
+  variavel_geo  = "codmunres",
+  disponivel    = TRUE,
+  stringsAsFactors = FALSE
+)
+
 #' Interface do módulo Onde?
 #'
 #' @param id Identificador do módulo.
@@ -13,6 +24,7 @@
 mod_onde_ui <- function(id) {
   ns <- shiny::NS(id)
 
+  ## Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
   # Montando as opções de medida com o prefixo "Bloco" para leitura natural
   medidas <- opcoes_medidas()
   # Montando as opções de nível de análise a partir da configuração central
@@ -29,13 +41,16 @@ mod_onde_ui <- function(id) {
       # Cabeçalho editorial da seção
       titulo_secao(
         eyebrow = "Onde?",
-        titulo = "Onde est\u00e1 a inseguran\u00e7a em sa\u00fade materna?",
-        descricao = TEXTO_ESCALA
+        titulo = "Onde está a insegurança em saúde materna?",
+        descricao = paste(
+          "O IBISMA varia de 0 a 100: quanto maior o valor,",
+          "maior a insegurança em saúde materna do município."
+        )
       ),
       # Controles principais escritos como uma frase
-      frase_controles(
+      htmltools::tags$div(
+        class = "controles-inline",
         htmltools::tags$span(class = "controle-texto", "Mostrar"),
-        # Desabilitando a busca na medida e no nível, que têm poucas opções
         seletor_inline(
           ns("medida"), medidas, selected = "indice_final",
           largura = "300px", busca = FALSE
@@ -89,7 +104,8 @@ mod_onde_ui <- function(id) {
             )
           ),
           # Controle de escopo do ranking (Brasil ou uma UF)
-          frase_controles(
+          htmltools::tags$div(
+            class = "controles-inline",
             htmltools::tags$span(class = "controle-texto", "Ranking para"),
             seletor_inline(ns("escopo"), opcoes_escopo_ranking(), selected = "nacional")
           ),
@@ -125,6 +141,7 @@ mod_onde_server <- function(id, dados, municipio) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+    ## Obs.: este bloco usa funções auxiliares de fct_mapa.
     # Calculando os dados do mapa para a medida e o ano selecionados
     base_mapa <- shiny::reactive({
       dados_mapa(dados, as.integer(input$ano), input$medida)
@@ -210,16 +227,18 @@ mod_onde_server <- function(id, dados, municipio) {
     })
 
     # ----- Legenda -----
+    ## Obs.: este bloco usa funções auxiliares de fct_mapa e fct_config.
 
     # Recriando a legenda sempre que a medida exibida mudar
     output$legenda <- shiny::renderUI({
       legenda_categorias(
-        paleta = paleta_medida(input$medida),
+        paleta = PALETAS[[input$medida]],
         titulo = "N\u00edvel de inseguran\u00e7a"
       )
     })
 
     # ----- Ranking -----
+    ## Obs.: este bloco usa funções auxiliares de fct_dados, fct_config e utils_ui.
 
     # Montando a tabela do ranking conforme medida, ano e escopo escolhidos
     tabela_ranking <- shiny::reactive({
@@ -277,7 +296,7 @@ mod_onde_server <- function(id, dados, municipio) {
         stringsAsFactors = FALSE
       )
       # Montando os selos de categoria de uma vez, com a rampa da medida exibida
-      exibicao$categoria_html <- montar_selos(exibicao$categoria, input$medida)
+      exibicao$categoria_html <- badge_categoria_html(exibicao$categoria, input$medida)
 
       # Localizando a linha do município em foco para marcar já na montagem
       destaque <- which(exibicao$codmunres == shiny::isolate(municipio()))
@@ -407,6 +426,7 @@ busca_sem_acento <- reactable::JS(
 #' @return Objeto reactableTheme com as cores do projeto.
 #' @noRd
 tema_reactable <- function(medida = "indice_final") {
+  ## Obs.: este bloco usa funções auxiliares de fct_config.
   # Obtendo a cor de identificação da medida exibida no ranking
   base <- cor_medida(medida)[1]
   # Derivando os tons suaves da cor da medida usados nos destaques da tabela

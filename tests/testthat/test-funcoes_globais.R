@@ -81,7 +81,7 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
     base <- valores_ano(dados, ano, medida)
 
     # A categoria de cada município é a faixa dos quintis do ano
-    cortes <- stats::quantile(base$valor, PROBS_CORTES, na.rm = TRUE)
+    cortes <- stats::quantile(base$valor, c(0.2, 0.4, 0.6, 0.8), na.rm = TRUE)
     expect_equal(
       as.integer(base$categoria),
       findInterval(base$valor, cortes) + 1L
@@ -455,7 +455,7 @@ test_that("frase_percentil limita o texto a 99,9% com uma casa decimal", {
 })
 
 test_that("paletas e cores seguem a configuração do projeto", {
-  expect_equal(unname(paleta_mapa("indice_final")), unname(PALETA_IBISMA))
+  expect_setequal(names(PALETAS), MEDIDAS$medida)
   expect_equal(cor_medida("bloco1"), BLOCOS$cor[1])
   expect_equal(cor_medida("indice_final"), COR_IBISMA)
   expect_equal(cor_categoria(NA_character_), COR_SEM_DADOS)
@@ -463,7 +463,7 @@ test_that("paletas e cores seguem a configuração do projeto", {
   expect_equal(cor_texto_sobre("#0A1E3C"), "#FFFFFF")
 
   # A rampa de um bloco deve ter cinco tons distintos
-  rampa <- paleta_mapa("bloco3")
+  rampa <- unname(PALETAS[["bloco3"]])
   expect_length(rampa, 5)
   expect_equal(length(unique(rampa)), 5)
 })
@@ -693,11 +693,11 @@ test_that("atualizar_municipios envia listas nomeadas que serializam sem aviso",
   expect_null(aviso)
 })
 
-test_that("montar_selos gera o HTML dos selos de categoria", {
-  selos <- montar_selos(c("Muito baixo", "Muito alto"))
+test_that("badge_categoria_html gera o HTML dos selos de categoria", {
+  selos <- badge_categoria_html(c("Muito baixo", "Muito alto"))
   expect_length(selos, 2)
   expect_true(all(grepl("badge-categoria", selos)))
-  expect_true(grepl(PALETA_IBISMA[["Muito alto"]], selos[2]))
+  expect_true(grepl(PALETAS$indice_final[["Muito alto"]], selos[2]))
 })
 
 test_that("dados_mapa monta cores e tooltips para o ano", {
@@ -706,11 +706,11 @@ test_that("dados_mapa monta cores e tooltips para o ano", {
   base <- dados_mapa(dados, ano, "indice_final")
   expect_equal(nrow(base), nrow(dados$municipios))
   expect_true(all(nzchar(base$tooltip)))
-  expect_true(all(base$cor %in% unname(PALETA_IBISMA)))
+  expect_true(all(base$cor %in% unname(PALETAS$indice_final)))
   expect_true(all(grepl("tooltip-mapa", base$tooltip)))
 
   base_bloco <- dados_mapa(dados, ano, "bloco3")
-  expect_false(identical(unique(base_bloco$cor), unname(PALETA_IBISMA)))
+  expect_false(identical(unique(base_bloco$cor), unname(PALETAS$indice_final)))
 })
 
 test_that("municipio_padrao escolhe o mais vulnerável do último ano", {
@@ -755,26 +755,28 @@ test_that("legenda_categorias omite Sem dados por padrão", {
   expect_true(grepl("Sem dados", completo))
 })
 
-test_that("paleta_medida concentra a rampa usada por mapa, selos e tooltips", {
-  # O IBISMA mantém a paleta roxa e cada bloco usa a própria rampa
-  expect_equal(paleta_medida("indice_final"), PALETA_IBISMA)
+test_that("as rampas de PALETAS seguem a configuração do projeto", {
+  # O índice tem a cor de identificação no topo da rampa
+  expect_equal(unname(PALETAS$indice_final[5]), COR_IBISMA)
+
+  # Cada bloco tem a própria rampa e a categoria central é a cor de identificação
   for (m in BLOCOS$medida) {
-    rampa <- paleta_medida(m)
+    rampa <- PALETAS[[m]]
     expect_length(rampa, 5)
     expect_equal(names(rampa), CATEGORIAS)
     expect_equal(length(unique(rampa)), 5)
-    # A categoria central deve ser a cor de identificação do bloco
     expect_equal(unname(rampa[3]), cor_medida(m))
   }
+
   # A cor mais clara não pode se confundir com o cinza de "Sem dados"
-  expect_false(any(paleta_medida("bloco1") == COR_SEM_DADOS))
+  expect_false(any(PALETAS[["bloco1"]] == COR_SEM_DADOS))
 })
 
-test_that("cor_categoria e montar_selos respeitam a medida informada", {
+test_that("cor_categoria e badge_categoria_html respeitam a medida informada", {
   cor_bloco <- cor_categoria("Muito alto", "bloco3")
-  expect_equal(cor_bloco, unname(paleta_medida("bloco3")["Muito alto"]))
+  expect_equal(cor_bloco, unname(PALETAS[["bloco3"]]["Muito alto"]))
   expect_false(identical(cor_bloco, cor_categoria("Muito alto")))
-  selos <- montar_selos(c("Muito baixo", "Muito alto"), "bloco3")
+  selos <- badge_categoria_html(c("Muito baixo", "Muito alto"), "bloco3")
   expect_true(grepl(cor_bloco, selos[2], fixed = TRUE))
 })
 

@@ -36,12 +36,13 @@ ESQUELETO_MAPA_BRASIL <- paste0(
   "L 89.4 46.8 L 91.7 43.2 L 91.3 43.4 L 96.8 37.5 L 97.1 37 L 96.4 36.7 Z"
 )
 
-#' Montando um slot que empilha o output e o esqueleto correspondente
+#' Definindo uma função que monta um slot que empilha o output e o esqueleto correspondente
 #'
 #' @param output Elemento do output do Shiny.
 #' @param esqueleto Elemento do esqueleto exibido durante o carregamento.
 #' @param classe Classe extra aplicada ao slot (opcional).
 #' @return Elemento HTML do slot.
+#' Usada em: mod_onde.R e mod_como.R (empilhando os outputs).
 #' @noRd
 esqueleto_slot <- function(output, esqueleto, classe = NULL) {
   htmltools::tags$div(
@@ -51,12 +52,13 @@ esqueleto_slot <- function(output, esqueleto, classe = NULL) {
   )
 }
 
-#' Montando uma barra do esqueleto
+#' Definindo uma função que monta uma barra do esqueleto
 #'
 #' @param largura Largura da barra (qualquer unidade CSS).
 #' @param altura Altura da barra (qualquer unidade CSS).
 #' @param classe Classe extra aplicada à barra (opcional).
 #' @return Elemento HTML da barra.
+#' Usada em: fct_esqueleto.R (todos os esqueletos).
 #' @noRd
 esqueleto_barra <- function(largura = "100%", altura = "0.6em", classe = NULL) {
   htmltools::tags$span(
@@ -65,11 +67,12 @@ esqueleto_barra <- function(largura = "100%", altura = "0.6em", classe = NULL) {
   )
 }
 
-#' Montando um bloco de métrica do esqueleto do perfil
+#' Definindo uma função que monta um bloco de métrica do esqueleto do perfil
 #'
 #' @param rotulo Largura da barra do rótulo.
 #' @param valor Largura da barra do valor.
 #' @return Elemento HTML com a métrica esquelética.
+#' Usada em: fct_esqueleto.R (esqueleto_palco e esqueleto_placar).
 #' @noRd
 esqueleto_metrica <- function(rotulo, valor) {
   htmltools::tags$div(
@@ -79,9 +82,10 @@ esqueleto_metrica <- function(rotulo, valor) {
   )
 }
 
-#' Montando o esqueleto da área do mapa
+#' Definindo uma função que monta o esqueleto da área do mapa
 #'
 #' @return Elemento HTML com a silhueta do Brasil e o controle de zoom.
+#' Usada em: mod_onde.R (esqueleto do mapa).
 #' @noRd
 esqueleto_mapa <- function() {
   htmltools::tags$div(
@@ -102,9 +106,10 @@ esqueleto_mapa <- function() {
   )
 }
 
-#' Montando o esqueleto da legenda das categorias
+#' Definindo uma função que monta o esqueleto da legenda das categorias
 #'
 #' @return Elemento HTML com título e itens esqueléticos.
+#' Usada em: mod_onde.R (esqueleto da legenda).
 #' @noRd
 esqueleto_legenda <- function() {
   # Variando as larguras para lembrar os rótulos reais das categorias
@@ -124,9 +129,10 @@ esqueleto_legenda <- function() {
   )
 }
 
-#' Montando o esqueleto de um texto curto
+#' Definindo uma função que monta o esqueleto de um texto curto
 #'
 #' @return Elemento HTML com a barra que ocupa o lugar da frase.
+#' Usada em: mod_onde.R (esqueleto do resumo do ranking).
 #' @noRd
 esqueleto_texto <- function() {
   htmltools::tags$span(
@@ -135,9 +141,10 @@ esqueleto_texto <- function() {
   )
 }
 
-#' Montando o esqueleto da identificação da evolução
+#' Definindo uma função que monta o esqueleto da identificação da evolução
 #'
 #' @return Elemento HTML com a barra que ocupa o lugar do nome e do período.
+#' Usada em: mod_como.R (esqueleto da identificação da evolução).
 #' @noRd
 esqueleto_identificacao <- function() {
   htmltools::tags$span(
@@ -146,7 +153,7 @@ esqueleto_identificacao <- function() {
   )
 }
 
-#' Montando a célula do esqueleto da tabela do ranking
+#' Definindo uma função que monta a célula do esqueleto da tabela do ranking
 #'
 #' @param largura Largura fixa da coluna; NULL usa a coluna flexível.
 #' @param barra Largura da barra interna; NULL deixa a célula sem barra.
@@ -154,6 +161,7 @@ esqueleto_identificacao <- function() {
 #' @param celula Classe extra aplicada à célula (opcional).
 #' @param marca Classe extra aplicada à barra (opcional).
 #' @return Elemento HTML da célula.
+#' Usada em: fct_esqueleto.R (esqueleto_ranking).
 #' @noRd
 esqueleto_celula <- function(largura = NULL, barra = NULL, altura = "0.6em",
                              celula = NULL, marca = NULL) {
@@ -175,10 +183,11 @@ esqueleto_celula <- function(largura = NULL, barra = NULL, altura = "0.6em",
   )
 }
 
-#' Montando o esqueleto do ranking
+#' Definindo uma função que monta o esqueleto do ranking
 #'
 #' @param linhas Número de linhas exibidas, igual ao tamanho de página real.
 #' @return Elemento HTML com busca, cabeçalho, linhas e paginação.
+#' Usada em: mod_onde.R (esqueleto da tabela do ranking).
 #' @noRd
 esqueleto_ranking <- function(linhas = 12) {
   # Reproduzindo as larguras de coluna configuradas no reactable
@@ -237,9 +246,10 @@ esqueleto_ranking <- function(linhas = 12) {
   )
 }
 
-#' Montando o esqueleto do leque de pétalas
+#' Definindo uma função que monta o esqueleto do leque de pétalas
 #'
 #' @return Elemento HTML com guias, pétalas e discos neutros.
+#' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
 esqueleto_petalas <- function() {
   # Desenhando as seis pétalas com uma escala fixa e sem qualquer dado
@@ -300,9 +310,10 @@ esqueleto_petalas <- function() {
   )
 }
 
-#' Montando o esqueleto do placar do IBISMA
+#' Definindo uma função que monta o esqueleto do placar do IBISMA
 #'
 #' @return Elemento HTML com valor central e rankings laterais neutros.
+#' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
 esqueleto_placar <- function() {
   # Mantendo a mesma divisão em áreas do placar real
@@ -345,9 +356,10 @@ esqueleto_placar <- function() {
   )
 }
 
-#' Montando o esqueleto do palco de um município
+#' Definindo uma função que monta o esqueleto do palco de um município
 #'
 #' @return Elemento HTML com identificação, pétalas e placar esqueléticos.
+#' Usada em: mod_como.R (palcos principal e comparado).
 #' @noRd
 esqueleto_palco <- function() {
   # Reaproveitando as classes do palco real para herdar espaçamentos e fontes
@@ -381,10 +393,11 @@ ESQUELETO_GRAFICO_RODAPE <- 28
 # Definindo as frações da altura útil usadas na grade e nos números do eixo
 ESQUELETO_GRAFICO_GRADE <- c(0.15, 0.38, 0.62, 0.85)
 
-#' Montando a coluna dos números do eixo Y do esqueleto
+#' Definindo uma função que monta a coluna dos números do eixo Y do esqueleto
 #'
 #' @param altura Altura em pixels da área do gráfico.
 #' @return Elemento HTML com as barras que reservam os números do eixo.
+#' Usada em: fct_esqueleto.R (esqueleto_grade_evolucao).
 #' @noRd
 esqueleto_grafico_margem <- function(altura) {
   # Calculando a altura útil do gráfico, como no desenho real
@@ -401,10 +414,11 @@ esqueleto_grafico_margem <- function(altura) {
   htmltools::tags$div(class = "esqueleto__grafico-margem", barras)
 }
 
-#' Montando o desenho abstrato de um gráfico de linhas
+#' Definindo uma função que monta o desenho abstrato de um gráfico de linhas
 #'
 #' @param altura Altura em pixels da área do gráfico.
 #' @return Elemento SVG com grade e traços de tendência.
+#' Usada em: fct_esqueleto.R (esqueleto_grade_evolucao).
 #' @noRd
 esqueleto_grafico_svg <- function(altura) {
   # Reproduzindo as margens verticais usadas pelos gráficos reais
@@ -443,9 +457,10 @@ esqueleto_grafico_svg <- function(altura) {
   )
 }
 
-#' Montando o esqueleto da grade de evolução temporal
+#' Definindo uma função que monta o esqueleto da grade de evolução temporal
 #'
 #' @return Elemento HTML com o cartão do IBISMA e os seis cartões dos blocos.
+#' Usada em: mod_como.R (esqueleto da grade da evolução).
 #' @noRd
 esqueleto_grade_evolucao <- function() {
   # Reproduzindo um cartão da evolução com a área reservada para o gráfico

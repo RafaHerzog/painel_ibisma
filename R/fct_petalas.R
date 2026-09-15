@@ -18,7 +18,7 @@ PETALAS_COMPRIMENTO <- 170
 # Definindo a área visível do desenho, cortando as sobras de topo e laterais
 PETALAS_VIEWBOX <- "45 60 410 236"
 
-#' Montando o conteúdo HTML do tooltip de uma pétala
+#' Definindo uma função que monta o conteúdo HTML do tooltip de uma pétala
 #'
 #' @param nome Nome do bloco.
 #' @param valor Valor do bloco na escala 0 a 100.
@@ -27,6 +27,7 @@ PETALAS_VIEWBOX <- "45 60 410 236"
 #' @param total_nac Total de municípios ranqueados.
 #' @param medida Identificador do bloco que define a cor da dimensão.
 #' @return Texto HTML pronto para o tooltip do Bootstrap.
+#' Usada em: fct_petalas.R (petala_svg).
 #' @noRd
 tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
   # Montando o cartão com nome, valor, ranking e selo de categoria
@@ -50,11 +51,12 @@ tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
   )
 }
 
-#' Montando uma pétala individual do gráfico
+#' Definindo uma função que monta uma pétala individual do gráfico
 #'
 #' @param i Índice do bloco.
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
 #' @return Elemento HTML com o grupo SVG da pétala.
+#' Usada em: fct_petalas.R (grafico_petalas).
 #' @noRd
 petala_svg <- function(i, blocos) {
   # Extraindo os dados e calculando os fatores de escala da pétala
@@ -132,10 +134,11 @@ petala_svg <- function(i, blocos) {
   )
 }
 
-#' Montando o gráfico de pétalas dos seis blocos do IBISMA
+#' Definindo uma função que monta o gráfico de pétalas dos seis blocos do IBISMA
 #'
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
 #' @return Elemento HTML com o leque de pétalas e as legendas de apoio.
+#' Usada em: fct_perfil.R (palco do município).
 #' @noRd
 grafico_petalas <- function(blocos) {
   # Garantindo que os nomes cheguem como texto

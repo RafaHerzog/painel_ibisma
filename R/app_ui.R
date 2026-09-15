@@ -31,6 +31,165 @@ app_ui <- function(request) {
   )
 }
 
+# -----------------------------------------------------------------------------
+#   COMPONENTES DA CASCA DO PAINEL
+#   Tema, barra de navegação e rodapé, usados apenas pela interface do app.
+# -----------------------------------------------------------------------------
+
+#' Definindo uma função que monta o tema bslib do painel
+#'
+#' @return Objeto bs_theme com as cores e fontes do projeto.
+#' @noRd
+tema_ibisma <- function() {
+  bslib::bs_theme(
+    version = 5,
+    bg = "#FFFFFF",
+    fg = COR_AZUL_ESCURO,
+    primary = COR_IBISMA,
+    secondary = COR_AZUL_CLARO,
+    base_font = bslib::font_collection(
+      "'Source Sans Pro'",
+      "system-ui",
+      "sans-serif"
+    ),
+    heading_font = bslib::font_collection(
+      "'Source Sans Pro'",
+      "system-ui",
+      "sans-serif"
+    ),
+    "body-bg" = "#FFFFFF",
+    "border-radius" = "12px",
+    "font-size-base" = "1rem"
+  )
+}
+
+#' Definindo uma função que monta a barra de navegação fixa do painel
+#'
+#' @return Elemento HTML da navbar com âncoras para as seções.
+#' @noRd
+navbar_ibisma <- function() {
+  # Montando uma navbar escura Bootstrap 5 com colapso automático em telas pequenas
+  htmltools::tags$nav(
+    class = "navbar navbar-expand-md navbar-dark navbar-ibisma",
+    `aria-label` = "Navegação principal",
+    id = "navbar-ibisma",
+    htmltools::tags$div(
+      class = "painel-container navbar-conteudo",
+      # Ligando a marca do painel ao topo da página
+      htmltools::tags$a(
+        class = "navbar-brand",
+        href = "#topo",
+        `aria-label` = "Voltar ao topo",
+        htmltools::tags$img(
+          src = "www/logos/logo-oobr-curto.png",
+          alt = "Observatório Obstétrico Brasileiro",
+          class = "navbar-brand__logo"
+        ),
+        htmltools::tags$span(
+          class = "navbar-brand__identidade",
+          htmltools::tags$span(class = "navbar-brand__texto", "IBISMA"),
+          # Mantendo a descrição do índice visível apenas quando houver espaço
+          htmltools::tags$span(
+            class = "navbar-brand__descricao d-none d-lg-block",
+            "Índice Brasileiro de Insegurança em Saúde Materna"
+          )
+        )
+      ),
+      # Criando o botão de menu para telas pequenas
+      htmltools::tags$button(
+        class = "navbar-toggler",
+        type = "button",
+        `data-bs-toggle` = "collapse",
+        `data-bs-target` = "#menu-ibisma",
+        `aria-controls` = "menu-ibisma",
+        `aria-expanded` = "false",
+        `aria-label` = "Abrir menu de navegação",
+        htmltools::tags$span(class = "navbar-toggler-icon")
+      ),
+      # Listando as âncoras das seções do painel
+      htmltools::tags$div(
+        class = "collapse navbar-collapse",
+        id = "menu-ibisma",
+        htmltools::tags$ul(
+          class = "navbar-nav ms-auto",
+          htmltools::tags$li(
+            class = "nav-item",
+            htmltools::tags$a(class = "nav-link", href = "#onde", "Onde?")
+          ),
+          htmltools::tags$li(
+            class = "nav-item",
+            htmltools::tags$a(class = "nav-link", href = "#como", "Como?")
+          )
+        )
+      )
+    )
+  )
+}
+
+#' Definindo uma função que monta o rodapé institucional do painel
+#'
+#' @return Elemento HTML do rodapé.
+#' @noRd
+rodape_ibisma <- function() {
+  # Definindo os logos negativos e seus textos alternativos para o rodapé
+  realizacao <- c(
+    "logos/realizacao/logo_oobr_negativo.png" = "Observatório Obstétrico Brasileiro",
+    "logos/realizacao/logo_fiocruz_negativo.png" = "Fiocruz",
+    "logos/realizacao/logo_ufes_negativo.png" = "Universidade Federal do Espírito Santo",
+    "logos/realizacao/logo_ufrj_negativo.png" = "Universidade Federal do Rio de Janeiro"
+  )
+  financiadores <- c(
+    "logos/financiadores/logo_bill_melinda_negativo.png" = "Bill & Melinda Gates Foundation",
+    "logos/financiadores/logo_cnpq_negativo.png" = "CNPq",
+    "logos/financiadores/logo_fapes_negativo.png" = "FAPES"
+  )
+
+  # Montando uma faixa de logos a partir de um vetor nomeado
+  faixa_logos <- function(logos) {
+    htmltools::tags$div(
+      class = "rodape-logos",
+      lapply(names(logos), function(caminho) {
+        htmltools::tags$img(
+          src = paste0("www/", caminho),
+          alt = logos[[caminho]],
+          class = "rodape-logo",
+          loading = "lazy",
+          decoding = "async"
+        )
+      })
+    )
+  }
+
+  htmltools::tags$footer(
+    class = "rodape-painel",
+    htmltools::tags$div(
+      class = "painel-container",
+      htmltools::tags$div(
+        class = "rodape-grade",
+        htmltools::tags$div(
+          class = "rodape-bloco",
+          htmltools::tags$h3(class = "rodape-titulo", "Realização"),
+          faixa_logos(realizacao)
+        ),
+        htmltools::tags$div(
+          class = "rodape-bloco",
+          htmltools::tags$h3(class = "rodape-titulo", "Financiamento"),
+          faixa_logos(financiadores)
+        )
+      ),
+      htmltools::tags$div(
+        class = "rodape-base",
+        htmltools::tags$p(
+          class = "rodape-nota",
+          "Este painel está em desenvolvimento. ",
+          "O IBISMA é um índice relativo: seus valores representam o percentil de ",
+          "vulnerabilidade dos municípios brasileiros, não uma medida absoluta."
+        )
+      )
+    )
+  )
+}
+
 #' Add external Resources to the Application
 #'
 #' This function is internally used to add external
@@ -54,12 +213,12 @@ golem_add_external_resources <- function() {
 
   tags$head(
     favicon(),
-    tags$title(paste0(TITULO_PAINEL, " \u2014 ", SUBTITULO_PAINEL)),
+    tags$title("IBISMA — Índice Brasileiro de Insegurança em Saúde Materna"),
     tags$meta(
       name = "description",
       content = paste0(
-        SUBTITULO_PAINEL,
-        ": painel interativo com o índice e os seis blocos que compõem o IBISMA."
+        "Índice Brasileiro de Insegurança em Saúde Materna: ",
+        "painel interativo com o índice e os seis blocos que compõem o IBISMA."
       )
     ),
     # Carregando a fonte institucional do Google Fonts

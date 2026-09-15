@@ -1,105 +1,16 @@
 # =============================================================================
 #   COMPONENTES DE INTERFACE REUTILIZÁVEIS
-#   Reúne pedaços de UI usados por mais de uma seção do painel, garantindo
-#   consistência visual e evitando repetição de código.
+#   Reúne os componentes de interface que o painel reaproveita; cada função
+#   registra na própria documentação exatamente onde é usada.
 # =============================================================================
 
-#' Definindo o tema bslib do painel
-#'
-#' @return Objeto bs_theme com as cores e fontes do projeto.
-#' @noRd
-tema_ibisma <- function() {
-  bslib::bs_theme(
-    version = 5,
-    bg = "#FFFFFF",
-    fg = COR_AZUL_ESCURO,
-    primary = COR_IBISMA,
-    secondary = COR_AZUL_CLARO,
-    base_font = bslib::font_collection(
-      "'Source Sans Pro'",
-      "system-ui",
-      "sans-serif"
-    ),
-    heading_font = bslib::font_collection(
-      "'Source Sans Pro'",
-      "system-ui",
-      "sans-serif"
-    ),
-    "body-bg" = "#FFFFFF",
-    "border-radius" = "12px",
-    "font-size-base" = "1rem"
-  )
-}
-
-#' Montando a barra de navegação fixa do painel
-#'
-#' @return Elemento HTML da navbar com âncoras para as seções.
-#' @noRd
-navbar_ibisma <- function() {
-  # Montando uma navbar escura Bootstrap 5 com colapso automático em telas pequenas
-  htmltools::tags$nav(
-    class = "navbar navbar-expand-md navbar-dark navbar-ibisma",
-    `aria-label` = "Navegação principal",
-    id = "navbar-ibisma",
-    htmltools::tags$div(
-      class = "painel-container navbar-conteudo",
-      # Ligando a marca do painel ao topo da página
-      htmltools::tags$a(
-        class = "navbar-brand",
-        href = "#topo",
-        `aria-label` = "Voltar ao topo",
-        htmltools::tags$img(
-          src = "www/logos/logo-oobr-curto.png",
-          alt = "Observatório Obstétrico Brasileiro",
-          class = "navbar-brand__logo"
-        ),
-        htmltools::tags$span(
-          class = "navbar-brand__identidade",
-          htmltools::tags$span(class = "navbar-brand__texto", TITULO_PAINEL),
-          # Mantendo a descrição do índice visível apenas quando houver espaço
-          htmltools::tags$span(
-            class = "navbar-brand__descricao d-none d-lg-block",
-            SUBTITULO_PAINEL
-          )
-        )
-      ),
-      # Criando o botão de menu para telas pequenas
-      htmltools::tags$button(
-        class = "navbar-toggler",
-        type = "button",
-        `data-bs-toggle` = "collapse",
-        `data-bs-target` = "#menu-ibisma",
-        `aria-controls` = "menu-ibisma",
-        `aria-expanded` = "false",
-        `aria-label` = "Abrir menu de navegação",
-        htmltools::tags$span(class = "navbar-toggler-icon")
-      ),
-      # Listando as âncoras das seções do painel
-      htmltools::tags$div(
-        class = "collapse navbar-collapse",
-        id = "menu-ibisma",
-        htmltools::tags$ul(
-          class = "navbar-nav ms-auto",
-          htmltools::tags$li(
-            class = "nav-item",
-            htmltools::tags$a(class = "nav-link", href = "#onde", "Onde?")
-          ),
-          htmltools::tags$li(
-            class = "nav-item",
-            htmltools::tags$a(class = "nav-link", href = "#como", "Como?")
-          )
-        )
-      )
-    )
-  )
-}
-
-#' Montando o cabeçalho de uma seção do painel
+#' Definindo uma função que monta o cabeçalho de uma seção do painel
 #'
 #' @param eyebrow Texto curto acima do título.
 #' @param titulo Título principal da seção.
 #' @param descricao Parágrafo de apoio (opcional).
 #' @return Elemento HTML com o cabeçalho da seção.
+#' Usada em: mod_onde.R e mod_como.R (cabeçalho de cada seção).
 #' @noRd
 titulo_secao <- function(eyebrow, titulo, descricao = NULL) {
   htmltools::tags$header(
@@ -112,24 +23,7 @@ titulo_secao <- function(eyebrow, titulo, descricao = NULL) {
   )
 }
 
-#' Atualizando o valor de um slimSelectInput pelo servidor
-#'
-#' @param session Sessão do Shiny.
-#' @param input_id Identificador do input.
-#' @param selecionado Valor que deve ficar selecionado.
-#' @return Nada; envia a mensagem de atualização para o navegador.
-#' @noRd
-atualizar_seletor <- function(session, input_id, selecionado) {
-  # Removendo nomes do valor para a mensagem JSON não carregar vetor nomeado
-  # Usando a função oficial do shinyWidgets para manter o slim select sincronizado
-  shinyWidgets::updateSlimSelect(
-    session = session,
-    inputId = input_id,
-    selected = unname(as.character(selecionado))
-  )
-}
-
-#' Criando um seletor inline integrado à frase de controles
+#' Definindo uma função que cria um seletor inline integrado à frase de controles
 #'
 #' @param input_id Identificador do input.
 #' @param choices Vetor nomeado de opções.
@@ -137,6 +31,7 @@ atualizar_seletor <- function(session, input_id, selecionado) {
 #' @param largura Largura do seletor (mínima).
 #' @param busca Habilita o campo de busca dentro do dropdown.
 #' @return Elemento HTML do seletor estilizado.
+#' Usada em: mod_onde.R (medida, nível, ano e escopo) e mod_como.R (município, ano e comparação).
 #' @noRd
 seletor_inline <- function(input_id, choices, selected = NULL, largura = "auto",
                            busca = TRUE) {
@@ -155,20 +50,12 @@ seletor_inline <- function(input_id, choices, selected = NULL, largura = "auto",
   )
 }
 
-#' Montando a frase de controles com seletores embutidos
-#'
-#' @param ... Partes da frase, alternando textos e seletores.
-#' @return Elemento HTML com a frase completa.
-#' @noRd
-frase_controles <- function(...) {
-  htmltools::tags$div(class = "controles-inline", ...)
-}
-
-#' Criando o selo colorido de uma categoria
+#' Definindo uma função que cria o selo colorido de uma categoria
 #'
 #' @param categoria Rótulo da categoria.
 #' @param cor Cor de fundo do selo (opcional).
 #' @return Elemento HTML do selo.
+#' Usada em: fct_perfil.R (selo do índice no placar) e fct_petalas.R (selo do tooltip da pétala).
 #' @noRd
 badge_categoria <- function(categoria, cor = NULL) {
   # Usando a cor da categoria quando nenhuma cor for informada
@@ -185,13 +72,14 @@ badge_categoria <- function(categoria, cor = NULL) {
   )
 }
 
-#' Montando selos de categoria em HTML de forma vetorizada
+#' Definindo uma função que monta selos de categoria em HTML de forma vetorizada
 #'
 #' @param categorias Vetor de categorias.
 #' @param medida Identificador da medida que define a rampa de cores.
 #' @return Vetor de textos HTML com os selos coloridos.
+#' Usada em: mod_onde.R (coluna Categoria da tabela do ranking).
 #' @noRd
-montar_selos <- function(categorias, medida = "indice_final") {
+badge_categoria_html <- function(categorias, medida = "indice_final") {
   # Calculando as cores de fundo e de texto de uma só vez
   cores <- cor_categoria(categorias, medida)
   sprintf(
@@ -202,78 +90,12 @@ montar_selos <- function(categorias, medida = "indice_final") {
   )
 }
 
-#' Montando a legenda das cinco categorias do mapa
-#'
-#' @param paleta Vetor nomeado com as cores das categorias.
-#' @param titulo Título curto da legenda.
-#' @param com_sem_dados Incluir a entrada "Sem dados" (desativado no painel).
-#' @return Elemento HTML com a legenda completa.
-#' @noRd
-legenda_categorias <- function(paleta = paleta_categorias(), titulo = NULL,
-                               com_sem_dados = FALSE) {
-  # Montando um item de legenda para cada categoria
-  itens <- lapply(names(paleta), function(nome) {
-    htmltools::tags$span(
-      class = "legenda-item",
-      htmltools::tags$span(class = "legenda-cor", style = paste0("background:", paleta[[nome]], ";")),
-      htmltools::tags$span(class = "legenda-rotulo", nome)
-    )
-  })
-
-  # Acrescentando a entrada de municípios sem dado, quando pedido
-  if (com_sem_dados) {
-    itens <- c(itens, list(
-      htmltools::tags$span(
-        class = "legenda-item legenda-item--sem-dados",
-        htmltools::tags$span(class = "legenda-cor", style = paste0("background:", COR_SEM_DADOS, ";")),
-        htmltools::tags$span(class = "legenda-rotulo", "Sem dados")
-      )
-    ))
-  }
-
-  htmltools::tags$div(
-    class = "legenda-categorias",
-    if (!is.null(titulo)) htmltools::tags$span(class = "legenda-titulo", titulo),
-    htmltools::tags$div(class = "legenda-itens", itens)
-  )
-}
-
-#' Criando uma métrica do cabeçalho do perfil
-#'
-#' @param rotulo Rótulo da métrica.
-#' @param valor Valor principal já formatado.
-#' @param detalhe Texto auxiliar (opcional).
-#' @param tooltip Guarda o texto completo para o tooltip exibido quando cortado.
-#' @return Elemento HTML da métrica.
-#' @noRd
-metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
-  # Montando um campo que expõe o próprio texto para o tooltip condicional
-  montar_campo <- function(classe, texto) {
-    if (!tooltip) {
-      return(htmltools::tags$span(class = classe, texto))
-    }
-    htmltools::tags$span(
-      class = paste(classe, "metrica-tooltip"),
-      `data-tooltip-texto` = texto,
-      texto
-    )
-  }
-
-  htmltools::tags$div(
-    class = "metrica",
-    montar_campo("metrica-rotulo", rotulo),
-    montar_campo("metrica-valor", valor),
-    if (!is.null(detalhe)) {
-      htmltools::tags$span(class = "metrica-detalhe", detalhe)
-    }
-  )
-}
-
-#' Exibindo um estado vazio com mensagem amigável
+#' Definindo uma função que exibe um estado vazio com mensagem amigável
 #'
 #' @param mensagem Texto explicativo.
 #' @param icone Nome do ícone do fontawesome (opcional).
 #' @return Elemento HTML do estado vazio.
+#' Usada em: fct_perfil.R (palco sem seleção e sem dado) e mod_como.R (evolução sem série).
 #' @noRd
 estado_vazio <- function(mensagem, icone = NULL) {
   htmltools::tags$div(
@@ -286,66 +108,3 @@ estado_vazio <- function(mensagem, icone = NULL) {
   )
 }
 
-#' Montando o rodapé institucional do painel
-#'
-#' @return Elemento HTML do rodapé.
-#' @noRd
-rodape_ibisma <- function() {
-  # Definindo os logos negativos e seus textos alternativos para o rodapé
-  realizacao <- c(
-    "logos/realizacao/logo_oobr_negativo.png" = "Observatório Obstétrico Brasileiro",
-    "logos/realizacao/logo_fiocruz_negativo.png" = "Fiocruz",
-    "logos/realizacao/logo_ufes_negativo.png" = "Universidade Federal do Espírito Santo",
-    "logos/realizacao/logo_ufrj_negativo.png" = "Universidade Federal do Rio de Janeiro"
-  )
-  financiadores <- c(
-    "logos/financiadores/logo_bill_melinda_negativo.png" = "Bill & Melinda Gates Foundation",
-    "logos/financiadores/logo_cnpq_negativo.png" = "CNPq",
-    "logos/financiadores/logo_fapes_negativo.png" = "FAPES"
-  )
-
-  # Montando uma faixa de logos a partir de um vetor nomeado
-  faixa_logos <- function(logos) {
-    htmltools::tags$div(
-      class = "rodape-logos",
-      lapply(names(logos), function(caminho) {
-        htmltools::tags$img(
-          src = paste0("www/", caminho),
-          alt = logos[[caminho]],
-          class = "rodape-logo",
-          loading = "lazy",
-          decoding = "async"
-        )
-      })
-    )
-  }
-
-  htmltools::tags$footer(
-    class = "rodape-painel",
-    htmltools::tags$div(
-      class = "painel-container",
-      htmltools::tags$div(
-        class = "rodape-grade",
-        htmltools::tags$div(
-          class = "rodape-bloco",
-          htmltools::tags$h3(class = "rodape-titulo", "Realização"),
-          faixa_logos(realizacao)
-        ),
-        htmltools::tags$div(
-          class = "rodape-bloco",
-          htmltools::tags$h3(class = "rodape-titulo", "Financiamento"),
-          faixa_logos(financiadores)
-        )
-      ),
-      htmltools::tags$div(
-        class = "rodape-base",
-        htmltools::tags$p(
-          class = "rodape-nota",
-          "Este painel está em desenvolvimento. ",
-          "O IBISMA é um índice relativo: seus valores representam o percentil de ",
-          "vulnerabilidade dos municípios brasileiros, não uma medida absoluta."
-        )
-      )
-    )
-  )
-}

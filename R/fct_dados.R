@@ -7,9 +7,10 @@
 # Criando um cache em memória para não reler os arquivos a cada sessão
 .ibisma_cache <- new.env(parent = emptyenv())
 
-#' Obtendo a base preparada do IBISMA com cache
+#' Definindo uma função que obtém a base preparada do IBISMA com cache
 #'
 #' @return Lista com o cadastro de municípios, os anos e as séries temporais.
+#' Usada em: app_server.R (abertura do app), fct_dados.R (internamente) e mod_como.R.
 #' @noRd
 dados_ibisma <- function() {
   # Lendo o arquivo uma única vez por processo e reutilizando depois
@@ -22,10 +23,11 @@ dados_ibisma <- function() {
   .ibisma_cache$dados
 }
 
-#' Descobrindo o município padrão de abertura do painel
+#' Definindo uma função que descobre o município padrão de abertura do painel
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @return Código do município mais vulnerável do ano mais recente.
+#' Usada em: app_server.R (município de abertura) e mod_como.R (valor inicial do seletor).
 #' @noRd
 municipio_padrao <- function(dados = dados_ibisma()) {
   # Buscando o município com o maior IBISMA no último ano disponível
@@ -34,11 +36,12 @@ municipio_padrao <- function(dados = dados_ibisma()) {
   base$codmunres[which.max(base$valor)]
 }
 
-#' Lendo a tabela anual em cache
+#' Definindo uma função que lê a tabela anual em cache
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @return Data frame com uma linha por município e medida.
+#' Usada em: fct_dados.R (valores_ano e resumo_municipio).
 #' @noRd
 tabela_ano <- function(dados, ano) {
   # Guardando em memória a tabela de cada ano já lida
@@ -62,12 +65,13 @@ tabela_ano <- function(dados, ano) {
   .ibisma_cache[[chave]]
 }
 
-#' Obtendo os valores de uma medida em um ano
+#' Definindo uma função que obtém os valores de uma medida em um ano
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida ("indice_final", "bloco1"...).
 #' @return Data frame com uma linha por município, já com categoria e rankings.
+#' Usada em: fct_dados.R (municipio_padrao), fct_mapa.R (dados_mapa) e mod_onde.R (ranking).
 #' @noRd
 valores_ano <- function(dados, ano, medida) {
   # Selecionando a medida desejada dentro da tabela anual
@@ -75,12 +79,13 @@ valores_ano <- function(dados, ano, medida) {
   tabela[tabela$medida == medida, ]
 }
 
-#' Montando o resumo completo de um município em um ano
+#' Definindo uma função que monta o resumo completo de um município em um ano
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param codmunres Código do município.
 #' @param ano Ano de referência.
 #' @return Lista com identificação, valores, categorias e posições no ranking.
+#' Usada em: mod_como.R (palcos principal e comparado).
 #' @noRd
 resumo_municipio <- function(dados, codmunres, ano) {
   # Reunindo as linhas do município em todas as medidas do ano
@@ -118,11 +123,12 @@ resumo_municipio <- function(dados, codmunres, ano) {
   )
 }
 
-#' Obtendo as séries das sete medidas de um município
+#' Definindo uma função que obtém as séries das sete medidas de um município
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param codmunres Código do município.
 #' @return Data frame com uma linha por ano e uma coluna por medida.
+#' Usada em: mod_como.R (evolução e comparação).
 #' @noRd
 series_municipio <- function(dados, codmunres) {
   # Selecionando as linhas do município na tabela de séries pronta
@@ -134,19 +140,21 @@ series_municipio <- function(dados, codmunres) {
   serie
 }
 
-#' Verificando se uma série tem algum valor para desenhar
+#' Definindo uma função que verifica se uma série tem algum valor para desenhar
 #'
 #' @param series Data frame retornado por series_municipio().
 #' @return TRUE quando existe pelo menos um valor entre as sete medidas.
+#' Usada em: mod_como.R (evolução e comparação).
 #' @noRd
 series_tem_valor <- function(series) {
   any(!is.na(series[, MEDIDAS$medida]))
 }
 
-#' Gerando as opções de municípios para os seletores
+#' Definindo uma função que gera as opções de municípios para os seletores
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @return Vetor nomeado em que os valores são os códigos e os nomes incluem a UF.
+#' Usada em: mod_como.R (seletor de município).
 #' @noRd
 opcoes_municipios <- function(dados) {
   # Montando rótulos legíveis e ordenados alfabeticamente
@@ -156,11 +164,12 @@ opcoes_municipios <- function(dados) {
   stats::setNames(municipios$codmunres, rotulos)
 }
 
-#' Obtendo o nome de um município pelo código
+#' Definindo uma função que obtém o nome de um município pelo código
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param codmunres Código do município.
 #' @return Nome do município com a sigla da UF.
+#' Usada em: mod_como.R (evolução e identificação dos gráficos).
 #' @noRd
 nome_municipio <- function(dados, codmunres) {
   info <- dados$municipios[dados$municipios$codmunres == codmunres, ]
@@ -170,32 +179,30 @@ nome_municipio <- function(dados, codmunres) {
   paste0(info$municipio[1], " (", info$sigla_uf[1], ")")
 }
 
-#' Gerando as opções de medidas para os seletores
+#' Definindo uma função que gera as opções de medidas para os seletores
 #'
-#' @param prefixo_bloco Se TRUE, prefixa os blocos com a palavra "Bloco".
 #' @return Vetor nomeado em que os valores são as colunas das medidas.
+#' Usada em: mod_onde.R (seletor de medida).
 #' @noRd
-opcoes_medidas <- function(prefixo_bloco = TRUE) {
-  # Montando rótulos legíveis para a frase de controles do painel
-  rotulos <- MEDIDAS$nome
-  if (prefixo_bloco) {
-    rotulos[rotulos != "IBISMA"] <- paste("Bloco", rotulos[rotulos != "IBISMA"])
-  }
-  stats::setNames(MEDIDAS$medida, rotulos)
+opcoes_medidas <- function() {
+  # Montando as opções com os rótulos já prontos do dicionário das medidas
+  stats::setNames(MEDIDAS$medida, MEDIDAS$rotulo)
 }
 
-#' Listando os anos disponíveis na base
+#' Definindo uma função que lista os anos disponíveis na base
 #'
 #' @return Vetor ordenado de anos.
+#' Usada em: mod_onde.R e mod_como.R (seletores de ano).
 #' @noRd
 anos_disponiveis <- function() {
   dados_ibisma()$anos
 }
 
-#' Montando as opções de escopo do ranking (Brasil ou uma UF)
+#' Definindo uma função que monta as opções de escopo do ranking (Brasil ou uma UF)
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @return Vetor nomeado em que os valores são "nacional" ou a sigla da UF.
+#' Usada em: mod_onde.R (escopo do ranking).
 #' @noRd
 opcoes_escopo_ranking <- function(dados = dados_ibisma()) {
   # Obtendo as unidades da federação a partir do cadastro de municípios
@@ -209,10 +216,11 @@ opcoes_escopo_ranking <- function(dados = dados_ibisma()) {
   )
 }
 
-#' Obtendo o nome por extenso de uma unidade da federação
+#' Definindo uma função que obtém o nome por extenso de uma unidade da federação
 #'
 #' @param sigla Sigla da UF.
 #' @return Nome da UF correspondente à sigla.
+#' Usada em: mod_onde.R (resumo do ranking).
 #' @noRd
 nome_uf <- function(sigla) {
   # Buscando o nome nos municípios já preparados, sem tocar na base bruta
@@ -220,11 +228,12 @@ nome_uf <- function(sigla) {
   ufs$uf[match(sigla, ufs$sigla_uf)]
 }
 
-#' Formatando números na convenção brasileira
+#' Definindo uma função que formata números na convenção brasileira
 #'
 #' @param x Vetor numérico.
 #' @param decimais Número de casas decimais.
 #' @return Vetor de texto com vírgula decimal.
+#' Usada em: fct_dados.R (frase do percentil), fct_mapa.R (tooltip do mapa), fct_perfil.R (valor do índice) e fct_petalas.R (valor no disco).
 #' @noRd
 formatar_numero <- function(x, decimais = 1) {
   # Evitando erro em valores ausentes e formatando com vírgula
@@ -235,10 +244,11 @@ formatar_numero <- function(x, decimais = 1) {
   )
 }
 
-#' Formatando inteiros na convenção brasileira
+#' Definindo uma função que formata inteiros na convenção brasileira
 #'
 #' @param x Vetor numérico.
 #' @return Vetor de texto com separador de milhar.
+#' Usada em: fct_dados.R (rótulo de posição) e mod_onde.R (resumo do ranking).
 #' @noRd
 formatar_inteiro <- function(x) {
   ifelse(
@@ -248,20 +258,22 @@ formatar_inteiro <- function(x) {
   )
 }
 
-#' Montando o rótulo de posição no ranking
+#' Definindo uma função que monta o rótulo de posição no ranking
 #'
 #' @param posicao Posição do município.
 #' @param total Número de municípios avaliados.
 #' @return Texto no formato "1.234º de 5.570".
+#' Usada em: fct_perfil.R (placar) e fct_petalas.R (tooltip da pétala).
 #' @noRd
 rotulo_posicao <- function(posicao, total) {
   paste0(formatar_inteiro(posicao), "\u00ba de ", formatar_inteiro(total))
 }
 
-#' Produzindo a frase de leitura do percentil do IBISMA
+#' Definindo uma função que produz a frase de leitura do percentil do IBISMA
 #'
 #' @param valor Valor do índice na escala 0 a 100.
 #' @return Texto explicando o percentil de vulnerabilidade.
+#' Usada em: fct_perfil.R (frase do placar).
 #' @noRd
 frase_percentil <- function(valor) {
   if (is.na(valor)) {

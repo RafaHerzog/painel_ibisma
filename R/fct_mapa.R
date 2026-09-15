@@ -7,9 +7,10 @@
 # Guardando a malha em memória para não reler o arquivo a cada sessão
 .malha_cache <- new.env(parent = emptyenv())
 
-#' Carregando a malha municipal simplificada
+#' Definindo uma função que carrega a malha municipal simplificada
 #'
 #' @return Objeto sf com os polígonos dos municípios brasileiros.
+#' Usada em: fct_mapa.R (malha_do_ano) e mod_onde.R (destaque do município selecionado).
 #' @noRd
 carregar_malha_municipios <- function() {
   # Lendo o arquivo apenas na primeira chamada e reutilizando depois
@@ -21,9 +22,10 @@ carregar_malha_municipios <- function() {
   .malha_cache$municipios
 }
 
-#' Carregando a malha estadual simplificada
+#' Definindo uma função que carrega a malha estadual simplificada
 #'
 #' @return Objeto sf com os polígonos das unidades da federação.
+#' Usada em: fct_mapa.R (desenhar_ufs).
 #' @noRd
 carregar_malha_ufs <- function() {
   # Lendo o arquivo apenas na primeira chamada e reutilizando depois
@@ -35,24 +37,24 @@ carregar_malha_ufs <- function() {
   .malha_cache$ufs
 }
 
-#' Montando o texto HTML do tooltip de um município
+#' Definindo uma função que monta o texto HTML do tooltip de um município
 #'
 #' @param municipio Nome do município.
 #' @param sigla_uf Sigla da unidade da federação.
 #' @param valor Valor da medida exibida.
 #' @param categoria Categoria de vulnerabilidade.
 #' @param nome_medida Nome da medida exibida.
-#' @param paleta Vetor nomeado com as cores das categorias da medida.
+#' @param medida Identificador da medida exibida no mapa.
 #' @return Texto HTML pronto para o tooltip do leaflet.
+#' Usada em: fct_mapa.R (dados_mapa).
 #' @noRd
-tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida, paleta) {
+tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida, medida) {
   # Tratando municípios sem dado no ano selecionado, vetorizadamente
   sem_dado <- is.na(valor)
   valor_texto <- ifelse(sem_dado, "\u2014", formatar_numero(valor))
   categoria_texto <- ifelse(sem_dado, "Sem dados", categoria)
-  # Buscando a cor da categoria na paleta da medida exibida no mapa
-  cor_cat <- unname(paleta[categoria])
-  cor_cat <- ifelse(sem_dado | is.na(cor_cat), COR_SEM_DADOS, cor_cat)
+  # Buscando a cor da categoria na rampa da medida exibida no mapa
+  cor_cat <- cor_categoria(categoria, medida)
   # Escolhendo a cor de texto com melhor leitura sobre o selo da categoria
   cor_texto <- cor_texto_sobre(cor_cat)
 
@@ -71,26 +73,20 @@ tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida
   )
 }
 
-#' Preparando os dados anuais que alimentam o mapa
+#' Definindo uma função que prepara os dados anuais que alimentam o mapa
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida exibida.
 #' @return Data frame com categoria, cor e tooltip prontos para o mapa.
+#' Usada em: fct_mapa.R (malha_do_ano) e mod_onde.R (reactive do mapa).
 #' @noRd
 dados_mapa <- function(dados, ano, medida) {
   # Buscando os valores do ano e da medida selecionados
   base <- valores_ano(dados, ano, medida)
 
-  # Montando a paleta da medida (roxa para o IBISMA, do bloco para os demais)
-  paleta <- paleta_medida(medida)
-
   # Definindo a cor de cada município conforme sua categoria
-  base$cor <- ifelse(
-    is.na(base$valor),
-    COR_SEM_DADOS,
-    unname(paleta[as.character(base$categoria)])
-  )
+  base$cor <- cor_categoria(as.character(base$categoria), medida)
 
   # Montando o texto HTML exibido ao passar o mouse
   base$tooltip <- tooltip_municipio(
@@ -99,17 +95,18 @@ dados_mapa <- function(dados, ano, medida) {
     valor = base$valor,
     categoria = as.character(base$categoria),
     nome_medida = nome_medida(medida)[1],
-    paleta = paleta
+    medida = medida
   )
   base
 }
 
-#' Juntando a malha municipal aos valores do ano e da medida
+#' Definindo uma função que junta a malha municipal aos valores do ano e da medida
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida exibida.
 #' @return Objeto sf com geometria, cor e tooltip de cada município.
+#' Usada em: mod_onde.R (desenho do mapa).
 #' @noRd
 malha_do_ano <- function(dados, ano, medida) {
   # Buscando a malha e os valores preparados para o mapa
@@ -126,9 +123,10 @@ malha_do_ano <- function(dados, ano, medida) {
   malha
 }
 
-#' Criando o mapa-base do painel
+#' Definindo uma função que cria o mapa-base do painel
 #'
 #' @return Objeto leaflet sem camadas de dados.
+#' Usada em: mod_onde.R (desenho do mapa).
 #' @noRd
 mapa_base <- function() {
   # Configurando um mapa limpo, sem tiles externos e com desenho em canvas
@@ -152,7 +150,7 @@ mapa_base <- function() {
     leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6)
 }
 
-#' Desenhando os municípios no mapa
+#' Definindo uma função que desenha os municípios no mapa
 #'
 #' As cores e os tooltips ficam fora da carga inicial e chegam logo depois,
 #' pela mensagem tratada em funcoes_javascript.js, para o mapa abrir mais leve.
@@ -160,6 +158,7 @@ mapa_base <- function() {
 #' @param mapa Objeto leaflet.
 #' @param base Objeto sf retornado por malha_do_ano().
 #' @return Objeto leaflet com a camada de municípios.
+#' Usada em: mod_onde.R (desenho do mapa).
 #' @noRd
 desenhar_municipios <- function(mapa, base) {
   # Usando o código do município como identificador de cada polígono
@@ -185,10 +184,11 @@ desenhar_municipios <- function(mapa, base) {
     )
 }
 
-#' Desenhando os contornos das unidades da federação
+#' Definindo uma função que desenha os contornos das unidades da federação
 #'
 #' @param mapa Objeto leaflet.
 #' @return Objeto leaflet com a camada de contornos estaduais.
+#' Usada em: mod_onde.R (desenho do mapa).
 #' @noRd
 desenhar_ufs <- function(mapa) {
   # Sobrepondo os limites estaduais sem interferir na interação dos municípios
@@ -206,12 +206,13 @@ desenhar_ufs <- function(mapa) {
     )
 }
 
-#' Enviando ao navegador a atualização de cores e tooltips do mapa
+#' Definindo uma função que envia ao navegador a atualização de cores e tooltips do mapa
 #'
 #' @param session Sessão do Shiny.
 #' @param output_id Identificador do output do mapa.
 #' @param base Data frame retornado por dados_mapa().
 #' @return Nada; envia a mensagem para o JavaScript do painel.
+#' Usada em: mod_onde.R (atualização das cores e tooltips).
 #' @noRd
 atualizar_municipios <- function(session, output_id, base) {
   # Convertendo os mapas de código para cor e tooltip em listas nomeadas
@@ -225,3 +226,41 @@ atualizar_municipios <- function(session, output_id, base) {
     list(id = output_id, cores = cores, labels = labels)
   )
 }
+
+#' Definindo uma função que monta a legenda das cinco categorias do mapa
+#'
+#' @param paleta Vetor nomeado com as cores das categorias.
+#' @param titulo Título curto da legenda.
+#' @param com_sem_dados Incluir a entrada "Sem dados" (desativado no painel).
+#' @return Elemento HTML com a legenda completa.
+#' Usada em: mod_onde.R (legenda do mapa).
+#' @noRd
+legenda_categorias <- function(paleta = PALETAS$indice_final,
+                               titulo = NULL, com_sem_dados = FALSE) {
+  # Montando um item de legenda para cada categoria
+  itens <- lapply(names(paleta), function(nome) {
+    htmltools::tags$span(
+      class = "legenda-item",
+      htmltools::tags$span(class = "legenda-cor", style = paste0("background:", paleta[[nome]], ";")),
+      htmltools::tags$span(class = "legenda-rotulo", nome)
+    )
+  })
+
+  # Acrescentando a entrada de municípios sem dado, quando pedido
+  if (com_sem_dados) {
+    itens <- c(itens, list(
+      htmltools::tags$span(
+        class = "legenda-item legenda-item--sem-dados",
+        htmltools::tags$span(class = "legenda-cor", style = paste0("background:", COR_SEM_DADOS, ";")),
+        htmltools::tags$span(class = "legenda-rotulo", "Sem dados")
+      )
+    ))
+  }
+
+  htmltools::tags$div(
+    class = "legenda-categorias",
+    if (!is.null(titulo)) htmltools::tags$span(class = "legenda-titulo", titulo),
+    htmltools::tags$div(class = "legenda-itens", itens)
+  )
+}
+

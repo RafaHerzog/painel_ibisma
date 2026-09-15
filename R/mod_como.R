@@ -13,6 +13,7 @@
 mod_como_ui <- function(id) {
   ns <- shiny::NS(id)
 
+  ## Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
   # Montando as opções de municípios e de anos usadas nos controles
   municipios <- opcoes_municipios(dados_ibisma())
   anos_ordem <- rev(anos_disponiveis())
@@ -36,7 +37,8 @@ mod_como_ui <- function(id) {
         )
       ),
       # Controles principais escritos como uma frase
-      frase_controles(
+      htmltools::tags$div(
+        class = "controles-inline",
         htmltools::tags$span(class = "controle-texto", "Ver"),
         seletor_inline(ns("municipio"), municipios, selected = municipio_padrao(), largura = "320px"),
         htmltools::tags$span(class = "controle-texto", "em"),
@@ -112,7 +114,12 @@ mod_como_server <- function(id, dados, municipio) {
     shiny::observeEvent(municipio(), {
       selecionado <- municipio()
       if (!is.null(selecionado) && !is.na(selecionado)) {
-        atualizar_seletor(session, "municipio", selecionado)
+        # Removendo nomes do valor para a mensagem JSON não carregar vetor nomeado
+        shinyWidgets::updateSlimSelect(
+          session = session,
+          inputId = "municipio",
+          selected = unname(as.character(selecionado))
+        )
       }
     }, ignoreInit = FALSE)
 
@@ -132,12 +139,14 @@ mod_como_server <- function(id, dados, municipio) {
       dados$municipios[dados$municipios$codmunres == municipio(), ][1, ]
     })
 
+    ## Obs.: este bloco usa funções auxiliares de fct_dados.
     # Montando o resumo do município no ano escolhido
     resumo <- shiny::reactive({
       resumo_municipio(dados, municipio(), ano())
     })
 
     # ----- Município de comparação -----
+    ## Obs.: este bloco usa funções auxiliares de fct_dados.
 
     # Descobrindo o município de comparação escolhido, se houver
     cod_comparacao <- shiny::reactive({
@@ -168,6 +177,7 @@ mod_como_server <- function(id, dados, municipio) {
     })
 
     # ----- Palcos -----
+    ## Obs.: este bloco usa funções auxiliares de fct_perfil.
 
     # Montando o palco do município principal, com rótulo apenas na comparação
     output$palco_principal <- shiny::renderUI({
@@ -200,6 +210,7 @@ mod_como_server <- function(id, dados, municipio) {
     }, ignoreInit = TRUE)
 
     # ----- Evolução temporal -----
+    ## Obs.: este bloco usa funções auxiliares de fct_graficos, fct_dados e utils_ui.
 
     # Montando as séries das sete medidas de cada município
     series_principal <- shiny::reactive(series_municipio(dados, municipio()))
@@ -293,7 +304,7 @@ mod_como_server <- function(id, dados, municipio) {
     output$evolucoes <- shiny::renderUI({
       if (!series_tem_valor(series_principal())) {
         return(estado_vazio(
-          "Sem dados de s\u00e9rie temporal para este munic\u00edpio.",
+          "Sem dados de série temporal para este município.",
           icone = "circle-info"
         ))
       }
