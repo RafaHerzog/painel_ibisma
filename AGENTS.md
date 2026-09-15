@@ -30,6 +30,12 @@ e para que sigam os princípios mais modernos de design e experiência do usuár
 no máximo uma linha e devem em geral iniciar com um verbo em gerúndio, referente à ação que aquele código faz. Ex: "Criando uma
 função que...". O código deve ser comentado extensivamente, para que pessoas que não estejam habituadas com a codebase consigam
 entender facilmente o que está sendo feito.
+- O comentário que explica uma função auxiliar deve começar com "Definindo uma função que...".
+- Funções auxiliares que ficam em arquivos auxiliares (`fct_*.R` e `utils_ui.R`) devem trazer no próprio comentário onde são
+usadas, no formato "Usada em: {arquivos e contextos}".
+- Ao usar funções auxiliares em um módulo, registrar no início de cada bloco de código de quais arquivos auxiliares
+ele usa, no formato `## Obs.: este bloco usa funções auxiliares de {arquivos}.` Ex.:
+`## Obs.: este bloco usa funções auxiliares de fct_graficos e fct_dados.`
 - Deve-se prezar por códigos simples, sem over-engeneering, que sejam fáceis de entender mesmo para pessoas que não estejam
 habituadas com a codebase.
 
