@@ -1842,3 +1842,57 @@ data-raw/
 - `b20fd58` Renomeia o fct_config para constantes e ajusta as referências
 - `097eff5` Extrai as funções de cor para o fct_cores
 - `e5dce67` Leva o nome_medida para o fct_dados
+
+---
+
+# Sessão 20 — Simplificação das constantes (15/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** deixar o `constantes.R` com o mínimo necessário — só os valores que têm
+  mais de um usuário — e corrigir a duplicação do nível de análise que restou da sessão
+  anterior.
+
+## 1. Cores direto nas rampas
+
+- `COR_AMARELO`, `COR_VERDE`, `COR_AZUL_MEDIO`, `COR_CORAL` e `COR_TEAL` deixaram de
+  existir: cada hexadecimal entrou direto na posição correspondente de `PALETAS`.
+- **Achado:** `COR_AZUL_CLARO` parecia ter o mesmo destino, mas é usada também no
+  `app_ui.R` (tema bslib, `secondary`) — permaneceu como constante, com o comentário
+  atualizado.
+
+## 2. `MEDIDAS$cor` explícita
+
+- A derivação por `vapply` (tom central dos blocos e topo do índice) saiu; a coluna
+  `cor` passou a ser preenchida explicitamente na criação da `data.frame`, com os
+  mesmos valores da geração anterior.
+
+## 3. `CORTES_PERCENTIS` para o cria_rda
+
+- A constante saiu do `constantes.R` e virou um objeto local do `cria_rda.R`
+  (`cortes_percentis <- c(0.2, 0.4, 0.6, 0.8)`), já que só a geração usa. O
+  `usar("CORTES_PERCENTIS")` foi removido: o script lê apenas `MEDIDAS` e `CATEGORIAS`.
+
+## 4. `NIVEIS_ANALISE` centralizado (correção)
+
+- A definição voltou para o `constantes.R`, numa seção própria de níveis de análise.
+- A cópia que restava em `mod_onde.R` foi removida: como a carga do pacote segue a
+  ordem alfabética dos arquivos, a versão do módulo sobrescrevia a central (o app
+  funcionava, mas com duas fontes). O cabeçalho do módulo aponta para o novo dono.
+
+## 5. Comentários de uso refinados
+
+- A linha de uso de cada constante virou `## Usada em: ...` (um `#` a mais que o
+  comentário de definição) e foi comprimida em uma linha por constante, para leitura
+  direta ao lado do valor.
+
+## 6. Testes e validação
+
+- `devtools::test()`: **374 asserções verdes**.
+- `cria_rda.R` rodado de ponta a ponta em cópia isolada: 13 arquivos / 4,72 MB,
+  config lendo só `MEDIDAS` e `CATEGORIAS`, cobertura de 100% da malha.
+- Smoke headless: app completo com o mapa renderizado, sem erros de JavaScript.
+
+## 7. Commits da sessão
+
+- `fe30862` Simplifica as constantes do painel
+- `b1e6da9` Centraliza o NIVEIS_ANALISE no constantes
