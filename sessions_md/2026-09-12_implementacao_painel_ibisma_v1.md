@@ -1793,3 +1793,52 @@ data-raw/
 - `081158a` Remove os auxiliares de um só dono do fct_dados
 - `9ef4126` Inlina as opções dos controles nos módulos
 - `680be48` Atualiza o cabeçalho do fct_config
+
+---
+
+# Sessão 19 — `constantes.R` só com constantes (15/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** fechar a separação de responsabilidades do arquivo de configuração:
+  ele deixa de ter funções auxiliares e passa a ser um repositório puro de constantes,
+  com o uso de cada valor documentado no próprio comentário.
+
+## 1. Renomeação e limpeza
+
+- `R/fct_config.R` virou `R/constantes.R` (sem o prefixo `fct_`, reservado aos arquivos
+  de funções auxiliares): dicionário (`MEDIDAS`, `BLOCOS`, `CATEGORIAS`), cores
+  (`COR_*`, `PALETAS`), limiares (`CORTES_PERCENTIS`) e níveis (`NIVEIS_ANALISE`).
+- As 4 funções de cor (`cor_medida`, `cor_categoria`, `cor_texto_sobre`,
+  `misturar_cores`) foram para o novo `R/fct_cores.R`, que deriva tudo das constantes.
+- `nome_medida` foi para o `R/fct_dados.R`, junto de `nome_municipio` e `nome_uf`
+  (consulta de nomes de exibição é leitura do dicionário, não estilo).
+- O `cria_rda.R` passou a ler `R/constantes.R`; o desvio de `grDevices` no
+  ambiente de leitura deixou de ser necessário (só há valores agora).
+
+## 2. Comentário de uso em cada constante
+
+- Todas as constantes de `constantes.R` ganharam a linha de uso (arquivos/contextos
+  que as consomem), no mesmo espírito do `Usada em:` das funções auxiliares.
+- As cores que entram apenas na construção das rampas (`COR_AZUL_CLARO`,
+  `COR_AZUL_MEDIO`, `COR_AMARELO`, `COR_VERDE`, `COR_CORAL`, `COR_TEAL`) foram
+  agrupadas sob um comentário único, e `MEDIDAS$cor` (derivada) ganhou o seu.
+
+## 3. Referências atualizadas
+
+- `data-raw/cria_rda.R`, teste das medidas × CSV e os `## Obs.` de `mod_onde`
+  passaram a citar `constantes`/`fct_cores`.
+- O `manifest.json` do deploy mantém o caminho antigo até o próximo redeploy
+  (é regenerado pelo processo de publicação).
+
+## 4. Testes e validação
+
+- `devtools::test()`: **374 asserções verdes**.
+- `cria_rda.R` rodado de ponta a ponta em cópia isolada: 13 arquivos / 4,72 MB,
+  cobertura de 100% da malha.
+- Smoke headless: app completo com o mapa renderizado, sem erros de JavaScript.
+
+## 5. Commits da sessão
+
+- `b20fd58` Renomeia o fct_config para constantes e ajusta as referências
+- `097eff5` Extrai as funções de cor para o fct_cores
+- `e5dce67` Leva o nome_medida para o fct_dados
