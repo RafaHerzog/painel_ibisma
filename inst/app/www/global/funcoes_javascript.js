@@ -379,8 +379,8 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
 
 /* =============================================================================
    BUSCA DOS SELETORES
-   Ignorando maiúsculas, acentos e sinais nas buscas dos slimSelect, no mesmo
-   padrão usado pelas demais buscas do painel.
+   Ignorando maiúsculas, acentos e sinais nas buscas dos slimSelect e realçando
+   o trecho encontrado, no mesmo padrão usado pelas demais buscas do painel.
    ============================================================================= */
 (function () {
   /* Normalizando o texto como na busca do ranking */
@@ -392,6 +392,38 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       .replace(/[^a-z0-9]+/g, "");
   }
 
+  /* Normalizando o texto e guardando de onde cada letra veio no original */
+  function normalizarComMapa(texto) {
+    var normalizado = "";
+    var mapa = [];
+    for (var i = 0; i < texto.length; i++) {
+      var letra = texto[i]
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+      normalizado += letra;
+      for (var j = 0; j < letra.length; j++) mapa.push(i);
+    }
+    return { texto: normalizado, mapa: mapa };
+  }
+
+  /* Realçando no texto original o trecho que o filtro normalizado encontrou */
+  function destacar(texto, busca, classe) {
+    var alvo = normalizarComMapa(String(busca).trim());
+    if (alvo.texto === "") return null;
+    var fonte = normalizarComMapa(texto);
+    var posicao = fonte.texto.indexOf(alvo.texto);
+    if (posicao === -1) return null;
+    /* Convertendo as posições normalizadas de volta para o texto original */
+    var inicio = fonte.mapa[posicao];
+    var fim = fonte.mapa[posicao + alvo.texto.length - 1] + 1;
+    return (
+      texto.slice(0, inicio) +
+      '<mark class="' + classe + '">' + texto.slice(inicio, fim) + "</mark>" +
+      texto.slice(fim)
+    );
+  }
+
   /* Trocando o filtro padrão do slimSelect pelo filtro normalizado */
   function ajustar(select) {
     if (select.dataset.buscaNormalizada === "sim") return;
@@ -400,6 +432,19 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     instancia.events.searchFilter = function (opcao, busca) {
       return normalizar(opcao.text).indexOf(normalizar(busca)) !== -1;
     };
+    /* Substituindo o realce cru do plugin pelo realce sem acento do painel */
+    var render = instancia.render;
+    if (render && typeof render.highlightText === "function") {
+      var realcarOriginal = render.highlightText.bind(render);
+      render.highlightText = function (texto, busca, classe) {
+        /* Preservando o realce do plugin quando a opção trouxer HTML */
+        if (String(texto).indexOf("<") !== -1) {
+          return realcarOriginal(texto, busca, classe);
+        }
+        var destacado = destacar(texto, busca, classe);
+        return destacado === null ? texto : destacado;
+      };
+    }
     select.dataset.buscaNormalizada = "sim";
   }
 
