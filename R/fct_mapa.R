@@ -145,7 +145,11 @@ mapa_base <- function() {
       lng2 = -32.0, lat2 = 6.0
     ) |>
     # Enquadrando o Brasil no carregamento inicial
-    leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6)
+    leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6) |>
+    # Criando a camada que mantém os contornos das UFs acima dos municípios
+    leaflet::addMapPane("ufs", zIndex = 450) |>
+    # Criando a camada do contorno do município selecionado, acima das UFs
+    leaflet::addMapPane("destaque", zIndex = 460)
 }
 
 #' Definindo uma função que envia ao navegador o desenho e os dados dos municípios
@@ -204,10 +208,11 @@ desenhar_ufs <- function(mapa) {
       fill = FALSE,
       # Suavizando o contorno estadual para não competir com as divisas finas
       color = "#FFFFFF",
-      weight = 0.8,
-      opacity = 0.85,
+      weight = 0.75,
+      opacity = 0.75,
       smoothFactor = 0,
-      options = leaflet::pathOptions(interactive = FALSE)
+      # Desenhando no painel acima dos municípios, sem capturar o mouse
+      options = leaflet::pathOptions(pane = "ufs", interactive = FALSE)
     )
 }
 

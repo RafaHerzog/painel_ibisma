@@ -207,7 +207,8 @@ mod_onde_server <- function(id, dados, municipio) {
             weight = 1.8,
             opacity = 0.95,
             smoothFactor = 0,
-            options = leaflet::pathOptions(interactive = FALSE)
+            # Desenhando no painel acima das UFs, sem capturar o mouse
+            options = leaflet::pathOptions(pane = "destaque", interactive = FALSE)
           )
         }
       }
