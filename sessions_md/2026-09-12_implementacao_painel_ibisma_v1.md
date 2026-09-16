@@ -1957,3 +1957,102 @@ data-raw/
 
 - `b36217d` Renomeia utils_ui e fct_graficos para fct_ui e fct_graficos_evolucao
 - `5ef359c` Centraliza as cores do painel em variáveis no custom.css
+
+---
+
+# Sessão 22 — Otimização da inicialização do mapa (16/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** implementar as alternativas A + D + E do diagnóstico da
+  inicialização do mapa: pré-serializar a geometria no ETL, enxugar a mensagem
+  de dados e arredondar as coordenadas para 4 casas.
+
+## 1. Diagnóstico (medido antes)
+
+| Etapa (por sessão) | Custo |
+| --- | --- |
+| `desenhar_municipios()` (sf → listas do leaflet) | 1,14–1,17 s |
+| Serialização do widget com a geometria | 4,04–4,10 s / 4,00 MB |
+| Serialização de cores + tooltips | 0,36 s / 1,99 MB |
+| Cliente até o mapa com tooltips | ~5–8 s |
+| Abertura completa (parede) | ~15–16 s |
+
+O gargalo era a conversão da geometria e a serialização do widget a cada
+sessão, repetidas para cada usuário.
+
+## 2. A — geometria pronta no ETL
+
+- `data-raw/cria_rda.R` passou a gerar `inst/app/data/malha_mapa.rds` com o
+  texto JSON dos polígonos no formato colunar do `addPolygons` e os códigos das
+  camadas (5.570 municípios).
+- `carregar_desenho_municipios()` lê o arquivo uma vez por processo (0,03 s).
+- `enviar_desenho_municipios()` manda a geometria como **texto já pronto** na
+  mensagem `ibisma_mapa_desenha`; o JavaScript faz `JSON.parse` e cria as
+  camadas com `window.LeafletWidget.methods.addPolygons.call(mapa, ...)`, o
+  mesmo caminho de dispatch do widget.
+- A serialização da mensagem inicial caiu para 0,01–0,04 s (3,54 MB).
+
+## 3. D — dados compactos e tooltip montada no cliente
+
+- `dados_mapa()` devolve as colunas alinhadas à ordem da malha (nome, UF, valor
+  em texto e código da categoria), sem HTML.
+- `mensagem_mapa()` envia paleta, rótulos e cores de texto uma vez; a mensagem
+  de atualização caiu de 1,99 MB para **0,15 MB** (0,000 s).
+- O JavaScript monta o HTML do tooltip (`montarTooltip`) e repinta as camadas
+  (`aplicarDados`), amarrando o tooltip na primeira passagem.
+- Efeito colateral positivo: municípios sem valor no ano (Borá/2023) passaram a
+  exibir "Sem dados" em cinza, porque os dados agora partem da malha.
+
+## 4. E — 4 casas decimais
+
+- `arredondar_coordenadas()` passou de 5 para 4 casas (cerca de 11 m), abaixo de
+  um pixel no zoom máximo do painel.
+- Malha municipal: 0,94 → 0,86 MB; texto do desenho: 3,32 MB (nenhuma
+  coordenada com mais de 4 casas no JSON).
+
+## 5. Testes e validação
+
+- `devtools::test()`: **392 asserções verdes** (eram 374). Os testes do mapa
+  foram reescritos e ganharam um que compara o desenho gerado com a conversão
+  do próprio `leaflet::addPolygons`.
+- `dev/bench_inicializacao.R` foi ajustado para medir o desenho pronto, os
+  dados compactos e a mensagem.
+- Smoke headless: mapa com 5.570 camadas e 5.570 tooltips, hover real
+  ("Novo Santo Antônio (MT) — IBISMA 83,6 — Muito alto"), clique destacando o
+  município no perfil, Borá/2023 em "Sem dados" e cinza, troca de medida
+  repintando na rampa do bloco, nenhum erro de JavaScript.
+- Linha do tempo na página: container do mapa em 5,9 s, mapa completo em 6,4 s
+  (janela de mapa vazio de 473 ms). Abertura completa: **16,3 s → 6,1 s**.
+
+## 6. Linhas das UFs de volta aos contornos
+
+- Com a geometria dos municípios chegando depois, as camadas passaram a cobrir
+  os contornos das UFs, que antes eram desenhados por cima.
+- `mapa_base()` ganhou dois painéis (`addMapPane`): `ufs` (zIndex 450) e
+  `destaque` (zIndex 460); `desenhar_ufs()` e o contorno do selecionado passaram
+  a usar `pathOptions(pane = ...)`, preservando a hierarquia
+  municípios < UFs < município selecionado.
+- A pedido, os contornos ficaram mais leves: `weight` e `opacity` em 0,75
+  (antes 0,8 e 0,85).
+- Validação: 27 caminhos SVG no painel `ufs`, ordem dos painéis conferida e
+  alinhamento verificado em zoom 7.
+
+## 7. Limitações e próximos passos
+
+- A janela de 473 ms entre o container e as camadas fica coberta pelo esqueleto
+  na maior parte dos casos; se incomodar, dá para manter o esqueleto do mapa até
+  a mensagem do desenho.
+- Ainda restam os ~2 s de ligação de 5.570 tooltips no cliente; a tooltip única
+  (um `mouseover` no mapa) ficou como próximo passo.
+- O `manifest.json` do deploy segue desatualizado (arquivos de dados
+  regenerados e o novo `malha_mapa.rds`); é regenerado no redeploy.
+- A refatoração dos auxiliares restantes (`fct_esqueleto`,
+  `fct_graficos_evolucao`, `fct_mapa`, `fct_perfil` e `fct_petalas`) continua na
+  próxima sessão, com a régua de um dono por função das Sessões 17 e 18.
+
+## 8. Commits da sessão
+
+- `50532f4` Gera o desenho pronto do mapa e arredonda a malha para 4 casas
+- `9882020` Envia a geometria do mapa por mensagem e compacta os dados dos tooltips
+- `34d36a2` Restaura os contornos das UFs em painel acima dos municípios
+
