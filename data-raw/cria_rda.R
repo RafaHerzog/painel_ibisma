@@ -85,7 +85,8 @@ print(colnames(df_ibisma))
 
 # =============================================================================
 #   2. CONSTANTES DO ÍNDICE
-#   Lidas de R/constantes.R, a fonte única que o app também usa
+#   Medidas e categorias vêm de R/constantes.R, a fonte única que o app usa;
+#   os cortes de percentis só existem na geração
 # =============================================================================
 
 # Carregando as definições do painel em um ambiente próprio, sem tocar no global
@@ -100,7 +101,6 @@ usar <- function(nome) {
 }
 usar("MEDIDAS")
 usar("CATEGORIAS")
-usar("CORTES_PERCENTIS")
 
 # Nomes das colunas que viram medidas no formato longo
 medidas <- MEDIDAS$medida
@@ -108,8 +108,8 @@ medidas <- MEDIDAS$medida
 # Rótulos das cinco categorias, do menos para o mais vulnerável
 categorias <- CATEGORIAS
 
-# Percentis que cortam as cinco categorias
-cortes_percentis <- CORTES_PERCENTIS
+# Percentis que cortam as cinco categorias (específicos da geração dos dados)
+cortes_percentis <- c(0.2, 0.4, 0.6, 0.8)
 
 # =============================================================================
 #   3. BASE LONGA
