@@ -66,48 +66,17 @@ valores_ano <- function(dados, ano, medida) {
   tabela[tabela$medida == medida, ]
 }
 
-#' Definindo uma função que monta o resumo completo de um município em um ano
+#' Definindo uma função que descobre o município padrão de abertura do painel
 #'
 #' @param dados Lista lida por dados_ibisma().
-#' @param codmunres Código do município.
-#' @param ano Ano de referência.
-#' @return Lista com identificação, valores, categorias e posições no ranking.
-#' Usada em: mod_como.R (palcos principal e comparado).
+#' @return Código do município mais vulnerável do ano mais recente.
+#' Usada em: app_server.R (município de abertura) e mod_como.R (valor inicial do seletor).
 #' @noRd
-resumo_municipio <- function(dados, codmunres, ano) {
-  # Reunindo as linhas do município em todas as medidas do ano
-  tabela <- tabela_ano(dados, ano)
-  linhas <- tabela[tabela$codmunres == codmunres, ]
-
-  # Identificando o município a partir das próprias linhas
-  info <- dados$municipios[dados$municipios$codmunres == codmunres, ]
-  if (nrow(info) == 0 || nrow(linhas) == 0) {
-    return(NULL)
-  }
-
-  # Separando a linha do índice final e a dos seis blocos na ordem configurada
-  linha_indice <- linhas[linhas$medida == "indice_final", ]
-  blocos <- linhas[match(BLOCOS$medida, linhas$medida), ]
-  blocos$nome <- nome_medida(blocos$medida)
-  blocos$cor <- cor_medida(blocos$medida)
-
-  # Montando a lista final consumida pelo módulo de perfil
-  list(
-    codmunres = codmunres,
-    municipio = info$municipio,
-    sigla_uf = info$sigla_uf,
-    uf = info$uf,
-    regiao = info$regiao,
-    r_saude = info$r_saude,
-    macro_r_saude = info$macro_r_saude,
-    valor = linha_indice$valor,
-    categoria = as.character(linha_indice$categoria),
-    pos_nac = linha_indice$pos_nac,
-    total_nac = linha_indice$total_nac,
-    pos_uf = linha_indice$pos_uf,
-    total_uf = linha_indice$total_uf,
-    blocos = blocos
-  )
+municipio_padrao <- function(dados = dados_ibisma()) {
+  # Buscando o município com o maior IBISMA no último ano disponível
+  ano <- max(dados$anos)
+  base <- valores_ano(dados, ano, "indice_final")
+  base$codmunres[which.max(base$valor)]
 }
 
 #' Definindo uma função que obtém as séries das sete medidas de um município
@@ -137,20 +106,6 @@ series_tem_valor <- function(series) {
   any(!is.na(series[, MEDIDAS$medida]))
 }
 
-#' Definindo uma função que gera as opções de municípios para os seletores
-#'
-#' @param dados Lista lida por dados_ibisma().
-#' @return Vetor nomeado em que os valores são os códigos e os nomes incluem a UF.
-#' Usada em: mod_como.R (seletor de município).
-#' @noRd
-opcoes_municipios <- function(dados) {
-  # Montando rótulos legíveis e ordenados alfabeticamente
-  municipios <- dados$municipios
-  municipios <- municipios[order(municipios$municipio, municipios$sigla_uf), ]
-  rotulos <- paste0(municipios$municipio, " (", municipios$sigla_uf, ")")
-  stats::setNames(municipios$codmunres, rotulos)
-}
-
 #' Definindo uma função que obtém o nome de um município pelo código
 #'
 #' @param dados Lista lida por dados_ibisma().
@@ -164,43 +119,6 @@ nome_municipio <- function(dados, codmunres) {
     return("Munic\u00edpio")
   }
   paste0(info$municipio[1], " (", info$sigla_uf[1], ")")
-}
-
-#' Definindo uma função que gera as opções de medidas para os seletores
-#'
-#' @return Vetor nomeado em que os valores são as colunas das medidas.
-#' Usada em: mod_onde.R (seletor de medida).
-#' @noRd
-opcoes_medidas <- function() {
-  # Montando as opções com os rótulos já prontos do dicionário das medidas
-  stats::setNames(MEDIDAS$medida, MEDIDAS$rotulo)
-}
-
-#' Definindo uma função que lista os anos disponíveis na base
-#'
-#' @return Vetor ordenado de anos.
-#' Usada em: mod_onde.R e mod_como.R (seletores de ano).
-#' @noRd
-anos_disponiveis <- function() {
-  dados_ibisma()$anos
-}
-
-#' Definindo uma função que monta as opções de escopo do ranking (Brasil ou uma UF)
-#'
-#' @param dados Lista lida por dados_ibisma().
-#' @return Vetor nomeado em que os valores são "nacional" ou a sigla da UF.
-#' Usada em: mod_onde.R (escopo do ranking).
-#' @noRd
-opcoes_escopo_ranking <- function(dados = dados_ibisma()) {
-  # Obtendo as unidades da federação a partir do cadastro de municípios
-  ufs <- unique(dados$municipios[, c("sigla_uf", "uf")])
-  ufs <- ufs[order(ufs$uf), ]
-
-  # Acrescentando a opção nacional no início da lista
-  stats::setNames(
-    c("nacional", ufs$sigla_uf),
-    c("Brasil (nacional)", paste0(ufs$uf, " (", ufs$sigla_uf, ")"))
-  )
 }
 
 #' Definindo uma função que obtém o nome por extenso de uma unidade da federação
