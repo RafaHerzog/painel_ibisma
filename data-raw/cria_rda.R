@@ -6,7 +6,7 @@
 #
 #   Etapas:
 #     1. Base bruta (a partir dos CSVs de data-raw/databases)
-#     2. Constantes do índice (lidas de R/fct_config.R)
+#     2. Constantes do índice (lidas de R/constantes.R)
 #     3. Base longa (memória)
 #     4. Tabelas por ano (inst/app/data/tabela_ano_*.rds)
 #     5. Cadastro, anos e séries (inst/app/data/dados_ibisma.rds)
@@ -85,14 +85,12 @@ print(colnames(df_ibisma))
 
 # =============================================================================
 #   2. CONSTANTES DO ÍNDICE
-#   Lidas de R/fct_config.R, a fonte única que o app também usa
+#   Lidas de R/constantes.R, a fonte única que o app também usa
 # =============================================================================
 
 # Carregando as definições do painel em um ambiente próprio, sem tocar no global
-# (as funções de cor também exigem o grDevices no caminho de busca)
 config <- new.env(parent = globalenv())
-config$grDevices <- asNamespace("grDevices")
-sys.source("R/fct_config.R", envir = config)
+sys.source("R/constantes.R", envir = config)
 
 # Trazendo para o script os objetos usados na geração, com o mesmo nome do app
 usar <- function(nome) {

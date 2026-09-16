@@ -66,7 +66,7 @@ test_that("as tabelas anuais usam as medidas e as categorias do painel", {
   exigir_base()
   dados <- dados_ibisma()
 
-  # As medidas de fct_config precisam cobrir as colunas do CSV de entrada
+  # As medidas de constantes.R precisam cobrir as colunas do CSV de entrada
   colunas_geo <- c(
     "ano", "codmunres", "municipio", "sigla_uf", "uf",
     "regiao", "r_saude", "macro_r_saude"
