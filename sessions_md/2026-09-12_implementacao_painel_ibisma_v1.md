@@ -1896,3 +1896,64 @@ data-raw/
 
 - `fe30862` Simplifica as constantes do painel
 - `b1e6da9` Centraliza o NIVEIS_ANALISE no constantes
+
+---
+
+# Sessão 21 — Renomeação dos auxiliares e paleta de cores no CSS (16/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** alinhar os arquivos auxiliares à convenção `fct_*` do projeto e
+  centralizar as cores do painel em variáveis no `custom.css`, sem mudança
+  visual.
+
+## 1. Renomeação dos arquivos auxiliares
+
+- `R/utils_ui.R` → `R/fct_ui.R` e `R/fct_graficos.R` →
+  `R/fct_graficos_evolucao.R`, com `git mv` (histórico preservado).
+- O `fct_graficos_evolucao` teve o cabeçalho ajustado, já que o arquivo cobre
+  apenas a evolução temporal (o leque de pétalas segue em `fct_petalas.R`).
+- Referências atualizadas em `fct_cores.R`, `constantes.R`, `fct_dados.R`,
+  `fct_perfil.R`, `mod_onde.R`, `mod_como.R` e no `AGENTS.md` (a convenção de
+  comentários deixa de citar `utils_ui.R` à parte: todo auxiliar é `fct_*.R`).
+- Ficaram intencionalmente sem tocar: o `manifest.json` (regenerado no
+  redeploy), o log das sessões anteriores e o `dev/01_start.R`, cuja chamada
+  `golem::use_utils_ui()` é a função de scaffolding do golem, não o arquivo do
+  projeto.
+
+## 2. Paleta de cores no custom.css
+
+- O arquivo ganhou um bloco único **"Paleta de cores do painel"** (`:root`) com
+  as cores de identificação, os tons neutros, os fundos e as cores dos
+  esqueletos; mais de 100 usos de cor literais passaram a consumir variáveis.
+- Padrão adotado: variável em hexadecimal para usos sólidos e variável `-rgb`
+  com os canais para transparências, no formato `rgb(var(--cor-x-rgb) / alfa)`
+  (ex.: `--cor-azul-escuro: #0A1E3C` e `--cor-azul-escuro-rgb: 10 30 60`).
+- O `:root` próprio dos esqueletos foi absorvido pela paleta
+  (`--cor-esqueleto-rgb/base/forte/guia/brilho` mais `cabecalho/linha/grade`) e
+  os gradientes de brilho passaram a derivar dos mesmos canais.
+- Exceções documentadas no bloco: as cores embutidas nos data URIs de máscara
+  (lupa e X da busca) não aceitam `var()` e seguem literais; os fallbacks
+  `#F2F2F2` e `#EDE8F1` do ranking continuam dentro do `var(--cor-*,
+  fallback)`, porque são sobrescritos pelo R a cada medida.
+- Os nomes não colidem com as variáveis injetadas pelo R (`--cor-medida`,
+  `--cor-fundo`, `--cor-cat`, `--cor-hover-ranking` e `--cor-selecao-ranking`).
+
+## 3. Testes e validação
+
+- `devtools::test()`: **374 asserções verdes** (rodada com `rlang` 1.3.0 da
+  biblioteca temporária, como nas sessões anteriores).
+- Smoke headless: cores computadas idênticas às anteriores (navbar
+  `rgb(10, 30, 60)`, mapa `rgb(237, 241, 247)`, blocos `rgb(250, 251, 253)`,
+  controles `rgb(244, 248, 255)`, índice roxo `rgb(75, 29, 115)` e esqueleto
+  `rgb(224 233 242 / 68%)`), sem erros de JavaScript ou de servidor.
+
+## 4. Próximos passos
+
+- Continuar a refatoração dos auxiliares restantes (`fct_esqueleto`,
+  `fct_graficos_evolucao`, `fct_mapa`, `fct_perfil` e `fct_petalas`), aplicando
+  a régua de um dono por função das Sessões 17 e 18.
+
+## 5. Commits da sessão
+
+- `b36217d` Renomeia utils_ui e fct_graficos para fct_ui e fct_graficos_evolucao
+- `5ef359c` Centraliza as cores do painel em variáveis no custom.css
