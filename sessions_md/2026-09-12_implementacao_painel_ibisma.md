@@ -1,7 +1,7 @@
-# Sessão — Implementação da primeira versão do painel IBISMA (v4)
+# Sessão — Implementação do painel IBISMA
 
 - **Data:** 12/09/2026
-- **Pacote:** `painel_ibisma_v4`
+- **Pacote:** `painel_ibisma`
 - **Objetivo:** construir a primeira versão do painel do IBISMA — Índice Brasileiro de
   Insegurança em Saúde Materna — em R/Shiny + golem + bslib, de forma modular,
   responsiva e validada com smoke tests visuais/headless.
@@ -146,7 +146,7 @@ R/
 │                             legenda, métrica, estado vazio, rodapé, atualizar_seletor
 ├── mod_panorama.R            controles, mapa, legenda, ranking reactable e sincronizações
 ├── mod_perfil_municipio.R    hero, flor, índice, evolução, comparação e estados sem dado
-└── painel_ibisma_v4-package.R doc do pacote (import shiny, sf)
+└── painel_ibisma-package.R doc do pacote (import shiny, sf)
 
 inst/app/www/global/
 ├── custom.css               identidade visual completa (~25 KB)
@@ -365,11 +365,11 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 2 — Correções e refinamentos (12/09/2026)
 
-- **Pacote:** `painel_ibisma_v4` (a v4 seguiu como base; a v3 foi consultada
-  apenas como referência visual dos componentes corrigidos).
+- **Pacote:** `painel_ibisma` (esta base seguiu adiante; uma versão anterior
+  foi consultada apenas como referência visual dos componentes corrigidos).
 - **Objetivo:** corrigir problemas específicos e aproximar navbar, mapa e
-  gráfico de pétalas do que já havia sido melhor resolvido na v3, sem regredir
-  o restante.
+  gráfico de pétalas do que já havia sido melhor resolvido na versão anterior,
+  sem regredir o restante.
 
 ## 1. SlimSelect
 
@@ -390,13 +390,14 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   viewport. O CSS libera a altura natural do documento (`height: auto` +
   `min-height: 100vh`).
 - Visual: fundo `#0A1E3C`, IBISMA + descrição do índice (visível a partir de
-  `lg`), itens brancos. O indicador inferior da v4 foi mantido (sublinhado azul
-  claro) e, no menu colapsado, acompanha a largura do texto.
+  `lg`), itens brancos. O indicador inferior do painel foi mantido (sublinhado
+  azul claro) e, no menu colapsado, acompanha a largura do texto.
 
 ## 3. Mapa
 
 - O zoom-out parou de encolher o mapa indefinidamente: `setMaxBounds` +
-  `maxBoundsViscosity = 1` (como na v3) e zoom mínimo calculado dinamicamente
+  `maxBoundsViscosity = 1` (como na versão anterior) e zoom mínimo calculado
+  dinamicamente
   para o enquadramento do Brasil conforme o contêiner (4 no desktop, 3 no
   mobile), recalculado em resize.
 - A entrada "Sem dados" saiu da legenda (`com_sem_dados = FALSE`); cores e
@@ -411,7 +412,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 ## 5. Gráfico de pétalas
 
-- A flor polar do echarts4r foi substituída pelo leque SVG da v3
+- A flor polar do echarts4r foi substituída pelo leque SVG da versão anterior
   (`R/fct_petalas.R`), com guias, marcas de 25/50/75, círculo de valor e ponto
   da mediana do Brasil.
 - Tooltip própria (Bootstrap 5, inicializada no JS) no padrão do painel, com
@@ -444,7 +445,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 3 — UI/UX, cores e hierarquia (12/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** corrigir cinco problemas de UI/UX e comportamento, centralizar
   a lógica de cores por dimensão e validar tudo com smoke tests headless.
 
@@ -552,7 +553,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 4 — Evolução temporal e comparação lado a lado (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** corrigir dois problemas do gráfico de evolução temporal
   (formatação do eixo X e sete séries simultâneas) e reformular completamente a
   comparação entre municípios, que passou a acontecer nos próprios elementos do
@@ -652,7 +653,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   `series_tem_valor`, o formato do gráfico de evolução (séries, cores, símbolos,
   eixo, tooltip), `grafico_legenda` (itens, eixos ocultos, grupo, `itemGap`) e
   `perfil_palco` (identificação, pétalas, placar e estado vazio).
-- Smoke headless (evidências em `dev/smoke/sessao_comparacao_v3`, `v4` e `v5`):
+- Smoke headless (evidências nas pastas da sessão de comparação):
   estados A/B/C/D, troca de comparação, troca de ano, Borá/2023, animação
   amostrada, legenda compartilhada (clique sincroniza e sobrevive a re-render),
   ausência da seção antiga e da linha pontilhada, legenda abaixo/centralizada e
@@ -674,7 +675,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 5 — Métricas territoriais, tooltips de corte e placar (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** refinar o cabeçalho territorial do perfil (ordem, cortes e
   tooltips condicionais), estabilizar o placar e igualar as colunas do modo
   comparação.
@@ -748,7 +749,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 6 — Pétalas com disco fixo, escala alinhada à guia (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** redesenhar o gráfico de pétalas (disco de valor no topo, sem
   ticks e sem mediana, escala alinhada à guia), trocar o texto do percentil e
   refinar espaçamentos do perfil.
@@ -805,7 +806,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 7 — Seções e módulos "Onde?" e "Como?" (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** renomear as duas seções do painel e seus módulos para
   "Onde?" (antigo Panorama/Visão geral) e "Como?" (antigo Perfil dos
   municípios), mantendo a coerência entre rótulos, âncoras e código.
@@ -844,7 +845,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 8 — Esqueletos de carregamento (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** adicionar esqueletos de carregamento a todos os outputs,
   preservando o espaço do conteúdo, com o visual do painel hospitalar e sem
   mudanças bruscas de layout.
@@ -945,7 +946,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 9 — Rodapé institucional com logos negativos (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** refazer o rodapé de realizadores e financiadores, que estava
   com "cara de adesivos" (cada logo dentro de uma caixa branca), aproximando-o
   da referência institucional: logos negativos direto no fundo azul, títulos
@@ -1001,7 +1002,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 10 — Seletores refinados e fendas da malha do mapa (13/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** refinar o comportamento e o visual dos seletores slimSelect e
   eliminar os espaços em branco do mapa, causados por fendas internas da malha
   municipal.
@@ -1109,7 +1110,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 11 — Evolução temporal: hierarquia, eixo Y e nitidez (14/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** fazer o IBISMA se destacar no gráfico de evolução temporal,
   adaptar o eixo Y à faixa dos dados (compartilhado na comparação) e corrigir
   o borrão dos gráficos ECharts em telas com escala fracionária ou sob zoom.
@@ -1198,7 +1199,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 12 — Evolução temporal em pequenos múltiplos (14/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** reformular a visualização "Evolução ao longo do tempo" — que
   concentrava IBISMA e seis blocos em um único gráfico por município — em uma
   grade com um gráfico para o índice e seis para os blocos, com identificação
@@ -1298,15 +1299,15 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - Alinhamento e esqueleto conferidos por medição: número real em 3,6 px e
   grade em 28/16/`altura - 28`; esqueleto com barras de 16 × 4 px em 4,0 px,
   grade idêntica e sem a linha vertical que o gráfico não tem.
-- Evidências em `dev/smoke/evolucao_v2/`, `evolucao_v3/` e `evolucao_v4/`
-  (ignorados pelo git): a v3 registra as alturas menores e o novo tooltip; a
-  v4, o alinhamento do eixo e as barras uniformes do esqueleto.
+- Evidências nas pastas da sessão de evolução (ignoradas pelo git): as
+  primeiras registram as alturas menores e o novo tooltip; as seguintes, o
+  alinhamento do eixo e as barras uniformes do esqueleto.
 
 ---
 
 # Sessão 13 — Ranking por medida e identificação da evolução (14/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** adaptar o ranking à medida exibida (cores, buscas, seleção e
   cabeçalho) e identificar os municípios e o período no card de evolução,
   com esqueleto e bolinhas de dimensão nos títulos.
@@ -1412,7 +1413,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 14 — Teto adaptativo do eixo Y, rótulos de ano no mobile e placar (14/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** tornar o teto do eixo Y adaptativo (espelhando o piso), dar
   respiro aos anos do eixo X no mobile com rótulos inclinados e colocar os
   rankings do placar lado a lado em telas pequenas.
@@ -1483,7 +1484,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 15 — Otimização da inicialização (15/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** tirar do app as contas determinísticas (preparação da base,
   categorias, rankings e séries), consumir arquivos prontos em `inst/app/data/`,
   aliviar o payload da primeira carga do mapa e consertar a junção da malha.
@@ -1560,7 +1561,7 @@ Rscript data-raw/cria_rda.R   # base bruta e arquivos prontos (ver Sessão 16)
 
 # Sessão 16 — Roteiro de dados unificado e legível no cria_rda.R (15/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** concentrar todo o roteiro de geração em um único arquivo
   linear, em R comum, que possa ser lido e rodado passo a passo por uma
   pessoa — sem funções empacotadas, atalhos nem carregamento do pacote.
@@ -1640,7 +1641,7 @@ data-raw/
 
 # Sessão 17 — Refatoração para leitura: definições, componentes e paletas (15/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** facilitar a leitura do código do painel — ao abrir um módulo, saber de onde vem cada função auxiliar e
   onde ela é usada —, reduzindo os auxiliares com funções de um só dono.
 
@@ -1717,7 +1718,7 @@ data-raw/
 
 # Sessão 18 — Refatoração do fct_dados (15/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** continuar a refatoração para leitura aplicada na Sessão 17, agora focada no
   `fct_dados`: explicar o papel de cada auxiliar, localizar seus usos e mover para cada dono o
   que tem um único consumidor.
@@ -1798,7 +1799,7 @@ data-raw/
 
 # Sessão 19 — `constantes.R` só com constantes (15/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** fechar a separação de responsabilidades do arquivo de configuração:
   ele deixa de ter funções auxiliares e passa a ser um repositório puro de constantes,
   com o uso de cada valor documentado no próprio comentário.
@@ -1847,7 +1848,7 @@ data-raw/
 
 # Sessão 20 — Simplificação das constantes (15/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** deixar o `constantes.R` com o mínimo necessário — só os valores que têm
   mais de um usuário — e corrigir a duplicação do nível de análise que restou da sessão
   anterior.
@@ -1901,7 +1902,7 @@ data-raw/
 
 # Sessão 21 — Renomeação dos auxiliares e paleta de cores no CSS (16/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** alinhar os arquivos auxiliares à convenção `fct_*` do projeto e
   centralizar as cores do painel em variáveis no `custom.css`, sem mudança
   visual.
@@ -1962,7 +1963,7 @@ data-raw/
 
 # Sessão 22 — Otimização da inicialização do mapa (16/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** implementar as alternativas A + D + E do diagnóstico da
   inicialização do mapa: pré-serializar a geometria no ETL, enxugar a mensagem
   de dados e arredondar as coordenadas para 4 casas.
@@ -2060,7 +2061,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 23 — Tooltip única e dinâmica no mapa (16/09/2026)
 
-- **Pacote:** `painel_ibisma_v4`.
+- **Pacote:** `painel_ibisma`.
 - **Objetivo:** substituir as 5.570 tooltips individuais dos municípios por um
   único tooltip dinâmico, atualizado pelo hover, para testar empiricamente o
   ganho de desempenho e de usabilidade sem mexer em mais nada no painel.
@@ -2131,4 +2132,51 @@ sessão, repetidas para cada usuário.
 ## 6. Commits da sessão
 
 - `ab0b932` Troca as 5.570 tooltips do mapa por um tooltip único dinâmico
+
+---
+
+# Sessão 24 — Repositório oficial: nome sem versão (16/09/2026)
+
+- **Pacote:** `painel_ibisma` (antes `painel_ibisma_v4`).
+- **Objetivo:** transformar este repositório no repositório oficial do painel do
+  IBISMA, removendo todas as referências a versão (v4) e ao caráter de testes.
+
+## 1. Renomeação do pacote
+
+- `DESCRIPTION`, `R/app_config.R` (`app_sys`), `app.R`, `tests/testthat.R`,
+  `inst/golem-config.yml` (`golem_name`) e os scripts de `dev/` passaram a usar
+  `painel_ibisma`.
+- `R/painel_ibisma_v4-package.R` → `R/painel_ibisma-package.R` e
+  `painel_ibisma_v4.Rproj` → `painel_ibisma.Rproj`, com `git mv` (histórico
+  preservado).
+- Documentação regenerada (`devtools::document()`): sai
+  `man/painel_ibisma_v4-package.Rd`, entra `man/painel_ibisma-package.Rd`; o
+  `NAMESPACE` passou ao formato do roxygen2 8.1.0 instalado.
+- `manifest.json` regenerado (`rsconnect::writeManifest()`): além do caminho
+  novo do pacote, o arquivo deixou de listar itens que já não existem
+  (`utils_ui.R`, `fct_config.R`, `fct_graficos.R` e `data/df_ibisma.rda`) e
+  passou a listar os arquivos prontos de `inst/app/data/`.
+
+## 2. Notas das sessões e repositório
+
+- `sessions_md/2026-09-12_implementacao_painel_ibisma_v1.md` virou
+  `sessions_md/2026-09-12_implementacao_painel_ibisma.md`; título e menções a
+  números de versão foram neutralizados ("versão anterior", "pastas da sessão").
+- O repositório remoto `RafaHerzog/painel_ibisma_testes` foi renomeado para
+  `RafaHerzog/painel_ibisma` (o GitHub mantém redirecionamento do nome antigo).
+- A pasta local do projeto (`.../painel_ibisma_v4`) pode ser renomeada para
+  `painel_ibisma` com o R/RStudio fechados.
+
+## 3. Testes e validação
+
+- `devtools::test()`: **392 asserções verdes** já sob o nome `painel_ibisma`.
+- Smoke headless: app sobe com `painel_ibisma::run_app()`, mapa com 5.570
+  camadas, tooltip única funcionando e dados lidos por `app_sys` sem aviso.
+- Busca final por referências a `v4`/`painel_ibisma_testes` nos arquivos
+  versionados: nenhuma restante (só o `V8`, motor do `rmapshaper`, que não é
+  versão do painel).
+
+## 4. Commits da sessão
+
+- `ec28fb5` Renomeia o pacote para painel_ibisma e remove as referências de versão
 
