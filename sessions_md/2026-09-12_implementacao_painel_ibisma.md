@@ -2180,3 +2180,45 @@ sessão, repetidas para cada usuário.
 
 - `ec28fb5` Renomeia o pacote para painel_ibisma e remove as referências de versão
 
+---
+
+# Sessão 25 — Caracteres literais no lugar de escapes unicode (16/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** retirar do código os escapes unicode (`\u00e7`, `\u00e3`, etc.) que geram
+  caracteres especiais e escrever os caracteres literais (`ç`, `ã`, `í`, `º`, travessões),
+  para que qualquer texto do painel possa ser encontrado por busca manual.
+
+## 1. Substituição nos arquivos
+
+- 33 linhas em 7 arquivos: `R/fct_dados.R`, `R/fct_mapa.R`,
+  `R/fct_graficos_evolucao.R`, `R/mod_onde.R`, `R/mod_como.R`,
+  `dev/headless_smoke.R` e `tests/testthat/test-funcoes_globais.R`.
+- Conversões: `\u00e3` → ã, `\u00e7` → ç, `\u00ed` → í, `\u00e1` → á, `\u00f3` → ó,
+  `\u00f5` → õ, `\u00ba` → º, `\u00b7` → ·, `\u2013` → – e `\u2014` → —.
+- Ficaram intencionalmente como escapes os intervalos de expressões regulares que
+  dependem do código unicode (`[\\u0300-\\u036f]` na busca sem acento da tabela e
+  `[\u0300-\u036f]` na busca dos seletores): são código de normalização, não texto de
+  exibição.
+- O `manifest.json` não foi tocado: além de ser regenerado no redeploy, os escapes
+  vêm dos metadados dos pacotes de terceiros.
+
+## 2. Convenção no AGENTS.md
+
+- A seção de convenções ganhou a regra de nunca usar escapes unicode para representar
+  acentos, ç ou outros caracteres especiais, com a exceção dos intervalos de regex que
+  dependem do código unicode.
+
+## 3. Testes e validação
+
+- `devtools::test()`: **392 asserções verdes** (suíte rodada com `rlang` 1.3.0 da
+  biblioteca temporária, como nas sessões anteriores).
+- `parse("dev/headless_smoke.R")` sem erros (o script não é coberto pela suíte).
+- Busca final por `\uXXXX` em todo o repositório: restam apenas os dois intervalos de
+  regex e os metadados do `manifest.json`.
+
+## 4. Commits da sessão
+
+- `72b91a8` Substitui os escapes unicode por caracteres literais no painel
+- `d8b114c` Proíbe os escapes unicode nas convenções do AGENTS.md
+
