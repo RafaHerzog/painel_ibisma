@@ -6,7 +6,7 @@
 #
 #   Etapas:
 #     1. Base bruta (a partir dos CSVs de data-raw/databases)
-#     2. Constantes do índice
+#     2. Constantes do índice (lidas de R/fct_config.R)
 #     3. Base longa (memória)
 #     4. Tabelas por ano (inst/app/data/tabela_ano_*.rds)
 #     5. Cadastro, anos e séries (inst/app/data/dados_ibisma.rds)
@@ -85,21 +85,33 @@ print(colnames(df_ibisma))
 
 # =============================================================================
 #   2. CONSTANTES DO ÍNDICE
-#   Precisam ser iguais às de R/fct_config.R, que o app usa
+#   Lidas de R/fct_config.R, a fonte única que o app também usa
 # =============================================================================
 
+# Carregando as definições do painel em um ambiente próprio, sem tocar no global
+# (as funções de cor também exigem o grDevices no caminho de busca)
+config <- new.env(parent = globalenv())
+config$grDevices <- asNamespace("grDevices")
+sys.source("R/fct_config.R", envir = config)
+
+# Trazendo para o script os objetos usados na geração, com o mesmo nome do app
+usar <- function(nome) {
+  valor <- config[[nome]]
+  assign(nome, valor, envir = globalenv())
+  cat("Config:", nome, "->", length(valor), "itens\n")
+}
+usar("MEDIDAS")
+usar("CATEGORIAS")
+usar("CORTES_PERCENTIS")
+
 # Nomes das colunas que viram medidas no formato longo
-medidas <- c(
-  "indice_final",
-  "bloco1", "bloco2", "bloco3",
-  "bloco4", "bloco5", "bloco6"
-)
+medidas <- MEDIDAS$medida
 
 # Rótulos das cinco categorias, do menos para o mais vulnerável
-categorias <- c("Muito baixo", "Baixo", "Médio", "Alto", "Muito alto")
+categorias <- CATEGORIAS
 
 # Percentis que cortam as cinco categorias
-cortes_percentis <- c(0.2, 0.4, 0.6, 0.8)
+cortes_percentis <- CORTES_PERCENTIS
 
 # =============================================================================
 #   3. BASE LONGA

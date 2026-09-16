@@ -63,7 +63,15 @@ test_that("as séries prontas batem com a base bruta", {
 })
 
 test_that("as tabelas anuais usam as medidas e as categorias do painel", {
+  exigir_base()
   dados <- dados_ibisma()
+
+  # As medidas de fct_config precisam cobrir as colunas do CSV de entrada
+  colunas_geo <- c(
+    "ano", "codmunres", "municipio", "sigla_uf", "uf",
+    "regiao", "r_saude", "macro_r_saude"
+  )
+  expect_setequal(setdiff(names(base_referencia), colunas_geo), MEDIDAS$medida)
 
   for (ano in dados$anos) {
     tabela <- tabela_ano(dados, ano)

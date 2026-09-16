@@ -111,6 +111,10 @@ MEDIDAS$cor <- vapply(MEDIDAS$medida, function(medida) {
 BLOCOS <- MEDIDAS[MEDIDAS$medida != "indice_final", ]
 row.names(BLOCOS) <- NULL
 
+# Definindo os percentis que cortam as cinco categorias na geração dos dados
+# Usada em: data-raw/cria_rda.R (níveis das categorias de cada ano).
+CORTES_PERCENTIS <- c(0.2, 0.4, 0.6, 0.8)
+
 # -----------------------------------------------------------------------------
 #   FUNÇÕES DE COR
 # -----------------------------------------------------------------------------
