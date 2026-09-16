@@ -8,6 +8,8 @@
 #   series_municipio ............ 0,02 s por seleção
 #   nome_uf ..................... 0,03 s por render
 #   payload do mapa ............. 7,51 MB / 1,94 s de serialização
+# Depois da otimização de 16/09/2026, a geometria sai do widget do leaflet e
+# viaja como texto JSON pronto, gerado por data-raw/cria_rda.R.
 
 suppressPackageStartupMessages(pkgload::load_all(quiet = TRUE))
 
@@ -41,21 +43,20 @@ medir("opções de escopo do ranking (mod_onde)", {
 })
 medir("nome_uf(\"SP\")", nome_uf("SP"))
 
-# Junção da malha com os dados do ano
-medir("malha_do_ano(2024, indice_final)", malha_do_ano(dados, 2024L, "indice_final"))
+# Desenho pronto dos municípios e dados compactos do mapa
+medir("carregar_desenho_municipios() (1a leitura)", desenho <- carregar_desenho_municipios())
+medir("dados_mapa(2024, indice_final)", base_mapa <- dados_mapa(dados, 2024L, "indice_final"))
+medir("mensagem_mapa(...)", mensagem <- mensagem_mapa("mapa", base_mapa, "indice_final"))
 
-# Payload enviado na primeira render do mapa (sem tooltips na carga)
-malha <- malha_do_ano(dados, 2024L, "indice_final")
-mapa <- desenhar_ufs(desenhar_municipios(mapa_base(), malha))
-i <- which(vapply(mapa$x$calls, function(ch) ch$method, "") == "addPolygons")[1]
-args_mapa <- mapa$x$calls[[i]]$args
+# Payload enviado na primeira carga do mapa (desenho + dados compactos)
+mensagem$pgons <- desenho$pgons
+mensagem$layers <- desenho$layers
 tempo_json <- system.time(json <- jsonlite::toJSON(
-  args_mapa,
-  auto_unbox = TRUE, force = TRUE, digits = NA
+  mensagem, auto_unbox = TRUE, force = TRUE, digits = 16
 ))
 cat(sprintf(
   "%-42s %.3f s | %.2f MB\n",
-  "serialização do mapa (addPolygons)",
+  "serialização do mapa (mensagem)",
   tempo_json[["elapsed"]],
   nchar(json) / 1024^2
 ))

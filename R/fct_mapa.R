@@ -1,16 +1,16 @@
 # =============================================================================
 #   FUNÇÕES AUXILIARES DO MAPA
-#   Prepara a malha, os valores e os textos dos tooltips usados pelo leaflet,
-#   além de definir o estilo-base do mapa do painel.
+#   Prepara a malha, o desenho enviado por mensagem e os dados compactos que
+#   alimentam o mapa, além de definir o estilo-base do mapa do painel.
 # =============================================================================
 
-# Guardando a malha em memória para não reler o arquivo a cada sessão
+# Guardando a malha e o desenho em memória para não reler os arquivos a cada sessão
 .malha_cache <- new.env(parent = emptyenv())
 
 #' Definindo uma função que carrega a malha municipal simplificada
 #'
 #' @return Objeto sf com os polígonos dos municípios brasileiros.
-#' Usada em: fct_mapa.R (malha_do_ano) e mod_onde.R (destaque do município selecionado).
+#' Usada em: fct_mapa.R (dados_mapa) e mod_onde.R (destaque do município selecionado).
 #' @noRd
 carregar_malha_municipios <- function() {
   # Lendo o arquivo apenas na primeira chamada e reutilizando depois
@@ -37,90 +37,88 @@ carregar_malha_ufs <- function() {
   .malha_cache$ufs
 }
 
-#' Definindo uma função que monta o texto HTML do tooltip de um município
+#' Definindo uma função que carrega o desenho pronto dos municípios
 #'
-#' @param municipio Nome do município.
-#' @param sigla_uf Sigla da unidade da federação.
-#' @param valor Valor da medida exibida.
-#' @param categoria Categoria de vulnerabilidade.
-#' @param nome_medida Nome da medida exibida.
-#' @param medida Identificador da medida exibida no mapa.
-#' @return Texto HTML pronto para o tooltip do leaflet.
-#' Usada em: fct_mapa.R (dados_mapa).
+#' Guarda o texto dos polígonos e os identificadores das camadas gerados por
+#' data-raw/cria_rda.R, evitando converter o sf a cada sessão do painel.
+#'
+#' @return Lista com o texto JSON dos polígonos e os códigos das camadas.
+#' Usada em: fct_mapa.R (enviar_desenho_municipios) e testes do desenho.
 #' @noRd
-tooltip_municipio <- function(municipio, sigla_uf, valor, categoria, nome_medida, medida) {
-  # Tratando municípios sem dado no ano selecionado, vetorizadamente
-  sem_dado <- is.na(valor)
-  valor_texto <- ifelse(sem_dado, "\u2014", formatar_numero(valor))
-  categoria_texto <- ifelse(sem_dado, "Sem dados", categoria)
-  # Buscando a cor da categoria na rampa da medida exibida no mapa
-  cor_cat <- cor_categoria(categoria, medida)
-  # Escolhendo a cor de texto com melhor leitura sobre o selo da categoria
-  cor_texto <- cor_texto_sobre(cor_cat)
-
-  # Montando o HTML do tooltip com o nome, o valor e a categoria
-  paste0(
-    '<div class="tooltip-mapa">',
-    '<div class="tooltip-mapa__titulo">', municipio, " <span>(", sigla_uf, ")</span></div>",
-    '<div class="tooltip-mapa__linha">',
-    '<span class="tooltip-mapa__rotulo">', nome_medida, "</span>",
-    '<span class="tooltip-mapa__valor">', valor_texto, "</span>",
-    "</div>",
-    '<div class="tooltip-mapa__categoria" style="--cor-cat:', cor_cat, ';color:', cor_texto, '">',
-    categoria_texto,
-    "</div>",
-    "</div>"
-  )
+carregar_desenho_municipios <- function() {
+  # Lendo o arquivo apenas na primeira chamada e reutilizando depois
+  if (is.null(.malha_cache$desenho)) {
+    arquivo <- app_sys("app", "data", "malha_mapa.rds")
+    if (!file.exists(arquivo)) {
+      stop(
+        "Desenho do mapa n\u00e3o encontrado. ",
+        "Rode data-raw/cria_rda.R para gerar o arquivo."
+      )
+    }
+    .malha_cache$desenho <- readRDS(arquivo)
+  }
+  .malha_cache$desenho
 }
 
-#' Definindo uma função que prepara os dados anuais que alimentam o mapa
+#' Definindo uma função que prepara os dados compactos que alimentam o mapa
+#'
+#' Os valores ficam na ordem da malha (a mesma das camadas do mapa) e os textos
+#' são curtos: o HTML do tooltip é montado no JavaScript do painel.
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida exibida.
-#' @return Data frame com categoria, cor e tooltip prontos para o mapa.
-#' Usada em: fct_mapa.R (malha_do_ano) e mod_onde.R (reactive do mapa).
+#' @return Data frame com nome, UF, valor em texto e código da categoria.
+#' Usada em: mod_onde.R (reactive do mapa).
 #' @noRd
 dados_mapa <- function(dados, ano, medida) {
   # Buscando os valores do ano e da medida selecionados
   base <- valores_ano(dados, ano, medida)
 
-  # Definindo a cor de cada município conforme sua categoria
-  base$cor <- cor_categoria(as.character(base$categoria), medida)
+  # Alinhando os valores à ordem da malha, que é a ordem das camadas do mapa
+  malha <- carregar_malha_municipios()
+  indice <- match(malha$codmunres, base$codmunres)
+  valor <- base$valor[indice]
+  categoria <- as.character(base$categoria[indice])
 
-  # Montando o texto HTML exibido ao passar o mouse
-  base$tooltip <- tooltip_municipio(
-    municipio = base$municipio,
-    sigla_uf = base$sigla_uf,
-    valor = base$valor,
-    categoria = as.character(base$categoria),
-    nome_medida = nome_medida(medida)[1],
-    medida = medida
+  # Buscando nome e UF no cadastro para municípios sem valor no ano (ex.: Borá/2023)
+  cadastro <- match(malha$codmunres, dados$municipios$codmunres)
+
+  # Montando as colunas compactas consumidas pelo JavaScript do mapa
+  data.frame(
+    municipio = dados$municipios$municipio[cadastro],
+    sigla_uf = dados$municipios$sigla_uf[cadastro],
+    valor_texto = ifelse(is.na(valor), "\u2014", formatar_numero(valor)),
+    categoria_cod = match(categoria, CATEGORIAS),
+    stringsAsFactors = FALSE
   )
-  base
 }
 
-#' Definindo uma função que junta a malha municipal aos valores do ano e da medida
+#' Definindo uma função que monta a mensagem com os dados do mapa
 #'
-#' @param dados Lista lida por dados_ibisma().
-#' @param ano Ano de referência.
-#' @param medida Identificador da medida exibida.
-#' @return Objeto sf com geometria, cor e tooltip de cada município.
-#' Usada em: mod_onde.R (desenho do mapa).
+#' A paleta, os rótulos das categorias e as cores de texto vão uma única vez
+#' por mensagem; por município vão apenas nome, UF, valor e categoria.
+#'
+#' @param output_id Identificador do output do mapa.
+#' @param base Data frame retornado por dados_mapa().
+#' @param medida Identificador da medida exibida no mapa.
+#' @return Lista pronta para o sendCustomMessage do Shiny.
+#' Usada em: fct_mapa.R (enviar_desenho_municipios e atualizar_municipios).
 #' @noRd
-malha_do_ano <- function(dados, ano, medida) {
-  # Buscando a malha e os valores preparados para o mapa
-  malha <- carregar_malha_municipios()
-  base <- dados_mapa(dados, ano, medida)
-
-  # Ligando cor e tooltip a cada município pela posição do código na malha
-  indice <- match(malha$codmunres, base$codmunres)
-  malha$cor <- base$cor[indice]
-  malha$tooltip <- base$tooltip[indice]
-
-  # Criando o identificador em texto exigido pelo leaflet para indexar as camadas
-  malha$codmunres_txt <- as.character(malha$codmunres)
-  malha
+mensagem_mapa <- function(output_id, base, medida) {
+  list(
+    id = output_id,
+    medida = nome_medida(medida),
+    municipios = base$municipio,
+    ufs = base$sigla_uf,
+    valores = base$valor_texto,
+    categorias = base$categoria_cod,
+    paleta = unname(PALETAS[[medida]]),
+    rotulos = unname(CATEGORIAS),
+    cores_texto = unname(cor_texto_sobre(PALETAS[[medida]])),
+    cor_sem_dados = COR_SEM_DADOS,
+    cor_texto_sem_dados = cor_texto_sobre(COR_SEM_DADOS)
+  )
 }
 
 #' Definindo uma função que cria o mapa-base do painel
@@ -150,38 +148,45 @@ mapa_base <- function() {
     leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6)
 }
 
-#' Definindo uma função que desenha os municípios no mapa
+#' Definindo uma função que envia ao navegador o desenho e os dados dos municípios
 #'
-#' As cores e os tooltips ficam fora da carga inicial e chegam logo depois,
-#' pela mensagem tratada em funcoes_javascript.js, para o mapa abrir mais leve.
+#' O texto dos polígonos e os identificadores das camadas vêm prontos de
+#' data-raw/cria_rda.R, então a geometria não é convertida nem serializada a
+#' cada sessão; o JavaScript cria as camadas com o próprio binding do leaflet.
 #'
-#' @param mapa Objeto leaflet.
-#' @param base Objeto sf retornado por malha_do_ano().
-#' @return Objeto leaflet com a camada de municípios.
-#' Usada em: mod_onde.R (desenho do mapa).
+#' @param session Sessão do Shiny.
+#' @param output_id Identificador do output do mapa.
+#' @param base Data frame retornado por dados_mapa().
+#' @param medida Identificador da medida exibida no mapa.
+#' @return Nada; envia a mensagem para o JavaScript do painel.
+#' Usada em: mod_onde.R (desenho inicial do mapa).
 #' @noRd
-desenhar_municipios <- function(mapa, base) {
-  # Usando o código do município como identificador de cada polígono
-  mapa |>
-    leaflet::addPolygons(
-      data = base,
-      layerId = ~codmunres_txt,
-      # Aumentando a opacidade para o fundo do mapa não clarear as cores
-      fillColor = ~cor,
-      fillOpacity = 0.95,
-      # Desenhando as divisas municipais com um traço branco fino e leve
-      color = "#FFFFFF",
-      weight = 0.25,
-      opacity = 0.65,
-      # Desenhando a malha já simplificada, sem nova simplificação no cliente
-      smoothFactor = 0,
-      highlightOptions = leaflet::highlightOptions(
-        weight = 1.2,
-        color = COR_AZUL_ESCURO,
-        fillOpacity = 0.95,
-        bringToFront = TRUE
-      )
-    )
+enviar_desenho_municipios <- function(session, output_id, base, medida) {
+  # Montando a mensagem com os dados e acrescentando o desenho pronto
+  desenho <- carregar_desenho_municipios()
+  mensagem <- mensagem_mapa(output_id, base, medida)
+  mensagem$pgons <- desenho$pgons
+  mensagem$layers <- desenho$layers
+
+  # Criando as camadas e preenchendo cores e tooltips em uma única mensagem
+  session$sendCustomMessage("ibisma_mapa_desenha", mensagem)
+}
+
+#' Definindo uma função que envia ao navegador a atualização de cores e tooltips do mapa
+#'
+#' @param session Sessão do Shiny.
+#' @param output_id Identificador do output do mapa.
+#' @param base Data frame retornado por dados_mapa().
+#' @param medida Identificador da medida exibida no mapa.
+#' @return Nada; envia a mensagem para o JavaScript do painel.
+#' Usada em: mod_onde.R (atualização das cores e tooltips).
+#' @noRd
+atualizar_municipios <- function(session, output_id, base, medida) {
+  # Atualizando os polígonos já desenhados sem reenviar a geometria
+  session$sendCustomMessage(
+    "ibisma_mapa_atualiza",
+    mensagem_mapa(output_id, base, medida)
+  )
 }
 
 #' Definindo uma função que desenha os contornos das unidades da federação
@@ -204,27 +209,6 @@ desenhar_ufs <- function(mapa) {
       smoothFactor = 0,
       options = leaflet::pathOptions(interactive = FALSE)
     )
-}
-
-#' Definindo uma função que envia ao navegador a atualização de cores e tooltips do mapa
-#'
-#' @param session Sessão do Shiny.
-#' @param output_id Identificador do output do mapa.
-#' @param base Data frame retornado por dados_mapa().
-#' @return Nada; envia a mensagem para o JavaScript do painel.
-#' Usada em: mod_onde.R (atualização das cores e tooltips).
-#' @noRd
-atualizar_municipios <- function(session, output_id, base) {
-  # Convertendo os mapas de código para cor e tooltip em listas nomeadas
-  # Evitando o aviso do jsonlite, que surge ao serializar vetores nomeados
-  cores <- as.list(stats::setNames(base$cor, as.character(base$codmunres)))
-  labels <- as.list(stats::setNames(base$tooltip, as.character(base$codmunres)))
-
-  # Atualizando os polígonos já desenhados sem reenviar a geometria
-  session$sendCustomMessage(
-    "ibisma_mapa_atualiza",
-    list(id = output_id, cores = cores, labels = labels)
-  )
 }
 
 #' Definindo uma função que monta a legenda das cinco categorias do mapa

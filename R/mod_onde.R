@@ -148,10 +148,9 @@ mod_onde_server <- function(id, dados, municipio) {
 
     # ----- Mapa -----
 
-    # Desenhando o mapa uma única vez; as atualizações usam mensagens ao JS
+    # Montando o mapa-base uma única vez; os municípios chegam por mensagem
     output$mapa <- leaflet::renderLeaflet({
-      malha <- shiny::isolate(malha_do_ano(dados, as.integer(input$ano), input$medida))
-      desenhar_ufs(desenhar_municipios(mapa_base(), malha)) |>
+      desenhar_ufs(mapa_base()) |>
         htmlwidgets::onRender(
           sprintf(
             "function(el) {
@@ -181,12 +180,12 @@ mod_onde_server <- function(id, dados, municipio) {
 
     # Atualizando cores e tooltips do mapa quando muda o ano ou a medida
     shiny::observeEvent(list(input$ano, input$medida), {
-      atualizar_municipios(session, ns("mapa"), base_mapa())
+      atualizar_municipios(session, ns("mapa"), base_mapa(), input$medida)
     }, ignoreInit = TRUE)
 
-    # Enviando cores e tooltips assim que o mapa termina de desenhar
+    # Enviando o desenho dos municípios assim que o mapa termina de montar
     shiny::observeEvent(input$mapa_pronto, {
-      atualizar_municipios(session, ns("mapa"), base_mapa())
+      enviar_desenho_municipios(session, ns("mapa"), base_mapa(), input$medida)
     }, once = TRUE)
 
     # Destacando no mapa o município selecionado em qualquer parte do painel

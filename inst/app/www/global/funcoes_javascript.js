@@ -1,6 +1,6 @@
 /* =============================================================================
    FUNÇÕES JAVASCRIPT DO PAINEL IBISMA
-   Reúne o handler que atualiza as cores do mapa sem reenviar a geometria, a
+   Reúne os handlers do mapa (desenho e atualização de cores e tooltips), a
    abertura animada das duas colunas de comparação e a marcação da seção visível
    na barra de navegação.
    ============================================================================= */
@@ -12,42 +12,116 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   if (el) el.classList.toggle("dupla--comparando", !!mensagem.ativa);
 });
 
-/* Atualizando cores e tooltips dos municípios já desenhados no mapa */
-Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
-  /* Localizando o widget leaflet a partir do seletor do mapa */
-  var widget = window.HTMLWidgets && HTMLWidgets.find("#" + mensagem.id);
-  if (!widget || typeof widget.getMap !== "function") return;
-  var mapa = widget.getMap();
-  if (!mapa || !mapa.layerManager || !mapa.layerManager._byLayerId) return;
+/* =============================================================================
+   DESENHO E ATUALIZAÇÃO DO MAPA
+   O desenho dos municípios chega pronto do servidor, como texto JSON gerado no
+   ETL; o binding do próprio leaflet cria as camadas, e as cores e tooltips são
+   atualizados a cada troca de ano ou de medida.
+   ============================================================================= */
+(function () {
+  /* Definindo o estilo das camadas de município e do realce de hover */
+  var ESTILO_MUNICIPIO = {
+    color: "#FFFFFF",
+    weight: 0.25,
+    opacity: 0.65,
+    fillOpacity: 0.95,
+    smoothFactor: 0
+  };
+  var REALCE_MUNICIPIO = {
+    weight: 1.2,
+    color: "#0A1E3C",
+    fillOpacity: 0.95,
+    bringToFront: true
+  };
+  /* Definindo as opções dos tooltips, iguais às do mapa do painel */
+  var OPCOES_TOOLTIP = {
+    direction: "auto",
+    sticky: true,
+    opacity: 1,
+    className: "tooltip-ibisma"
+  };
 
-  /* Percorrendo as camadas registradas, que guardam o ID após o caractere \n */
-  var camadas = mapa.layerManager._byLayerId;
-  Object.keys(camadas).forEach(function (chave) {
-    var camada = camadas[chave];
-    if (!camada || typeof camada.setStyle !== "function") return;
-    var id = chave.indexOf("\n") >= 0 ? chave.split("\n").pop() : String(chave);
-    var cor = mensagem.cores ? mensagem.cores[id] : null;
-    if (!cor) return;
+  /* Guardando a ordem das camadas de cada mapa para as mensagens seguintes */
+  var camadasPorMapa = {};
 
-    /* Repintando apenas o preenchimento, já que a divisa branca é fixa */
-    camada.setStyle({ fillColor: cor, fillOpacity: 0.95 });
+  /* Montando o HTML do tooltip de um município a partir da mensagem compacta */
+  function montarTooltip(mensagem, i) {
+    /* Categoria ausente vira a entrada cinza de "Sem dados" */
+    var categoria = mensagem.categorias[i] || 0;
+    var cor = categoria ? mensagem.paleta[categoria - 1] : mensagem.cor_sem_dados;
+    var corTexto = categoria
+      ? mensagem.cores_texto[categoria - 1]
+      : mensagem.cor_texto_sem_dados;
+    var rotulo = categoria ? mensagem.rotulos[categoria - 1] : "Sem dados";
+    return '<div class="tooltip-mapa">' +
+      '<div class="tooltip-mapa__titulo">' + mensagem.municipios[i] +
+        ' <span>(' + mensagem.ufs[i] + ')</span></div>' +
+      '<div class="tooltip-mapa__linha">' +
+        '<span class="tooltip-mapa__rotulo">' + mensagem.medida + '</span>' +
+        '<span class="tooltip-mapa__valor">' + mensagem.valores[i] + '</span>' +
+      '</div>' +
+      '<div class="tooltip-mapa__categoria" ' +
+        'style="--cor-cat:' + cor + ';color:' + corTexto + '">' +
+        rotulo + '</div>' +
+      '</div>';
+  }
 
-    var rotulo = mensagem.labels ? mensagem.labels[id] : null;
-    if (rotulo !== null && rotulo !== undefined) {
-      /* Amarrando o tooltip na primeira mensagem, já que o mapa abre sem ele */
+  /* Repintando uma camada por vez e amarrando o tooltip na primeira vez */
+  function aplicarDados(mapa, mensagem, layers) {
+    var camadas = mapa.layerManager._byLayerId;
+    if (!camadas) return;
+    /* As camadas dos municípios guardam o ID após o caractere de quebra de linha */
+    for (var i = 0; i < layers.length; i++) {
+      var camada = camadas["shape\n" + layers[i]];
+      if (!camada || typeof camada.setStyle !== "function") continue;
+      var categoria = mensagem.categorias[i] || 0;
+      var cor = categoria ? mensagem.paleta[categoria - 1] : mensagem.cor_sem_dados;
+      /* Repintando apenas o preenchimento, já que a divisa branca é fixa */
+      camada.setStyle({ fillColor: cor, fillOpacity: 0.95 });
+      var rotulo = montarTooltip(mensagem, i);
       if (camada.getTooltip && camada.getTooltip()) {
         camada.setTooltipContent(rotulo);
       } else if (camada.bindTooltip) {
-        camada.bindTooltip(rotulo, {
-          direction: "auto",
-          sticky: true,
-          opacity: 1,
-          className: "tooltip-ibisma"
-        });
+        camada.bindTooltip(rotulo, OPCOES_TOOLTIP);
       }
     }
+  }
+
+  /* Criando as camadas dos municípios com o binding do leaflet e os dados iniciais */
+  Shiny.addCustomMessageHandler("ibisma_mapa_desenha", function (mensagem) {
+    var widget = window.HTMLWidgets && HTMLWidgets.find("#" + mensagem.id);
+    if (!widget || typeof widget.getMap !== "function") return;
+    var mapa = widget.getMap();
+    if (!mapa || !mapa.layerManager) return;
+
+    /* O texto JSON vem pronto do ETL e é lido de uma vez pelo navegador */
+    var poligonos = JSON.parse(mensagem.pgons);
+    var opcoes = Object.assign({}, ESTILO_MUNICIPIO, {
+      fillColor: mensagem.categorias.map(function (categoria) {
+        return categoria ? mensagem.paleta[categoria - 1] : mensagem.cor_sem_dados;
+      })
+    });
+    window.LeafletWidget.methods.addPolygons.call(
+      mapa, poligonos, mensagem.layers, null, opcoes,
+      null, null, null, null, REALCE_MUNICIPIO
+    );
+
+    /* Guardando a ordem das camadas e preenchendo cores e tooltips */
+    camadasPorMapa[mensagem.id] = mensagem.layers;
+    aplicarDados(mapa, mensagem, mensagem.layers);
   });
-});
+
+  /* Atualizando cores e tooltips dos municípios já desenhados no mapa */
+  Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
+    var widget = window.HTMLWidgets && HTMLWidgets.find("#" + mensagem.id);
+    if (!widget || typeof widget.getMap !== "function") return;
+    var mapa = widget.getMap();
+    if (!mapa || !mapa.layerManager) return;
+    var layers = camadasPorMapa[mensagem.id];
+    if (!layers) return;
+    aplicarDados(mapa, mensagem, layers);
+  });
+})();
 
 /* =============================================================================
    ESQUELETOS DE CARREGAMENTO

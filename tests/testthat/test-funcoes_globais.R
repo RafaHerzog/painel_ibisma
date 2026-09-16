@@ -711,7 +711,7 @@ test_that("seletor_inline controla a busca e traduz os textos", {
   expect_true(grepl('"showSearch":false', sem_busca, fixed = TRUE))
 })
 
-test_that("atualizar_municipios envia listas nomeadas que serializam sem aviso", {
+test_that("atualizar_municipios envia os dados compactos sem aviso de serialização", {
   # Capturando a mensagem enviada por uma sessão simulada
   capturada <- new.env(parent = emptyenv())
   sessao <- list(sendCustomMessage = function(tipo, mensagem) {
@@ -719,17 +719,23 @@ test_that("atualizar_municipios envia listas nomeadas que serializam sem aviso",
     capturada$mensagem <- mensagem
   })
   dados <- dados_ibisma()
+  malha <- carregar_malha_municipios()
   base <- dados_mapa(dados, max(dados$anos), "indice_final")
-  atualizar_municipios(sessao, "mapa", base)
+  atualizar_municipios(sessao, "mapa", base, "indice_final")
 
   expect_equal(capturada$tipo, "ibisma_mapa_atualiza")
   mensagem <- capturada$mensagem
-  # As cores e os tooltips precisam ser listas nomeadas, e não vetores nomeados
-  expect_type(mensagem$cores, "list")
-  expect_type(mensagem$labels, "list")
-  expect_equal(names(mensagem$cores), as.character(base$codmunres))
+  # Os dados vão em vetores alinhados à malha, sem HTML de tooltip
+  expect_equal(mensagem$id, "mapa")
+  expect_equal(mensagem$medida, "IBISMA")
+  expect_length(mensagem$municipios, nrow(malha))
+  expect_length(mensagem$ufs, nrow(malha))
+  expect_length(mensagem$valores, nrow(malha))
+  expect_length(mensagem$categorias, nrow(malha))
+  expect_equal(mensagem$rotulos, unname(CATEGORIAS))
+  expect_false(any(grepl("tooltip-mapa", mensagem$valores)))
 
-  # O toJSON usado pelo Shiny não deve emitir o aviso de vetor nomeado
+  # O toJSON usado pelo Shiny não deve emitir aviso de serialização
   aviso <- NULL
   withCallingHandlers(
     shiny:::toJSON(mensagem),
@@ -741,6 +747,54 @@ test_that("atualizar_municipios envia listas nomeadas que serializam sem aviso",
   expect_null(aviso)
 })
 
+test_that("enviar_desenho_municipios junta o desenho pronto aos dados do mapa", {
+  # Capturando a mensagem enviada por uma sessão simulada
+  capturada <- new.env(parent = emptyenv())
+  sessao <- list(sendCustomMessage = function(tipo, mensagem) {
+    capturada$tipo <- tipo
+    capturada$mensagem <- mensagem
+  })
+  dados <- dados_ibisma()
+  base <- dados_mapa(dados, max(dados$anos), "indice_final")
+  enviar_desenho_municipios(sessao, "mapa", base, "indice_final")
+
+  expect_equal(capturada$tipo, "ibisma_mapa_desenha")
+  mensagem <- capturada$mensagem
+  desenho <- carregar_desenho_municipios()
+  expect_equal(mensagem$layers, desenho$layers)
+  expect_equal(mensagem$pgons, desenho$pgons)
+  expect_length(mensagem$valores, length(mensagem$layers))
+})
+
+test_that("o desenho pronto da malha casa com a conversão do leaflet", {
+  malha <- carregar_malha_municipios()
+  desenho <- carregar_desenho_municipios()
+
+  # A malha e o desenho têm os mesmos municípios, na mesma ordem
+  expect_equal(desenho$layers, as.character(malha$codmunres))
+
+  # O texto não deve ter coordenadas com mais de 4 casas decimais
+  expect_false(grepl("\\.\\d{5,}", desenho$pgons))
+
+  # O JSON bate com o que o leaflet monta para o addPolygons
+  referencia <- leaflet::addPolygons(
+    leaflet::leaflet(),
+    data = malha,
+    layerId = ~as.character(codmunres)
+  )
+  chamada <- Filter(
+    function(x) x$method == "addPolygons",
+    referencia$x$calls
+  )[[1]]
+  esperado <- as.character(jsonlite::toJSON(
+    chamada$args[[1]],
+    dataframe = "columns",
+    auto_unbox = TRUE,
+    digits = 4
+  ))
+  expect_equal(desenho$pgons, esperado)
+})
+
 test_that("badge_categoria_html gera o HTML dos selos de categoria", {
   selos <- badge_categoria_html(c("Muito baixo", "Muito alto"))
   expect_length(selos, 2)
@@ -748,17 +802,55 @@ test_that("badge_categoria_html gera o HTML dos selos de categoria", {
   expect_true(grepl(PALETAS$indice_final[["Muito alto"]], selos[2]))
 })
 
-test_that("dados_mapa monta cores e tooltips para o ano", {
+test_that("dados_mapa alinha os valores à malha em formato compacto", {
   dados <- dados_ibisma()
+  malha <- carregar_malha_municipios()
   ano <- max(dados$anos)
   base <- dados_mapa(dados, ano, "indice_final")
-  expect_equal(nrow(base), nrow(dados$municipios))
-  expect_true(all(nzchar(base$tooltip)))
-  expect_true(all(base$cor %in% unname(PALETAS$indice_final)))
-  expect_true(all(grepl("tooltip-mapa", base$tooltip)))
 
+  # Os dados ficam na ordem das camadas do mapa e sem HTML de tooltip
+  expect_equal(nrow(base), nrow(malha))
+  expect_setequal(
+    names(base),
+    c("municipio", "sigla_uf", "valor_texto", "categoria_cod")
+  )
+  expect_false(any(grepl("tooltip-mapa", base$valor_texto)))
+  expect_true(all(base$categoria_cod %in% 1:5))
+  expect_false(any(base$valor_texto == "\u2014"))
+
+  # O valor em texto segue a convenção brasileira e a ordem da malha
+  valor_tabela <- valores_ano(dados, ano, "indice_final")
+  codigo <- valor_tabela$codmunres[1]
+  posicao <- match(codigo, malha$codmunres)
+  valor_esperado <- formatar_numero(
+    valor_tabela$valor[valor_tabela$codmunres == codigo]
+  )
+  expect_equal(base$valor_texto[posicao], valor_esperado)
+
+  # Municípios sem valor no ano viram "Sem dados" em cinza (Borá/2023)
+  base_2023 <- dados_mapa(dados, 2023L, "indice_final")
+  bora <- which(malha$codmunres == 350720)
+  expect_equal(base_2023$valor_texto[bora], "\u2014")
+  expect_true(is.na(base_2023$categoria_cod[bora]))
+  expect_equal(base_2023$municipio[bora], "Bor\u00e1")
+})
+
+test_that("mensagem_mapa usa a paleta e as cores de texto da medida exibida", {
+  dados <- dados_ibisma()
+  ano <- max(dados$anos)
+
+  # A mensagem do índice leva a rampa roxa e os textos de contraste
+  base_indice <- dados_mapa(dados, ano, "indice_final")
+  msg_indice <- mensagem_mapa("mapa", base_indice, "indice_final")
+  expect_equal(msg_indice$paleta, unname(PALETAS$indice_final))
+  expect_equal(msg_indice$cores_texto, unname(cor_texto_sobre(PALETAS$indice_final)))
+  expect_equal(msg_indice$cor_sem_dados, COR_SEM_DADOS)
+
+  # A mensagem de um bloco usa a rampa daquele bloco
   base_bloco <- dados_mapa(dados, ano, "bloco3")
-  expect_false(identical(unique(base_bloco$cor), unname(PALETAS$indice_final)))
+  msg_bloco <- mensagem_mapa("mapa", base_bloco, "bloco3")
+  expect_equal(msg_bloco$paleta, unname(PALETAS$bloco3))
+  expect_false(identical(msg_bloco$paleta, msg_indice$paleta))
 })
 
 test_that("municipio_padrao escolhe o mais vulnerável do último ano", {
@@ -833,22 +925,6 @@ test_that("cor_categoria e badge_categoria_html respeitam a medida informada", {
   expect_false(identical(cor_bloco, cor_categoria("Muito alto")))
   selos <- badge_categoria_html(c("Muito baixo", "Muito alto"), "bloco3")
   expect_true(grepl(cor_bloco, selos[2], fixed = TRUE))
-})
-
-test_that("tooltip do mapa usa a cor da medida exibida", {
-  dados <- dados_ibisma()
-  ano <- max(dados$anos)
-
-  # A chip do IBISMA usa a paleta roxa
-  base_indice <- dados_mapa(dados, ano, "indice_final")
-  cor_indice <- cor_categoria("Muito alto")
-  expect_true(any(grepl(paste0("--cor-cat:", cor_indice), base_indice$tooltip, fixed = TRUE)))
-
-  # A chip de um bloco usa a rampa daquele bloco
-  base_bloco <- dados_mapa(dados, ano, "bloco3")
-  cor_bloco <- cor_categoria("Muito alto", "bloco3")
-  expect_true(any(grepl(paste0("--cor-cat:", cor_bloco), base_bloco$tooltip, fixed = TRUE)))
-  expect_false(any(grepl(paste0("--cor-cat:", cor_indice), base_bloco$tooltip, fixed = TRUE)))
 })
 
 test_that("tooltip da pétala carrega a cor da dimensão", {
