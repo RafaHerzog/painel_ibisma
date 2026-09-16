@@ -103,22 +103,35 @@ MEDIDAS <- data.frame(
     "Bloco Sistema de saúde",
     "Bloco Clima"
   ),
+  cor     = c(
+    COR_IBISMA,
+    "#FAC80F",
+    "#41BE3C",
+    COR_AZUL_CLARO,
+    "#E4572E",
+    "#1E5AA0",
+    "#00A6A6"
+  ),
   stringsAsFactors = FALSE
 )
 
-# Derivando a cor de identificação do tom central dos blocos e do topo do índice
-# Usada em: fct_cores.R (cor_medida).
-MEDIDAS$cor <- vapply(MEDIDAS$medida, function(medida) {
-  tom <- if (identical(medida, "indice_final")) "Muito alto" else "Médio"
-  unname(PALETAS[[medida]][tom])
-}, character(1))
-
 # Definindo os seis blocos como o recorte das medidas sem o índice
-# Usada em: mod_como.R (pétalas e eixos), fct_graficos.R (grade da evolução) e
-# fct_esqueleto.R (esqueleto da grade).
+## Usada em: mod_como.R (pétalas e eixos), fct_graficos.R (grade da evolução) e fct_esqueleto.R (esqueleto da grade).
 BLOCOS <- MEDIDAS[MEDIDAS$medida != "indice_final", ]
 row.names(BLOCOS) <- NULL
 
-# Definindo os percentis que cortam as cinco categorias na geração dos dados
-# Usada em: data-raw/cria_rda.R (níveis das categorias de cada ano).
-CORTES_PERCENTIS <- c(0.2, 0.4, 0.6, 0.8)
+# -----------------------------------------------------------------------------
+#   NÍVEIS DE ANÁLISE GEOGRÁFICA
+# -----------------------------------------------------------------------------
+
+# Definindo o nível de análise geográfica usado pela seção Onde?
+# Habilitando novos níveis ao acrescentar linhas com a variável geográfica do nível
+## Usada em: mod_onde.R (seletor de nível).
+NIVEIS_ANALISE <- data.frame(
+  id            = "municipio",
+  rotulo        = "municípios",
+  singular      = "município",
+  variavel_geo  = "codmunres",
+  disponivel    = TRUE,
+  stringsAsFactors = FALSE
+)

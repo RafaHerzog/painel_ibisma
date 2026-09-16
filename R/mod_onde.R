@@ -5,17 +5,6 @@
 #   circula entre o mapa, o ranking e o perfil.
 # =============================================================================
 
-# Definindo o nível de análise geográfica usado pela seção
-# Habilitando novos níveis ao acrescentar linhas com a variável geográfica do nível
-NIVEIS_ANALISE <- data.frame(
-  id            = "municipio",
-  rotulo        = "municípios",
-  singular      = "município",
-  variavel_geo  = "codmunres",
-  disponivel    = TRUE,
-  stringsAsFactors = FALSE
-)
-
 #' Interface do módulo Onde?
 #'
 #' @param id Identificador do módulo.
