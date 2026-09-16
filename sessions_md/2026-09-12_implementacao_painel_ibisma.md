@@ -2222,3 +2222,43 @@ sessão, repetidas para cada usuário.
 - `72b91a8` Substitui os escapes unicode por caracteres literais no painel
 - `d8b114c` Proíbe os escapes unicode nas convenções do AGENTS.md
 
+---
+
+# Sessão 26 — Realce da busca sem acento nos seletores (16/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** fazer o realce do trecho buscado acompanhar a busca sem acento dos
+  seletores, ligada na Sessão 13: digitar "sao" filtra "São Paulo", mas o "São" não
+  ficava aceso.
+
+## 1. Causa
+
+- O filtro normalizado (Sessão 13) troca só o `events.searchFilter`; o realce continua
+  sendo o `highlightText` do próprio slimSelect, que monta um regex com o termo cru
+  (`(sao)`) sobre o texto original ("São"), então nunca casa.
+- A tabela do ranking não tem realce de busca (o reactable só filtra as linhas), então
+  a correção ficou restrita aos seletores.
+- **Achado:** no slimSelect 2.x embutido no shinyWidgets, o renderizador fica em
+  `instancia.render` (`render.content.search.input`, `render.highlightText`); a
+  instância não tem mais o `content` da versão 1.x.
+
+## 2. Correção
+
+- Novo `normalizarComMapa()` normaliza o texto letra a letra e guarda de qual caractere
+  original cada letra veio; `destacar()` localiza o trecho normalizado e volta às
+  posições originais para envolvê-lo em `<mark class="ss-search-highlight">`.
+- `ajustar()` passou a substituir `render.highlightText`, preservando o realce original
+  para opções com HTML; quando a busca não casa, o texto fica sem realce (como antes).
+- O realce vale para todos os seletores; os que não têm busca nunca chamam o método.
+
+## 3. Testes e validação
+
+- Smoke headless no seletor de município digitando "sao": 367 opções filtradas, todas
+  realçadas, com `São Paulo (SP)` em
+  `<mark class="ss-search-highlight">São</mark> Paulo (SP)`.
+- Nenhuma mudança em R; a suíte não cobre JavaScript.
+
+## 4. Commits da sessão
+
+- `99185ec` Corrige o realce da busca sem acento nos seletores
+
