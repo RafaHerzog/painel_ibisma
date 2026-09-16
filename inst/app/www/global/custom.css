@@ -8,7 +8,7 @@
 
 /* Cor do texto principal aplicada globalmente */
 body, .content-wrapper, .main-header, .main-sidebar {
-  color: #0A1E3C !important;
+  color: var(--cor-azul-escuro) !important;
 }
 
 /* Fonte principal do painel: Source Sans Pro */
@@ -99,13 +99,51 @@ body, .content-wrapper, .main-header, .main-sidebar {
 :root {
   --fonte-numero-destaque-size: 3.25rem;
   --espaco-secao: 2rem;
+  --altura-navbar: 4.75rem;
+}
+
+/* =============================================================================
+      PALETA DE CORES DO PAINEL
+      Reúne as cores usadas em todo o arquivo: ajustar um tom aqui atualiza o
+      painel inteiro. As variáveis com sufixo -rgb guardam os canais RGB para
+      os usos com transparência, no formato rgb(var(--cor-x-rgb) / alfa).
+      Exceção: as cores embutidas nos data URIs de máscara (lupa e X da busca)
+      não aceitam var() e seguem literais no próprio trecho.
+   ============================================================================= */
+
+:root {
+  /* Cores de identificação e de destaque */
+  --cor-azul-escuro: #0A1E3C;
+  --cor-azul-escuro-rgb: 10 30 60;
+  --cor-azul-medio: #1E5AA0;
+  --cor-azul-medio-rgb: 30 90 160;
+  --cor-azul-claro: #32A0FF;
+  --cor-azul-claro-rgb: 50 160 255;
+  --cor-roxo-ibisma: #4B1D73;
+  --cor-amarelo-rgb: 250 200 15;
+  --cor-branco: #FFFFFF;
+  --cor-branco-rgb: 255 255 255;
+  --cor-preto-rgb: 0 0 0;
+
+  /* Tons neutros e fundos */
   --cor-texto-suave: #5A6472;
   --cor-linha: #ECEEF2;
+  --cor-borda: #E3E6EB;
   --cor-fundo-bloco: #FAFBFD;
-  --cor-roxo-ibisma: #4B1D73;
-  --cor-azul-claro: #32A0FF;
-  --cor-azul-medio: #1E5AA0;
-  --altura-navbar: 4.75rem;
+  --cor-fundo-controles: #F4F8FF;
+  --cor-fundo-mapa: #EDF1F7;
+  --cor-fundo-desabilitado: #F2F4F7;
+
+  /* Cores dos esqueletos de carregamento */
+  --cor-esqueleto-rgb: 224 233 242;
+  --cor-esqueleto-base: rgb(var(--cor-esqueleto-rgb) / 68%);
+  --cor-esqueleto-forte: rgb(var(--cor-esqueleto-rgb) / 88%);
+  --cor-esqueleto-guia: rgb(var(--cor-esqueleto-rgb) / 95%);
+  --cor-esqueleto-brilho-rgb: 246 249 252;
+  --cor-esqueleto-brilho: rgb(var(--cor-esqueleto-brilho-rgb) / 82%);
+  --cor-esqueleto-cabecalho: #DDE1E8;
+  --cor-esqueleto-linha: #F1F3F6;
+  --cor-esqueleto-grade: #EEF0F4;
 }
 
 /* Reduzindo o número de destaque em telas médias */
@@ -160,8 +198,8 @@ body.html-fill-container,
 /* Definindo a fonte e o comportamento base do painel */
 body {
   font-family: 'Source Sans Pro', system-ui, -apple-system, sans-serif;
-  background-color: #FFFFFF;
-  color: #0A1E3C;
+  background-color: var(--cor-branco);
+  color: var(--cor-azul-escuro);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -181,9 +219,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 1030;
-  background-color: #0A1E3C;
-  box-shadow: 0 4px 18px rgba(10, 30, 60, 0.25);
-  border-bottom: 2px solid #1E5AA0;
+  background-color: var(--cor-azul-escuro);
+  box-shadow: 0 4px 18px rgb(var(--cor-azul-escuro-rgb) / 0.25);
+  border-bottom: 2px solid var(--cor-azul-medio);
   padding-top: 0.55rem;
   padding-bottom: 0.55rem;
 }
@@ -222,12 +260,12 @@ body {
   font-size: var(--fonte-subtitulos-size);
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #FFFFFF;
+  color: var(--cor-branco);
 }
 
 /* Suavizando a descrição do índice abaixo do nome */
 .navbar-brand__descricao {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgb(var(--cor-branco-rgb) / 0.72);
   font-weight: 400;
   font-size: var(--fonte-muito-grande-size);
 }
@@ -236,7 +274,7 @@ body {
 .navbar-ibisma .nav-link {
   font-size: var(--fonte-subtitulos-sobre-size);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgb(var(--cor-branco-rgb) / 0.88);
   padding: 0.15rem 0.25rem;
   margin-left: 1.5rem;
   border-bottom: 2px solid transparent;
@@ -244,23 +282,23 @@ body {
 }
 
 .navbar-ibisma .nav-link:hover {
-  color: #FFFFFF;
-  border-bottom-color: rgba(50, 160, 255, 0.6);
+  color: var(--cor-branco);
+  border-bottom-color: rgb(var(--cor-azul-claro-rgb) / 0.6);
 }
 
 /* Marcando a seção visível mantendo o indicador inferior da v4 */
 .navbar-ibisma .nav-link.active {
-  color: #FFFFFF;
+  color: var(--cor-branco);
   border-bottom-color: var(--cor-azul-claro);
 }
 
 /* Ajustando o botão do menu móvel sobre o fundo escuro */
 .navbar-ibisma .navbar-toggler {
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: rgb(var(--cor-branco-rgb) / 0.35);
 }
 
 .navbar-ibisma .navbar-toggler:focus {
-  box-shadow: 0 0 0 3px rgba(50, 160, 255, 0.4);
+  box-shadow: 0 0 0 3px rgb(var(--cor-azul-claro-rgb) / 0.4);
 }
 
 /* Dando visibilidade ao foco por teclado em todos os elementos interativos */
@@ -268,7 +306,7 @@ a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 .ss-main:focus-visible {
-  outline: 3px solid rgba(50, 160, 255, 0.55);
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -309,7 +347,7 @@ input:focus-visible,
   font-weight: 700;
   line-height: 1.15;
   margin: 0 0 0.6rem 0;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
 }
 
 /* Estilizando o parágrafo de apoio das seções */
@@ -330,7 +368,7 @@ input:focus-visible,
   gap: 0.5rem 0.75rem;
   padding: 0.85rem 1.15rem;
   margin-bottom: 1.25rem;
-  background-color: #F4F8FF;
+  background-color: var(--cor-fundo-controles);
   border-radius: 16px;
 }
 
@@ -350,7 +388,7 @@ input:focus-visible,
 
 /* Transformando o slim select em um controle sublinhado dentro da frase */
 .controles-inline .ss-main {
-  --ss-font-color: #0A1E3C;
+  --ss-font-color: var(--cor-azul-escuro);
   --ss-bg-color: transparent;
   --ss-border-color: transparent;
   --ss-border-radius: 0;
@@ -359,7 +397,7 @@ input:focus-visible,
   --ss-spacing-m: 0.35rem;
   --ss-spacing-l: 0.5rem;
   border: none;
-  border-bottom: 2px solid rgba(50, 160, 255, 0.45);
+  border-bottom: 2px solid rgb(var(--cor-azul-claro-rgb) / 0.45);
   padding: 0 0.25rem 0.05rem 0.25rem;
   min-height: 0;
   font-size: var(--fonte-muito-grande-size);
@@ -390,13 +428,13 @@ input:focus-visible,
 /* Definindo a aparência moderna dos seletores fora da frase */
 .ss-main {
   --ss-primary-color: var(--cor-azul-medio);
-  --ss-bg-color: #FFFFFF;
-  --ss-font-color: #0A1E3C;
-  --ss-border-color: rgba(10, 30, 60, 0.16);
+  --ss-bg-color: var(--cor-branco);
+  --ss-font-color: var(--cor-azul-escuro);
+  --ss-border-color: rgb(var(--cor-azul-escuro-rgb) / 0.16);
   --ss-border-radius: 10px;
-  --ss-focus-color: rgba(50, 160, 255, 0.35);
+  --ss-focus-color: rgb(var(--cor-azul-claro-rgb) / 0.35);
   --ss-font-placeholder-color: var(--cor-texto-suave);
-  --ss-disabled-color: #F2F4F7;
+  --ss-disabled-color: var(--cor-fundo-desabilitado);
   font-size: var(--fonte-media-size);
   transition: border-color 0.18s ease, box-shadow 0.18s ease,
     background-color 0.18s ease;
@@ -438,8 +476,8 @@ input:focus-visible,
 
 /* Estilizando as fichas da seleção múltipla como pílulas leves */
 .ss-main .ss-values .ss-value {
-  background-color: rgba(50, 160, 255, 0.12);
-  border: 1px solid rgba(30, 90, 160, 0.25);
+  background-color: rgb(var(--cor-azul-claro-rgb) / 0.12);
+  border: 1px solid rgb(var(--cor-azul-medio-rgb) / 0.25);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -452,13 +490,13 @@ input:focus-visible,
 }
 
 .ss-main .ss-values .ss-value .ss-value-delete {
-  border-left: 1px solid rgba(30, 90, 160, 0.25);
+  border-left: 1px solid rgb(var(--cor-azul-medio-rgb) / 0.25);
   padding: 0.3rem 0.45rem;
   transition: background-color 0.15s ease;
 }
 
 .ss-main .ss-values .ss-value .ss-value-delete:hover {
-  background-color: rgba(30, 90, 160, 0.18);
+  background-color: rgb(var(--cor-azul-medio-rgb) / 0.18);
 }
 
 .ss-main .ss-values .ss-value .ss-value-delete svg path {
@@ -467,7 +505,7 @@ input:focus-visible,
 
 /* Alinhando o contador de fichas ocultas ao mesmo tom das pílulas */
 .ss-main .ss-values .ss-max {
-  background-color: rgba(50, 160, 255, 0.12);
+  background-color: rgb(var(--cor-azul-claro-rgb) / 0.12);
   color: var(--cor-azul-medio);
   font-size: var(--fonte-pequena-size);
   font-weight: 600;
@@ -479,20 +517,20 @@ input:focus-visible,
 /* Montando o dropdown como um cartão flutuante alinhado à identidade do painel */
 .ss-content {
   --ss-primary-color: var(--cor-azul-medio);
-  --ss-font-color: #0A1E3C;
-  --ss-bg-color: #FFFFFF;
+  --ss-font-color: var(--cor-azul-escuro);
+  --ss-bg-color: var(--cor-branco);
   --ss-border-color: var(--cor-linha);
-  --ss-font-placeholder-color: rgba(10, 30, 60, 0.45);
-  --ss-disabled-color: rgba(10, 30, 60, 0.04);
-  --ss-highlight-color: rgba(250, 200, 15, 0.34);
+  --ss-font-placeholder-color: rgb(var(--cor-azul-escuro-rgb) / 0.45);
+  --ss-disabled-color: rgb(var(--cor-azul-escuro-rgb) / 0.04);
+  --ss-highlight-color: rgb(var(--cor-amarelo-rgb) / 0.34);
   --ss-content-height: min(20rem, 56vh);
   --ss-spacing-l: 0.65rem;
   --ss-spacing-m: 0.45rem;
   --ss-spacing-s: 0.35rem;
   border: 1px solid var(--cor-linha);
-  background-color: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(10, 30, 60, 0.06),
-    0 18px 42px rgba(10, 30, 60, 0.14);
+  background-color: var(--cor-branco);
+  box-shadow: 0 2px 6px rgb(var(--cor-azul-escuro-rgb) / 0.06),
+    0 18px 42px rgb(var(--cor-azul-escuro-rgb) / 0.14);
   font-family: 'Source Sans Pro', system-ui, sans-serif;
   font-size: var(--fonte-media-size);
   z-index: 2000;
@@ -546,7 +584,7 @@ input:focus-visible,
   width: 0.9rem;
   height: 0.9rem;
   transform: translateY(-50%);
-  background-color: rgba(10, 30, 60, 0.45);
+  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.45);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E") center / contain no-repeat;
   pointer-events: none;
@@ -564,8 +602,8 @@ input:focus-visible,
   padding: 0 0.7rem 0 2.25rem;
   border: 1px solid transparent;
   border-radius: 10px;
-  background-color: rgba(10, 30, 60, 0.04);
-  color: #0A1E3C;
+  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.04);
+  color: var(--cor-azul-escuro);
   font-size: var(--fonte-media-size);
   line-height: 1;
   overflow-wrap: break-word;
@@ -574,18 +612,18 @@ input:focus-visible,
 }
 
 .ss-content > .ss-search input::placeholder {
-  color: rgba(10, 30, 60, 0.45);
+  color: rgb(var(--cor-azul-escuro-rgb) / 0.45);
 }
 
 .ss-content > .ss-search input:hover {
-  background-color: rgba(10, 30, 60, 0.07);
+  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.07);
 }
 
 .ss-content > .ss-search input:focus {
   outline: none;
-  background-color: #FFFFFF;
-  border-color: rgba(50, 160, 255, 0.55);
-  box-shadow: 0 0 0 3px rgba(50, 160, 255, 0.16);
+  background-color: var(--cor-branco);
+  border-color: rgb(var(--cor-azul-claro-rgb) / 0.55);
+  box-shadow: 0 0 0 3px rgb(var(--cor-azul-claro-rgb) / 0.16);
 }
 
 /* Desenhando o botão de limpar a busca no mesmo traço dos ícones do painel */
@@ -593,7 +631,7 @@ input:focus-visible,
   -webkit-appearance: none;
   width: 0.85rem;
   height: 0.85rem;
-  background-color: rgba(10, 30, 60, 0.45);
+  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.45);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
   cursor: pointer;
@@ -610,7 +648,7 @@ input:focus-visible,
 .ss-content .ss-list {
   padding: 0.3rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(10, 30, 60, 0.22) transparent;
+  scrollbar-color: rgb(var(--cor-azul-escuro-rgb) / 0.22) transparent;
   overscroll-behavior: contain;
 }
 
@@ -635,7 +673,7 @@ input:focus-visible,
   margin: 4px 0;
   padding: 0.35rem 0.6rem;
   border-radius: 8px;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
   font-size: var(--fonte-media-size);
   line-height: 1.35;
   overflow-wrap: break-word;
@@ -646,14 +684,14 @@ input:focus-visible,
 /* O !important vence a regra do plugin, que pinta a opção com a cor primária */
 .ss-content .ss-list .ss-option:hover,
 .ss-content .ss-list .ss-option.ss-highlighted {
-  background-color: rgba(50, 160, 255, 0.10) !important;
-  color: #0A1E3C !important;
+  background-color: rgb(var(--cor-azul-claro-rgb) / 0.10) !important;
+  color: var(--cor-azul-escuro) !important;
 }
 
 /* Pintando a opção selecionada com o azul médio cheio e texto branco */
 .ss-content .ss-list .ss-option.ss-selected {
   background-color: var(--cor-azul-medio) !important;
-  color: #FFFFFF !important;
+  color: var(--cor-branco) !important;
   font-weight: 600;
 }
 
@@ -662,15 +700,15 @@ input:focus-visible,
 .ss-content .ss-list .ss-option.ss-selected:hover,
 .ss-content .ss-list .ss-option.ss-selected.ss-highlighted {
   background-color: var(--cor-azul-medio) !important;
-  background-color: color-mix(in srgb, var(--cor-azul-medio) 85%, #0A1E3C) !important;
-  color: #FFFFFF !important;
+  background-color: color-mix(in srgb, var(--cor-azul-medio) 85%, var(--cor-azul-escuro)) !important;
+  color: var(--cor-branco) !important;
 }
 
 /* Apagando qualquer realce de hover da opção desabilitada */
 .ss-content .ss-list .ss-option.ss-disabled,
 .ss-content .ss-list .ss-option.ss-disabled:hover {
   background-color: transparent !important;
-  color: rgba(10, 30, 60, 0.35) !important;
+  color: rgb(var(--cor-azul-escuro-rgb) / 0.35) !important;
   cursor: not-allowed;
 }
 
@@ -725,7 +763,7 @@ input:focus-visible,
 .bloco-cabecalho .controles-inline {
   margin-bottom: 0;
   padding: 0.4rem 0.75rem;
-  background-color: #FFFFFF;
+  background-color: var(--cor-branco);
 }
 
 /* Estilizando o título dos blocos */
@@ -733,7 +771,7 @@ input:focus-visible,
   font-size: var(--fonte-titulos-sobre-size);
   font-weight: 700;
   margin: 0 0 0.25rem 0;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
 }
 
 /* Estilizando a descrição dos blocos */
@@ -763,7 +801,7 @@ input:focus-visible,
   height: clamp(420px, 60vh, 680px);
   border-radius: 14px;
   overflow: hidden;
-  background-color: #EDF1F7;
+  background-color: var(--cor-fundo-mapa);
 }
 
 /* Ajustando a altura do mapa em telas pequenas */
@@ -776,18 +814,18 @@ input:focus-visible,
 
 /* Removendo o fundo cinza padrão do leaflet */
 .leaflet-container {
-  background: #EDF1F7;
+  background: var(--cor-fundo-mapa);
   font-family: 'Source Sans Pro', system-ui, sans-serif;
 }
 
 /* Estilizando o tooltip do mapa */
 .leaflet-tooltip.tooltip-ibisma {
-  background: #FFFFFF;
+  background: var(--cor-branco);
   border: none;
   border-radius: 12px;
-  box-shadow: 0 10px 28px rgba(10, 30, 60, 0.18);
+  box-shadow: 0 10px 28px rgb(var(--cor-azul-escuro-rgb) / 0.18);
   padding: 0.7rem 0.85rem;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
 }
 
 /* Escondendo a seta do tooltip para um visual mais limpo */
@@ -837,7 +875,7 @@ input:focus-visible,
   padding: 0.12rem 0.55rem;
   border-radius: 999px;
   background-color: var(--cor-cat);
-  color: #FFFFFF;
+  color: var(--cor-branco);
   font-size: var(--fonte-pequena-size);
   font-weight: 600;
 }
@@ -879,7 +917,7 @@ input:focus-visible,
   width: 14px;
   height: 14px;
   border-radius: 4px;
-  border: 1px solid rgba(10, 30, 60, 0.12);
+  border: 1px solid rgb(var(--cor-azul-escuro-rgb) / 0.12);
   flex: 0 0 auto;
 }
 
@@ -936,12 +974,12 @@ input:focus-visible,
   padding: 0 0.7rem 0 2.25rem;
   border: 1px solid transparent;
   border-radius: 10px;
-  background-color: rgba(10, 30, 60, 0.04);
+  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.04);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A1E3C' stroke-opacity='0.45' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: 0.7rem center;
   background-size: 0.9rem 0.9rem;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
   font-size: var(--fonte-media-size);
   line-height: 1;
   transition: background-color 0.16s ease, border-color 0.16s ease,
@@ -949,20 +987,20 @@ input:focus-visible,
 }
 
 .painel-bloco--ranking .rt-search::placeholder {
-  color: rgba(10, 30, 60, 0.45);
+  color: rgb(var(--cor-azul-escuro-rgb) / 0.45);
 }
 
 .painel-bloco--ranking .rt-search:hover {
-  background-color: rgba(10, 30, 60, 0.07);
+  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.07);
 }
 
 /* Reforçando o estado de foco com o anel azul e a lupa na cor do painel */
 .painel-bloco--ranking .rt-search:focus,
 .painel-bloco--ranking .rt-search:active {
   outline: none;
-  background-color: #FFFFFF;
-  border-color: rgba(50, 160, 255, 0.55);
-  box-shadow: 0 0 0 3px rgba(50, 160, 255, 0.16);
+  background-color: var(--cor-branco);
+  border-color: rgb(var(--cor-azul-claro-rgb) / 0.55);
+  box-shadow: 0 0 0 3px rgb(var(--cor-azul-claro-rgb) / 0.16);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231E5AA0' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.8'/%3E%3Cpath d='M20 20l-3.4-3.4'/%3E%3C/svg%3E");
 }
 
@@ -1058,7 +1096,7 @@ input:focus-visible,
 
 /* Dando visibilidade ao foco por teclado nos campos com tooltip */
 .perfil-metricas .metrica-tooltip:focus-visible {
-  outline: 3px solid rgba(50, 160, 255, 0.55);
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -1083,7 +1121,7 @@ input:focus-visible,
 .metrica-valor {
   font-size: var(--fonte-grande-size);
   font-weight: 600;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
 }
 
 /* Estilizando detalhes opcionais das métricas */
@@ -1301,7 +1339,7 @@ input:focus-visible,
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.9rem 1rem 0.75rem 1rem;
-  background-color: #FFFFFF;
+  background-color: var(--cor-branco);
   border: 1px solid var(--cor-linha);
   border-radius: 14px;
 }
@@ -1315,7 +1353,7 @@ input:focus-visible,
 .evolucao-card__titulo {
   font-size: var(--fonte-grande-size);
   font-weight: 700;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
   margin: 0;
 }
 
@@ -1340,7 +1378,7 @@ input:focus-visible,
   grid-column: 1 / -1;
   font-size: var(--fonte-muito-grande-size);
   font-weight: 700;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
   margin: 0.5rem 0 0 0;
 }
 
@@ -1359,7 +1397,7 @@ input:focus-visible,
 .evolucao-identificacao__nomes {
   font-size: var(--fonte-muito-grande-size);
   font-weight: 700;
-  color: #0A1E3C;
+  color: var(--cor-azul-escuro);
 }
 
 /* Desenhando o traço que separa os nomes do período */
@@ -1398,7 +1436,7 @@ input:focus-visible,
   height: auto;
   max-height: 470px;
   overflow: visible;
-  filter: drop-shadow(0 4px 8px rgba(10, 30, 60, 0.05));
+  filter: drop-shadow(0 4px 8px rgb(var(--cor-azul-escuro-rgb) / 0.05));
 }
 
 /* Destacando cada pétala sob o mouse ou foco de teclado */
@@ -1416,7 +1454,7 @@ input:focus-visible,
 .grupo-petala:hover,
 .grupo-petala:focus-visible {
   opacity: 0.95;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 2px 6px rgb(var(--cor-preto-rgb) / 0.2));
 }
 
 /* Aumentando o círculo do valor quando a pétala está em destaque */
@@ -1455,7 +1493,7 @@ input:focus-visible,
 
 /* Deixando a seta da tooltip branca, igual ao fundo do cartão */
 .tooltip.tooltip-ibisma {
-  --bs-tooltip-bg: #FFFFFF;
+  --bs-tooltip-bg: var(--cor-branco);
 }
 
 /* Removendo a transparência padrão da tooltip */
@@ -1465,11 +1503,11 @@ input:focus-visible,
 
 /* Estilizando o cartão da tooltip no padrão do painel */
 .tooltip.tooltip-ibisma .tooltip-inner {
-  background-color: #FFFFFF;
-  color: #0A1E3C;
-  border: 1px solid #E3E6EB;
+  background-color: var(--cor-branco);
+  color: var(--cor-azul-escuro);
+  border: 1px solid var(--cor-borda);
   border-radius: 12px;
-  box-shadow: 0 10px 28px rgba(10, 30, 60, 0.18);
+  box-shadow: 0 10px 28px rgb(var(--cor-azul-escuro-rgb) / 0.18);
   padding: 0.65rem 0.8rem;
   font-family: 'Source Sans Pro', system-ui, sans-serif;
   font-size: var(--fonte-media-size);
@@ -1532,7 +1570,7 @@ input:focus-visible,
 /* Aumentando o ícone do estado vazio */
 .estado-vazio__icone {
   font-size: var(--fonte-titulos-size);
-  color: rgba(10, 30, 60, 0.25);
+  color: rgb(var(--cor-azul-escuro-rgb) / 0.25);
 }
 
 /* Ajustando o texto do estado vazio */
@@ -1544,12 +1582,7 @@ input:focus-visible,
 
 /* --------------------------------------------------------- esqueletos */
 
-/* Definindo as cores do brilho compartilhadas por todos os esqueletos */
-:root {
-  --cor-esqueleto-base: rgb(224 233 242 / 68%);
-  --cor-esqueleto-forte: rgb(224 233 242 / 88%);
-  --cor-esqueleto-guia: rgb(224 233 242 / 95%);
-}
+/* Usando as cores dos esqueletos definidas na paleta, no topo do arquivo */
 
 /* Empilhando o output e o esqueleto na mesma célula do slot */
 .esqueleto-slot {
@@ -1604,9 +1637,9 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 .esqueleto__controle {
   background-image: linear-gradient(
     90deg,
-    rgb(224 233 242 / 68%) 24%,
-    rgb(246 249 252 / 82%) 50%,
-    rgb(224 233 242 / 68%) 76%
+    var(--cor-esqueleto-base) 24%,
+    var(--cor-esqueleto-brilho) 50%,
+    var(--cor-esqueleto-base) 76%
   );
   background-size: 210% 100%;
   animation: loading-shimmer 1.7s infinite ease;
@@ -1674,7 +1707,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 .esqueleto--mapa {
   height: 100%;
   border-radius: 14px;
-  background-color: #EDF1F7;
+  background-color: var(--cor-fundo-mapa);
 }
 
 /* Posicionando o desenho sobre toda a área do mapa */
@@ -1740,7 +1773,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 .esqueleto__cabecalho {
   height: 23px;
-  border-bottom: 1px solid #DDE1E8;
+  border-bottom: 1px solid var(--cor-esqueleto-cabecalho);
 }
 
 .esqueleto__corpo {
@@ -1749,7 +1782,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 .esqueleto__linha {
   height: 29px;
-  border-bottom: 1px solid #F1F3F6;
+  border-bottom: 1px solid var(--cor-esqueleto-linha);
 }
 
 .esqueleto__celula {
@@ -1774,7 +1807,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   align-items: center;
   margin-top: 8px;
   padding: 6px 4px;
-  border-top: 1px solid #E3E6EB;
+  border-top: 1px solid var(--cor-borda);
   box-sizing: border-box;
 }
 
@@ -1857,7 +1890,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 .esqueleto__disco,
 .esqueleto__centro {
   fill: var(--cor-esqueleto-forte);
-  stroke: #FFFFFF;
+  stroke: var(--cor-branco);
   stroke-width: 2;
 }
 
@@ -1917,12 +1950,12 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 }
 
 .esqueleto__grade {
-  stroke: #EEF0F4;
+  stroke: var(--cor-esqueleto-grade);
   stroke-width: 1;
 }
 
 .esqueleto__eixo {
-  stroke: #E3E6EB;
+  stroke: var(--cor-borda);
   stroke-width: 1;
 }
 
@@ -1959,9 +1992,9 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   pointer-events: none;
   background-image: linear-gradient(
     90deg,
-    rgb(224 233 242 / 0%) 24%,
-    rgb(246 249 252 / 82%) 50%,
-    rgb(224 233 242 / 0%) 76%
+    rgb(var(--cor-esqueleto-rgb) / 0%) 24%,
+    var(--cor-esqueleto-brilho) 50%,
+    rgb(var(--cor-esqueleto-rgb) / 0%) 76%
   );
   background-size: 210% 100%;
   background-repeat: no-repeat;
@@ -1983,8 +2016,8 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 /* Montando o rodapé escuro do painel */
 .rodape-painel {
   margin-top: var(--espaco-secao);
-  background-color: #0A1E3C;
-  color: #FFFFFF;
+  background-color: var(--cor-azul-escuro);
+  color: var(--cor-branco);
   padding: 2.5rem 0 2rem 0;
 }
 
@@ -2006,7 +2039,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 /* Separando os blocos com uma linha vertical, como na referência */
 .rodape-bloco + .rodape-bloco {
-  border-left: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 1px solid rgb(var(--cor-branco-rgb) / 0.22);
   padding-left: 3rem;
 }
 
@@ -2016,7 +2049,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgb(var(--cor-branco-rgb) / 0.72);
   margin: 0;
 }
 
@@ -2039,14 +2072,14 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 /* Separando a base do rodapé com uma linha no container todo */
 .rodape-base {
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid rgb(var(--cor-branco-rgb) / 0.15);
   padding-top: 1.25rem;
 }
 
 /* Estilizando a nota final do rodapé */
 .rodape-nota {
   font-size: var(--fonte-aviso-size);
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(var(--cor-branco-rgb) / 0.7);
   max-width: 70rem;
   margin: 0;
 }
