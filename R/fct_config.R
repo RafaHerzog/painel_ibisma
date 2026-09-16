@@ -1,7 +1,8 @@
 # =============================================================================
 #   DEFINIÇÕES DO IBISMA E SUAS CORES
-#   Reúne o dicionário do índice (blocos, medidas e categorias), as rampas de
-#   cinco tons de cada medida e as funções de cor e contraste do painel.
+#   Reúne o dicionário do índice (blocos, medidas e categorias), as constantes
+#   de geração dos dados, as rampas de cinco tons de cada medida e as funções
+#   de cor do painel.
 #   Manter tudo aqui evita valores espalhados pelo código e facilita a evolução.
 # =============================================================================
 
