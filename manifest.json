@@ -2871,11 +2871,17 @@
     }
   },
   "files": {
+    ".posit/publish/deployments/deployment-BAQP.toml": {
+      "checksum": "c1d1d16116500be33dcd76f43d7576df"
+    },
+    ".posit/publish/painel_ibisma-GABA.toml": {
+      "checksum": "1728e8d26a252c4a597a9fe1103686b5"
+    },
     ".Rbuildignore": {
       "checksum": "1bd0c82832b02d7986a9f5f923ee5828"
     },
     "AGENTS.md": {
-      "checksum": "44d6e24633dc1c82d55d94e9643bdd37"
+      "checksum": "85d76e3989e737cc90f994e9f0e467fd"
     },
     "app.R": {
       "checksum": "8796f966692d08163311a9494ad2d1a5"
@@ -2929,10 +2935,10 @@
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
     },
     "inst/app/www/global/custom.css": {
-      "checksum": "8c9a10f582fa95ed9424c6cb82213e0c"
+      "checksum": "ba34587d2fbf7cc3fb74ea5faa25fabe"
     },
     "inst/app/www/global/funcoes_javascript.js": {
-      "checksum": "eb4cfaa323b70f86d655cf2f10542886"
+      "checksum": "9ccd2f707eb4467e0cc2b43c3cf1c641"
     },
     "inst/app/www/logos/favicon.ico": {
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
@@ -3025,16 +3031,16 @@
       "checksum": "22b566bb17f87d200abf6e7aec94dc0b"
     },
     "R/fct_dados.R": {
-      "checksum": "29e97053b88a22e8ab1a8d44a2d7e9db"
+      "checksum": "a4c7c4246edea3fef66e69a1eae438a3"
     },
     "R/fct_esqueleto.R": {
       "checksum": "facf966876115336dff5c1ed713136aa"
     },
     "R/fct_graficos_evolucao.R": {
-      "checksum": "840c307ab627d9a043df30e69b61ce0c"
+      "checksum": "35acc4ebf00f5f8149b635c7896e2a4f"
     },
     "R/fct_mapa.R": {
-      "checksum": "4a6859ee55f40fe5b85b70b72f158120"
+      "checksum": "32ed19976ffb7639a20113def32fbbac"
     },
     "R/fct_perfil.R": {
       "checksum": "39157a2dcc7eaaddb3dcbad4ee84ebde"
@@ -3046,10 +3052,10 @@
       "checksum": "2d8cd0a65eb70df2565b6c2a3378bc1e"
     },
     "R/mod_como.R": {
-      "checksum": "8cd1d7a134648f785c7b7190fcc0bcef"
+      "checksum": "677f98a37b6b47263539cb7bd25c4c80"
     },
     "R/mod_onde.R": {
-      "checksum": "6360c7d5d662b3e19bfcbd99686964a7"
+      "checksum": "e0ca4c2552667bee8225a5432ac04ef8"
     },
     "R/painel_ibisma-package.R": {
       "checksum": "3071f23bb815b0bcaee29a97ba422ea1"
