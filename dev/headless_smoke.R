@@ -187,7 +187,7 @@ for (tentativa in seq_len(max(1, espera))) {
   Sys.sleep(1)
 }
 if (!concluido) {
-  cat("AVISO: renderiza\u00e7\u00f5es n\u00e3o conclu\u00edram no tempo esperado. Estado:", estado, "\n")
+  cat("AVISO: renderizações não concluíram no tempo esperado. Estado:", estado, "\n")
 }
 
 # Rolando a página quando pedido, útil para capturar seções específicas

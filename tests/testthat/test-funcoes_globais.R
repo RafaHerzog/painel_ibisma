@@ -24,7 +24,7 @@ if (tem_base) {
 
 # Pulando os testes da base quando o CSV do data-raw não está presente
 exigir_base <- function() {
-  testthat::skip_if_not(tem_base, "CSV da base bruta n\u00e3o dispon\u00edvel")
+  testthat::skip_if_not(tem_base, "CSV da base bruta não disponível")
 }
 
 test_that("os dados prontos têm cadastro, anos e séries completos", {
@@ -689,7 +689,7 @@ test_that("o ranking descreve o clique na tabela logo acima dela", {
   expect_true(grepl(
     paste0(
       'class="bloco-descricao bloco-descricao--tabela"',
-      ">Clique em um munic\u00edpio para destac\u00e1-lo em todo o painel.</p>"
+      ">Clique em um município para destacá-lo em todo o painel.</p>"
     ),
     ui,
     fixed = TRUE
@@ -816,7 +816,7 @@ test_that("dados_mapa alinha os valores à malha em formato compacto", {
   )
   expect_false(any(grepl("tooltip-mapa", base$valor_texto)))
   expect_true(all(base$categoria_cod %in% 1:5))
-  expect_false(any(base$valor_texto == "\u2014"))
+  expect_false(any(base$valor_texto == "—"))
 
   # O valor em texto segue a convenção brasileira e a ordem da malha
   valor_tabela <- valores_ano(dados, ano, "indice_final")
@@ -830,9 +830,9 @@ test_that("dados_mapa alinha os valores à malha em formato compacto", {
   # Municípios sem valor no ano viram "Sem dados" em cinza (Borá/2023)
   base_2023 <- dados_mapa(dados, 2023L, "indice_final")
   bora <- which(malha$codmunres == 350720)
-  expect_equal(base_2023$valor_texto[bora], "\u2014")
+  expect_equal(base_2023$valor_texto[bora], "—")
   expect_true(is.na(base_2023$categoria_cod[bora]))
-  expect_equal(base_2023$municipio[bora], "Bor\u00e1")
+  expect_equal(base_2023$municipio[bora], "Borá")
 })
 
 test_that("mensagem_mapa usa a paleta e as cores de texto da medida exibida", {

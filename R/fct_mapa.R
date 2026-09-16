@@ -51,7 +51,7 @@ carregar_desenho_municipios <- function() {
     arquivo <- app_sys("app", "data", "malha_mapa.rds")
     if (!file.exists(arquivo)) {
       stop(
-        "Desenho do mapa n\u00e3o encontrado. ",
+        "Desenho do mapa não encontrado. ",
         "Rode data-raw/cria_rda.R para gerar o arquivo."
       )
     }
@@ -88,7 +88,7 @@ dados_mapa <- function(dados, ano, medida) {
   data.frame(
     municipio = dados$municipios$municipio[cadastro],
     sigla_uf = dados$municipios$sigla_uf[cadastro],
-    valor_texto = ifelse(is.na(valor), "\u2014", formatar_numero(valor)),
+    valor_texto = ifelse(is.na(valor), "—", formatar_numero(valor)),
     categoria_cod = match(categoria, CATEGORIAS),
     stringsAsFactors = FALSE
   )

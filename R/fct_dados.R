@@ -44,7 +44,7 @@ tabela_ano <- function(dados, ano) {
   )
   if (!file.exists(arquivo)) {
     stop(
-      "Tabela do ano ", ano, " n\u00e3o encontrada. ",
+      "Tabela do ano ", ano, " não encontrada. ",
       "Rode data-raw/cria_rda.R para gerar os arquivos."
     )
   }
@@ -116,7 +116,7 @@ series_tem_valor <- function(series) {
 nome_municipio <- function(dados, codmunres) {
   info <- dados$municipios[dados$municipios$codmunres == codmunres, ]
   if (nrow(info) == 0) {
-    return("Munic\u00edpio")
+    return("Município")
   }
   paste0(info$municipio[1], " (", info$sigla_uf[1], ")")
 }
@@ -188,5 +188,5 @@ formatar_inteiro <- function(x) {
 #' Usada em: fct_perfil.R (placar) e fct_petalas.R (tooltip da pétala).
 #' @noRd
 rotulo_posicao <- function(posicao, total) {
-  paste0(formatar_inteiro(posicao), "\u00ba de ", formatar_inteiro(total))
+  paste0(formatar_inteiro(posicao), "º de ", formatar_inteiro(total))
 }

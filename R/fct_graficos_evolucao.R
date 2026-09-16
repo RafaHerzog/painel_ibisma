@@ -296,7 +296,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
   grafico <- echarts4r::e_charts(dados, ano, renderer = "svg") |>
     echarts4r::e_line_(
       serie = "principal",
-      name = if (is.null(nome)) "Munic\u00edpio" else nome,
+      name = if (is.null(nome)) "Município" else nome,
       symbol = "circle",
       symbolSize = tamanho,
       showSymbol = TRUE,
@@ -317,7 +317,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
     grafico <- grafico |>
       echarts4r::e_line_(
         serie = "comparacao",
-        name = if (is.null(nome_comparacao)) "Compara\u00e7\u00e3o" else nome_comparacao,
+        name = if (is.null(nome_comparacao)) "Comparação" else nome_comparacao,
         symbol = "circle",
         symbolSize = tamanho - 1,
         showSymbol = TRUE,

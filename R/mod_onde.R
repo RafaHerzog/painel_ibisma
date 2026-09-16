@@ -69,7 +69,7 @@ mod_onde_ui <- function(id) {
           htmltools::tags$div(
             class = "bloco-cabecalho",
             htmltools::tags$div(
-              htmltools::tags$h3(class = "bloco-titulo", "Distribui\u00e7\u00e3o no territ\u00f3rio"),
+              htmltools::tags$h3(class = "bloco-titulo", "Distribuição no território"),
               htmltools::tags$p(
                 class = "bloco-descricao",
                 "Passe o mouse para ver o valor e a categoria. Clique em um município para destacá-lo em todo o painel."
@@ -94,7 +94,7 @@ mod_onde_ui <- function(id) {
           class = "painel-bloco painel-bloco--ranking",
           htmltools::tags$div(
             class = "bloco-cabecalho",
-            htmltools::tags$h3(class = "bloco-titulo", "Ranking dos munic\u00edpios"),
+            htmltools::tags$h3(class = "bloco-titulo", "Ranking dos municípios"),
             # Mantendo o resumo com o próprio estilo, sem classe de descrição
             esqueleto_slot(
               shiny::textOutput(ns("ranking_resumo"), inline = TRUE),
@@ -111,7 +111,7 @@ mod_onde_ui <- function(id) {
           # Explicando o clique na tabela logo acima dela, com leve respiro
           htmltools::tags$p(
             class = "bloco-descricao bloco-descricao--tabela",
-            "Clique em um munic\u00edpio para destac\u00e1-lo em todo o painel."
+            "Clique em um município para destacá-lo em todo o painel."
           ),
           # Tabela interativa com a lista de municípios e esqueleto empilhado
           esqueleto_slot(
@@ -121,7 +121,7 @@ mod_onde_ui <- function(id) {
           ),
           htmltools::tags$p(
             class = "bloco-nota",
-            "Valores de 0 a 100. A posi\u00e7\u00e3o 1\u00ba indica o munic\u00edpio mais vulner\u00e1vel do escopo escolhido."
+            "Valores de 0 a 100. A posição 1º indica o município mais vulnerável do escopo escolhido."
           )
         )
       )
@@ -232,7 +232,7 @@ mod_onde_server <- function(id, dados, municipio) {
     output$legenda <- shiny::renderUI({
       legenda_categorias(
         paleta = PALETAS[[input$medida]],
-        titulo = "N\u00edvel de inseguran\u00e7a"
+        titulo = "Nível de insegurança"
       )
     })
 
@@ -275,8 +275,8 @@ mod_onde_server <- function(id, dados, municipio) {
         paste0("de ", nome_uf(escopo))
       }
       paste0(
-        formatar_inteiro(total), " munic\u00edpios ", local,
-        " em ", input$ano, " \u00b7 ", nome_medida(input$medida, prefixo_bloco = TRUE)
+        formatar_inteiro(total), " municípios ", local,
+        " em ", input$ano, " · ", nome_medida(input$medida, prefixo_bloco = TRUE)
       )
     })
 
@@ -305,11 +305,11 @@ mod_onde_server <- function(id, dados, municipio) {
         searchable = TRUE,
         searchMethod = busca_sem_acento,
         language = reactable::reactableLang(
-          searchPlaceholder = "Buscar munic\u00edpio...",
-          noData = "Nenhum munic\u00edpio encontrado",
+          searchPlaceholder = "Buscar município...",
+          noData = "Nenhum município encontrado",
           pagePrevious = "Anterior",
-          pageNext = "Pr\u00f3xima",
-          pageInfo = "{rowStart}\u2013{rowEnd} de {rows} munic\u00edpios"
+          pageNext = "Próxima",
+          pageInfo = "{rowStart}–{rowEnd} de {rows} municípios"
         ),
         defaultSorted = "posicao",
         defaultSortOrder = "asc",
@@ -329,10 +329,10 @@ mod_onde_server <- function(id, dados, municipio) {
           posicao = reactable::colDef(
             name = "Pos.", width = 62, align = "right", sticky = "left",
             cell = reactable::JS(
-              "function (cellInfo) { return cellInfo.value + '\u00ba'; }"
+              "function (cellInfo) { return cellInfo.value + 'º'; }"
             )
           ),
-          municipio = reactable::colDef(name = "Munic\u00edpio", minWidth = 170),
+          municipio = reactable::colDef(name = "Município", minWidth = 170),
           sigla_uf = reactable::colDef(name = "UF", width = 54),
           valor = reactable::colDef(
             name = "Valor", width = 84, align = "right",

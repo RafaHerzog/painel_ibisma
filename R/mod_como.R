@@ -35,10 +35,10 @@ mod_como_ui <- function(id) {
       # Cabeçalho editorial da seção
       titulo_secao(
         eyebrow = "Como?",
-        titulo = "Como a inseguran\u00e7a se apresenta no munic\u00edpio?",
+        titulo = "Como a insegurança se apresenta no município?",
         descricao = paste(
-          "Escolha um munic\u00edpio para ver a situa\u00e7\u00e3o no ano selecionado",
-          "e a evolu\u00e7\u00e3o ao longo do tempo, comparando com outro munic\u00edpio",
+          "Escolha um município para ver a situação no ano selecionado",
+          "e a evolução ao longo do tempo, comparando com outro município",
           "quando quiser."
         )
       ),
@@ -86,7 +86,7 @@ mod_como_ui <- function(id) {
         class = "painel-bloco painel-bloco--evolucao",
         htmltools::tags$div(
           class = "bloco-cabecalho",
-          htmltools::tags$h3(class = "bloco-titulo", "Evolu\u00e7\u00e3o ao longo do tempo"),
+          htmltools::tags$h3(class = "bloco-titulo", "Evolução ao longo do tempo"),
           htmltools::tags$p(
             class = "bloco-descricao",
             paste(
@@ -236,7 +236,7 @@ mod_como_server <- function(id, dados, municipio) {
         municipio = info(),
         resumo = resumo(),
         ano = ano(),
-        rotulo = if (tem_comparacao()) "Munic\u00edpio principal" else NULL
+        rotulo = if (tem_comparacao()) "Município principal" else NULL
       )
     })
 
@@ -248,7 +248,7 @@ mod_como_server <- function(id, dados, municipio) {
         resumo = resumo_comparacao(),
         ano = ano(),
         comparado = TRUE,
-        rotulo = "Munic\u00edpio comparado"
+        rotulo = "Município comparado"
       )
     })
 
@@ -346,7 +346,7 @@ mod_como_server <- function(id, dados, municipio) {
         htmltools::tags$span(class = "evolucao-identificacao__separador", "|"),
         htmltools::tags$span(
           class = "evolucao-identificacao__periodo",
-          paste0(periodos[1], " \u2013 ", periodos[2])
+          paste0(periodos[1], " – ", periodos[2])
         )
       )
     })
