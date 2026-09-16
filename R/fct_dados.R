@@ -138,7 +138,7 @@ nome_uf <- function(sigla) {
 #' @param medida Vetor de identificadores de medida ("indice_final", "bloco1"...).
 #' @param prefixo_bloco Se TRUE, usa o rótulo com o prefixo "Bloco".
 #' @return Vetor de nomes legíveis, na mesma ordem da entrada.
-#' Usada em: fct_graficos.R (títulos dos cartões), fct_mapa.R (tooltip do mapa),
+#' Usada em: fct_graficos_evolucao.R (títulos dos cartões), fct_mapa.R (tooltip do mapa),
 #' mod_como.R (resumo do município) e mod_onde.R (resumo do ranking).
 #' @noRd
 nome_medida <- function(medida, prefixo_bloco = FALSE) {

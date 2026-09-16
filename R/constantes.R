@@ -74,7 +74,7 @@ PALETAS <- list(
 # Definindo as sete medidas na ordem canônica do painel
 # A ordem manda nas colunas das séries, nos sete gráficos e nos seletores
 # A coluna cor é a cor de identificação: tom central dos blocos e topo do índice
-## Usada em: fct_dados.R (colunas das séries), fct_graficos.R (sete cartões e eixos), fct_cores.R (cor_medida) e mod_como.R (laço dos gráficos).
+## Usada em: fct_dados.R (colunas das séries), fct_graficos_evolucao.R (sete cartões e eixos), fct_cores.R (cor_medida) e mod_como.R (laço dos gráficos).
 MEDIDAS <- data.frame(
   medida  = c(
     "indice_final",
@@ -116,7 +116,7 @@ MEDIDAS <- data.frame(
 )
 
 # Definindo os seis blocos como o recorte das medidas sem o índice
-## Usada em: mod_como.R (pétalas e eixos), fct_graficos.R (grade da evolução) e fct_esqueleto.R (esqueleto da grade).
+## Usada em: mod_como.R (pétalas e eixos), fct_graficos_evolucao.R (grade da evolução) e fct_esqueleto.R (esqueleto da grade).
 BLOCOS <- MEDIDAS[MEDIDAS$medida != "indice_final", ]
 row.names(BLOCOS) <- NULL
 

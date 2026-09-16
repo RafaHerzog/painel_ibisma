@@ -13,7 +13,7 @@
 mod_como_ui <- function(id) {
   ns <- shiny::NS(id)
 
-  ## Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
+  ## Obs.: este bloco usa funções auxiliares de fct_dados, fct_ui e fct_esqueleto.
   # Montando as opções de municípios em ordem alfabética, com a UF no rótulo
   municipios <- dados_ibisma()$municipios
   municipios <- municipios[order(municipios$municipio, municipios$sigla_uf), ]
@@ -261,7 +261,7 @@ mod_como_server <- function(id, dados, municipio) {
     }, ignoreInit = TRUE)
 
     # ----- Evolução temporal -----
-    ## Obs.: este bloco usa funções auxiliares de fct_graficos, fct_dados e utils_ui.
+    ## Obs.: este bloco usa funções auxiliares de fct_graficos_evolucao, fct_dados e fct_ui.
 
     # Montando as séries das sete medidas de cada município
     series_principal <- shiny::reactive(series_municipio(dados, municipio()))

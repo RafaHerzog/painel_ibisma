@@ -1,8 +1,7 @@
 # =============================================================================
-#   FUNÇÕES AUXILIARES DE GRÁFICOS
-#   Monta os gráficos do painel com echarts4r (licença Apache 2.0), entre eles
-#   a evolução temporal do IBISMA e dos seis blocos. O leque de pétalas fica
-#   em fct_petalas.R, em SVG.
+#   FUNÇÕES AUXILIARES DA EVOLUÇÃO TEMPORAL
+#   Monta os gráficos de evolução do IBISMA e dos seis blocos com echarts4r
+#   (licença Apache 2.0). O leque de pétalas fica em fct_petalas.R, em SVG.
 # =============================================================================
 
 # Definindo a família de fontes usada em todos os gráficos
@@ -29,7 +28,7 @@ LARGURA_ROTULOS_ANOS <- 340L
 #' @param formatter Função JavaScript com o conteúdo do tooltip (opcional).
 #' @param extras Lista com opções adicionais do tooltip (opcional).
 #' @return Objeto echarts4r com o tooltip configurado.
-#' Usada em: fct_graficos.R (grafico_evolucao).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao).
 #' @noRd
 tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras = list()) {
   # Reunindo o estilo padrão com as opções específicas de cada gráfico
@@ -60,7 +59,7 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
 #' @param series Data frame retornado por series_municipio().
 #' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
 #' @return Piso em dezena para o eixo começar perto dos dados (0 a 90).
-#' Usada em: fct_graficos.R (grafico_evolucao) e mod_como.R (limites do eixo).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao) e mod_como.R (limites do eixo).
 #' @noRd
 piso_eixo_y <- function(series, medidas = MEDIDAS$medida) {
   # Reunindo os valores das medidas pedidas em um único vetor
@@ -80,7 +79,7 @@ piso_eixo_y <- function(series, medidas = MEDIDAS$medida) {
 #' @param series Data frame retornado por series_municipio().
 #' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
 #' @return Teto em dezena para o eixo terminar perto dos dados (10 a 100).
-#' Usada em: fct_graficos.R (grafico_evolucao) e mod_como.R (limites do eixo).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao) e mod_como.R (limites do eixo).
 #' @noRd
 teto_eixo_y <- function(series, medidas = MEDIDAS$medida) {
   # Reunindo os valores das medidas pedidas em um único vetor
@@ -99,7 +98,7 @@ teto_eixo_y <- function(series, medidas = MEDIDAS$medida) {
 #'
 #' @param valores Vetor numérico de uma série.
 #' @return Último valor não ausente ou NA quando não houver nenhum.
-#' Usada em: fct_graficos.R (lados_rotulos).
+#' Usada em: fct_graficos_evolucao.R (lados_rotulos).
 #' @noRd
 ultimo_valor <- function(valores) {
   validos <- valores[!is.na(valores)]
@@ -120,7 +119,7 @@ ultimo_valor <- function(valores) {
 #' @param minimo_y Piso do eixo Y.
 #' @param maximo_y Teto do eixo Y.
 #' @return Lista com lado e afastamento vertical do rótulo de cada série.
-#' Usada em: fct_graficos.R (grafico_evolucao).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao).
 #' @noRd
 lados_rotulos <- function(dados, minimo_y, maximo_y) {
   # Calculando a posição relativa do fim de cada série dentro do eixo
@@ -196,7 +195,7 @@ lados_rotulos <- function(dados, minimo_y, maximo_y) {
 #' @param cor Cor do texto, igual à cor da série.
 #' @param opacidade Opacidade do texto (menor na série comparada).
 #' @return Lista com as opções do endLabel do echarts.
-#' Usada em: fct_graficos.R (grafico_evolucao).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao).
 #' @noRd
 opcoes_rotulo_serie <- function(rotulo, cor, opacidade = 1) {
   acima <- identical(rotulo$lado, "acima")
@@ -221,7 +220,7 @@ opcoes_rotulo_serie <- function(rotulo, cor, opacidade = 1) {
 #' Definindo uma função que monta o JavaScript que rotaciona os rótulos de ano conforme a largura
 #'
 #' @return Texto de função JavaScript executada pelo htmlwidgets no cliente.
-#' Usada em: fct_graficos.R (grafico_evolucao).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao).
 #' @noRd
 rotulos_anos_js <- function() {
   paste0(
@@ -391,7 +390,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
 #' Definindo uma função que monta o JavaScript do tooltip da evolução temporal
 #'
 #' @return Texto de função JavaScript para o echarts.
-#' Usada em: fct_graficos.R (grafico_evolucao).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao).
 #' @noRd
 tooltip_evolucao_js <- function() {
   paste0(

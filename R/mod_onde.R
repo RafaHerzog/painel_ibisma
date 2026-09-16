@@ -31,7 +31,7 @@ mod_onde_ui <- function(id) {
     c("Brasil (nacional)", paste0(ufs_escopo$uf, " (", ufs_escopo$sigla_uf, ")"))
   )
 
-  # Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
+  # Obs.: este bloco usa funções auxiliares de fct_dados, fct_ui e fct_esqueleto.
   htmltools::tags$section(
     id = "onde",
     class = "secao-painel",
@@ -237,7 +237,7 @@ mod_onde_server <- function(id, dados, municipio) {
     })
 
     # ----- Ranking -----
-    ## Obs.: este bloco usa funções auxiliares de fct_dados, constantes, fct_cores e utils_ui.
+    ## Obs.: este bloco usa funções auxiliares de fct_dados, constantes, fct_cores e fct_ui.
 
     # Montando a tabela do ranking conforme medida, ano e escopo escolhidos
     tabela_ranking <- shiny::reactive({

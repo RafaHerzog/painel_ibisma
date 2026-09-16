@@ -9,7 +9,7 @@
 #'
 #' @param medida Vetor de identificadores de medida ("indice_final", "bloco1"...).
 #' @return Vetor de cores em hexadecimal, na mesma ordem da entrada.
-#' Usada em: fct_graficos.R, fct_petalas.R, mod_como.R (resumo dos blocos) e mod_onde.R (tema do ranking).
+#' Usada em: fct_graficos_evolucao.R, fct_petalas.R, mod_como.R (resumo dos blocos) e mod_onde.R (tema do ranking).
 #' @noRd
 cor_medida <- function(medida) {
   # Buscando a cor de cada medida no dicionário
@@ -21,7 +21,7 @@ cor_medida <- function(medida) {
 #' @param categoria Vetor de categorias ("Muito baixo" ... "Muito alto").
 #' @param medida Identificador da medida que define a rampa de cores.
 #' @return Vetor de cores em hexadecimal, com cinza para valores ausentes.
-#' Usada em: fct_mapa.R (cores e tooltip do mapa), fct_petalas.R (tooltip da pétala) e utils_ui.R (selos de categoria).
+#' Usada em: fct_mapa.R (cores e tooltip do mapa), fct_petalas.R (tooltip da pétala) e fct_ui.R (selos de categoria).
 #' @noRd
 cor_categoria <- function(categoria, medida = "indice_final") {
   # Buscando cada categoria na rampa da medida e tratando valores sem dado
@@ -34,7 +34,7 @@ cor_categoria <- function(categoria, medida = "indice_final") {
 #'
 #' @param cor Cor de fundo em hexadecimal.
 #' @return "#FFFFFF" para fundos escuros e a cor azul escura para fundos claros.
-#' Usada em: fct_mapa.R (tooltip do mapa), fct_petalas.R (disco da pétala), mod_onde.R (tema do ranking) e utils_ui.R (selos de categoria).
+#' Usada em: fct_mapa.R (tooltip do mapa), fct_petalas.R (disco da pétala), mod_onde.R (tema do ranking) e fct_ui.R (selos de categoria).
 #' @noRd
 cor_texto_sobre <- function(cor) {
   # Calculando a luminância relativa do fundo informado

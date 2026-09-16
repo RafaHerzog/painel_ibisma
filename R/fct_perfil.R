@@ -65,7 +65,7 @@ frase_percentil <- function(valor) {
 #' Usada em: perfil_palco().
 #' @noRd
 perfil_placar <- function(resumo, ano) {
-  ## Obs.: este bloco usa funções auxiliares de utils_ui, fct_dados e fct_perfil.
+  ## Obs.: este bloco usa funções auxiliares de fct_ui, fct_dados e fct_perfil.
   htmltools::tags$div(
     class = "perfil-placar",
     # Valor do IBISMA nomeado, com categoria e leitura do percentil
@@ -121,7 +121,7 @@ perfil_placar <- function(resumo, ano) {
 #' @noRd
 perfil_palco <- function(municipio, resumo, ano,
                          comparado = FALSE, rotulo = NULL) {
-  ## Obs.: este bloco usa funções auxiliares de utils_ui e fct_petalas.
+  ## Obs.: este bloco usa funções auxiliares de fct_ui e fct_petalas.
   # Reunindo as classes do palco e marcando quando ele é o comparado
   classes <- c("painel-bloco", "painel-bloco--palco")
   if (comparado) {
