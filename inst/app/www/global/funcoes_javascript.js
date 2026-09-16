@@ -15,8 +15,9 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
 /* =============================================================================
    DESENHO E ATUALIZAÇÃO DO MAPA
    O desenho dos municípios chega pronto do servidor, como texto JSON gerado no
-   ETL; o binding do próprio leaflet cria as camadas, e as cores e tooltips são
-   atualizados a cada troca de ano ou de medida.
+   ETL; o binding do próprio leaflet cria as camadas e as cores são atualizadas
+   a cada troca de ano ou de medida. O hover usa um único tooltip do mapa, que
+   lê os dados do município sob o cursor, em vez de um tooltip por município.
    ============================================================================= */
 (function () {
   /* Definindo o estilo das camadas de município e do realce de hover */
@@ -33,16 +34,16 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     fillOpacity: 0.95,
     bringToFront: true
   };
-  /* Definindo as opções dos tooltips, iguais às do mapa do painel */
+  /* Definindo as opções do tooltip único, posicionado a cada evento do cursor */
   var OPCOES_TOOLTIP = {
     direction: "auto",
-    sticky: true,
     opacity: 1,
     className: "tooltip-ibisma"
   };
 
-  /* Guardando a ordem das camadas de cada mapa para as mensagens seguintes */
+  /* Guardando a ordem das camadas e os dados de cada mapa do painel */
   var camadasPorMapa = {};
+  var dadosPorMapa = {};
 
   /* Montando o HTML do tooltip de um município a partir da mensagem compacta */
   function montarTooltip(mensagem, i) {
@@ -66,10 +67,12 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       '</div>';
   }
 
-  /* Repintando uma camada por vez e amarrando o tooltip na primeira vez */
+  /* Repintando as camadas e guardando os dados que o tooltip único consulta */
   function aplicarDados(mapa, mensagem, layers) {
     var camadas = mapa.layerManager._byLayerId;
     if (!camadas) return;
+    /* Guardando a mensagem do mapa para o hover montar o tooltip do município */
+    dadosPorMapa[mensagem.id] = mensagem;
     /* As camadas dos municípios guardam o ID após o caractere de quebra de linha */
     for (var i = 0; i < layers.length; i++) {
       var camada = camadas["shape\n" + layers[i]];
@@ -78,13 +81,45 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       var cor = categoria ? mensagem.paleta[categoria - 1] : mensagem.cor_sem_dados;
       /* Repintando apenas o preenchimento, já que a divisa branca é fixa */
       camada.setStyle({ fillColor: cor, fillOpacity: 0.95 });
-      var rotulo = montarTooltip(mensagem, i);
-      if (camada.getTooltip && camada.getTooltip()) {
-        camada.setTooltipContent(rotulo);
-      } else if (camada.bindTooltip) {
-        camada.bindTooltip(rotulo, OPCOES_TOOLTIP);
-      }
+      /* Anotando o índice do município para o hover achar os dados sem busca */
+      camada._ibisma_indice = i;
+      /* Fazendo os eventos da camada subirem ao mapa, como no FeatureGroup */
+      camada.addEventParent(mapa);
     }
+  }
+
+  /* Criando um único tooltip por mapa, atualizado pelo município sob o cursor */
+  function prepararTooltip(mapa, id) {
+    /* Criando o tooltip apenas na primeira vez em que o mapa é desenhado */
+    if (mapa._ibismaTooltip) return;
+    var tooltip = L.tooltip(OPCOES_TOOLTIP);
+    var mostrando = false;
+
+    /* Mostrando o tooltip do município que o cursor acabou de encontrar */
+    mapa.on("mouseover", function (e) {
+      var indice = e.layer && e.layer._ibisma_indice;
+      var dados = dadosPorMapa[id];
+      if (typeof indice !== "number" || !dados) return;
+      tooltip.setContent(montarTooltip(dados, indice));
+      tooltip.setLatLng(e.latlng);
+      if (!mapa.hasLayer(tooltip)) mapa.addLayer(tooltip);
+      mostrando = true;
+    });
+
+    /* Acompanhando o cursor enquanto o tooltip estiver à mostra */
+    mapa.on("mousemove", function (e) {
+      if (mostrando) tooltip.setLatLng(e.latlng);
+    });
+
+    /* Escondendo o tooltip ao sair do município */
+    mapa.on("mouseout", function (e) {
+      if (!e.layer || typeof e.layer._ibisma_indice !== "number") return;
+      mostrando = false;
+      if (mapa.hasLayer(tooltip)) mapa.removeLayer(tooltip);
+    });
+
+    /* Guardando a instância para não criar um segundo tooltip no mesmo mapa */
+    mapa._ibismaTooltip = tooltip;
   }
 
   /* Criando as camadas dos municípios com o binding do leaflet e os dados iniciais */
@@ -106,12 +141,15 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       null, null, null, null, REALCE_MUNICIPIO
     );
 
-    /* Guardando a ordem das camadas e preenchendo cores e tooltips */
+    /* Guardando a ordem das camadas e preenchendo as cores dos municípios */
     camadasPorMapa[mensagem.id] = mensagem.layers;
     aplicarDados(mapa, mensagem, mensagem.layers);
+
+    /* Ligando o tooltip único do mapa, que lê os dados sob o cursor */
+    prepararTooltip(mapa, mensagem.id);
   });
 
-  /* Atualizando cores e tooltips dos municípios já desenhados no mapa */
+  /* Atualizando as cores dos municípios já desenhados no mapa */
   Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
     var widget = window.HTMLWidgets && HTMLWidgets.find("#" + mensagem.id);
     if (!widget || typeof widget.getMap !== "function") return;
