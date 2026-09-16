@@ -10,7 +10,7 @@
 #     3. Base longa (memória)
 #     4. Tabelas por ano (inst/app/data/tabela_ano_*.rds)
 #     5. Cadastro, anos e séries (inst/app/data/dados_ibisma.rds)
-#     6. Malha geográfica
+#     6. Malha geográfica e desenho do mapa (inst/app/data/malha_mapa.rds)
 # =============================================================================
 
 library(dplyr)
@@ -244,16 +244,17 @@ cat(
 )
 
 # =============================================================================
-#   6. MALHA GEOGRÁFICA
+#   6. MALHA GEOGRÁFICA E DESENHO DO MAPA
 # =============================================================================
 
 library(geobr)
 library(sf)
 library(rmapshaper)
+library(jsonlite)
 
-# Arredondando as coordenadas para 5 casas (cerca de 1 metro), sem perda
-# visual no zoom máximo do painel e com um volume bem menor para o navegador
-arredondar_coordenadas <- function(geometria, casas = 5) {
+# Arredondando as coordenadas para 4 casas (cerca de 11 metros), abaixo de um
+# pixel na escala máxima do painel e com um volume bem menor para o navegador
+arredondar_coordenadas <- function(geometria, casas = 4) {
   # Percorrendo matrizes e listas da geometria até chegar nas coordenadas
   arredondar <- function(x) {
     if (is.matrix(x)) return(round(x, casas))
@@ -335,4 +336,48 @@ cat(
   round(file.size("inst/app/data/malha_municipios.rds") / 1024^2, 2), "MB",
   "(municípios) e",
   round(file.size("inst/app/data/malha_ufs.rds") / 1024^2, 2), "MB (UFs)\n"
+)
+
+# ---------------------------------------------------------- desenho do mapa
+
+# Convertendo a geometria para o formato colunar (lng/lat) que o leaflet usa no
+# addPolygons: por município, uma lista de polígonos e, em cada um, os anéis
+desenho_municipios <- function(geometria) {
+  # Convertendo a matriz de coordenadas de um anel em um data frame lng/lat
+  para_anel <- function(anel) {
+    data.frame(lng = anel[, 1], lat = anel[, 2])
+  }
+  # Convertendo cada polígono na lista dos seus anéis
+  para_poligono <- function(poligono) {
+    lapply(unclass(poligono), para_anel)
+  }
+  lapply(geometria, function(municipio) {
+    # POLYGON vira um polígono e MULTIPOLYGON vira uma lista de polígonos
+    if (inherits(municipio, "MULTIPOLYGON")) {
+      lapply(unclass(municipio), para_poligono)
+    } else {
+      list(para_poligono(municipio))
+    }
+  })
+}
+
+# Gerando uma única vez o texto JSON que o navegador usa para desenhar o mapa
+poligonos <- desenho_municipios(st_geometry(malha_municipios))
+pgons <- as.character(jsonlite::toJSON(
+  poligonos,
+  dataframe = "columns",
+  auto_unbox = TRUE,
+  digits = 4
+))
+
+# Salvando o desenho pronto (texto dos polígonos e identificadores das camadas)
+saveRDS(
+  list(pgons = pgons, layers = as.character(malha_municipios$codmunres)),
+  "inst/app/data/malha_mapa.rds",
+  compress = "xz"
+)
+cat(
+  "Desenho do mapa:", round(nchar(pgons) / 1024^2, 2), "MB de JSON |",
+  round(file.size("inst/app/data/malha_mapa.rds") / 1024^2, 2), "MB em disco |",
+  nrow(malha_municipios), "municípios\n"
 )
