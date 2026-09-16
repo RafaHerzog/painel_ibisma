@@ -133,6 +133,23 @@ nome_uf <- function(sigla) {
   ufs$uf[match(sigla, ufs$sigla_uf)]
 }
 
+#' Definindo uma função que obtém o nome de exibição de uma ou mais medidas
+#'
+#' @param medida Vetor de identificadores de medida ("indice_final", "bloco1"...).
+#' @param prefixo_bloco Se TRUE, usa o rótulo com o prefixo "Bloco".
+#' @return Vetor de nomes legíveis, na mesma ordem da entrada.
+#' Usada em: fct_graficos.R (títulos dos cartões), fct_mapa.R (tooltip do mapa),
+#' mod_como.R (resumo do município) e mod_onde.R (resumo do ranking).
+#' @noRd
+nome_medida <- function(medida, prefixo_bloco = FALSE) {
+  # Devolvendo o rótulo com o prefixo quando pedido
+  if (prefixo_bloco) {
+    return(MEDIDAS$rotulo[match(medida, MEDIDAS$medida)])
+  }
+  # Devolvendo o nome curto da medida
+  MEDIDAS$nome[match(medida, MEDIDAS$medida)]
+}
+
 #' Definindo uma função que formata números na convenção brasileira
 #'
 #' @param x Vetor numérico.
