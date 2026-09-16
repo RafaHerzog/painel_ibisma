@@ -123,7 +123,7 @@ CORTES_PERCENTIS <- c(0.2, 0.4, 0.6, 0.8)
 #'
 #' @param medida Vetor de identificadores de medida ("indice_final", "bloco1"...).
 #' @return Vetor de cores em hexadecimal, na mesma ordem da entrada.
-#' Usada em: fct_dados.R (resumo do município), fct_graficos.R, fct_petalas.R e mod_onde.R (tema do ranking).
+#' Usada em: fct_graficos.R, fct_petalas.R, mod_como.R (resumo dos blocos) e mod_onde.R (tema do ranking).
 #' @noRd
 cor_medida <- function(medida) {
   # Buscando a cor de cada medida no dicionário
@@ -135,7 +135,7 @@ cor_medida <- function(medida) {
 #' @param medida Vetor de identificadores de medida ("indice_final", "bloco1"...).
 #' @param prefixo_bloco Se TRUE, usa o rótulo com o prefixo "Bloco".
 #' @return Vetor de nomes legíveis, na mesma ordem da entrada.
-#' Usada em: fct_dados.R (resumo do município), fct_graficos.R, fct_mapa.R (tooltip do mapa) e mod_onde.R (resumo do ranking).
+#' Usada em: fct_graficos.R (títulos dos cartões), fct_mapa.R (tooltip do mapa) e mod_como.R (resumo do município).
 #' @noRd
 nome_medida <- function(medida, prefixo_bloco = FALSE) {
   # Devolvendo o rótulo com o prefixo quando pedido

@@ -138,7 +138,7 @@ nome_uf <- function(sigla) {
 #' @param x Vetor numérico.
 #' @param decimais Número de casas decimais.
 #' @return Vetor de texto com vírgula decimal.
-#' Usada em: fct_dados.R (frase do percentil), fct_mapa.R (tooltip do mapa), fct_perfil.R (valor do índice) e fct_petalas.R (valor no disco).
+#' Usada em: fct_mapa.R (tooltip do mapa), fct_perfil.R (valor do índice e frase do percentil) e fct_petalas.R (valor no disco).
 #' @noRd
 formatar_numero <- function(x, decimais = 1) {
   # Evitando erro em valores ausentes e formatando com vírgula
@@ -172,23 +172,4 @@ formatar_inteiro <- function(x) {
 #' @noRd
 rotulo_posicao <- function(posicao, total) {
   paste0(formatar_inteiro(posicao), "\u00ba de ", formatar_inteiro(total))
-}
-
-#' Definindo uma função que produz a frase de leitura do percentil do IBISMA
-#'
-#' @param valor Valor do índice na escala 0 a 100.
-#' @return Texto explicando o percentil de vulnerabilidade.
-#' Usada em: fct_perfil.R (frase do placar).
-#' @noRd
-frase_percentil <- function(valor) {
-  if (is.na(valor)) {
-    return("Sem dado disponível para este ano.")
-  }
-  # Limitando a 99,9% para o município mais vulnerável não chegar a "100%"
-  percentil <- min(valor, 99.9)
-  # Usando a mesma casa decimal dos demais valores do painel
-  paste0(
-    "acima de ", formatar_numero(percentil),
-    "% dos municípios em insegurança em saúde materna"
-  )
 }

@@ -507,13 +507,24 @@ test_that("paletas e cores seguem a configuração do projeto", {
 
 test_that("opções de medida, ano e escopo do ranking estão completas", {
   exigir_base()
-  medidas <- opcoes_medidas()
-  expect_equal(unname(medidas), MEDIDAS$medida)
-  expect_true(all(grepl("^Bloco", names(medidas)[-1])))
-  expect_equal(anos_disponiveis(), sort(unique(base_referencia$ano)))
-  escopos <- opcoes_escopo_ranking()
-  expect_equal(escopos[[1]], "nacional")
-  expect_equal(length(escopos), 28)
+  # As medidas do seletor são o dicionário central, com o prefixo "Bloco" nos rótulos
+  expect_equal(MEDIDAS$rotulo[-1], paste("Bloco", MEDIDAS$nome[-1]))
+  expect_equal(dados_ibisma()$anos, sort(unique(base_referencia$ano)))
+
+  # Conferindo as opções do seletor de escopo embutidas na própria seção Onde?
+  ui <- as.character(mod_onde_ui("onde"))
+  json <- regmatches(
+    ui,
+    regexpr('data-for="onde-escopo">\\{.*?\\}</script>', ui, perl = TRUE)
+  )
+  json <- sub('data-for="onde-escopo">', "", json, fixed = TRUE)
+  json <- sub("</script>$", "", json)
+  opcoes <- jsonlite::fromJSON(json)$data
+  # O Brasil vem primeiro e as 27 UFs completam as opções do escopo
+  expect_equal(opcoes$value[1], "nacional")
+  expect_equal(nrow(opcoes), 28)
+  siglas_uf <- unique(dados_ibisma()$municipios$sigla_uf)
+  expect_setequal(opcoes$value[-1], siglas_uf)
 })
 
 test_that("nome_medida prefixa os blocos com Bloco quando pedido", {
@@ -767,6 +778,13 @@ test_that("nome_municipio devolve nome e sigla", {
     paste0(info$municipio, " (", info$sigla_uf, ")")
   )
   expect_equal(nome_municipio(dados, 999999), "Município")
+})
+
+test_that("nome_uf traduz a sigla no nome por extenso", {
+  dados <- dados_ibisma()
+  info <- dados$municipios[1, ]
+  expect_equal(nome_uf(info$sigla_uf), info$uf)
+  expect_true(is.na(nome_uf("XX")))
 })
 
 test_that("mapa_base limita o zoom e o arrasto ao enquadramento do Brasil", {

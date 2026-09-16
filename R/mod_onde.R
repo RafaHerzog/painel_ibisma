@@ -24,15 +24,25 @@ NIVEIS_ANALISE <- data.frame(
 mod_onde_ui <- function(id) {
   ns <- shiny::NS(id)
 
-  ## Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
   # Montando as opções de medida com o prefixo "Bloco" para leitura natural
-  medidas <- opcoes_medidas()
+  medidas <- stats::setNames(MEDIDAS$medida, MEDIDAS$rotulo)
+
   # Montando as opções de nível de análise a partir da configuração central
   niveis <- stats::setNames(NIVEIS_ANALISE$id, NIVEIS_ANALISE$rotulo)
+
   # Montando as opções de ano em ordem decrescente
-  anos_ordem <- rev(anos_disponiveis())
+  anos_ordem <- rev(dados_ibisma()$anos)
   anos <- stats::setNames(anos_ordem, anos_ordem)
 
+  # Montando as opções de escopo do ranking com o Brasil à frente das UFs
+  ufs_escopo <- unique(dados_ibisma()$municipios[, c("sigla_uf", "uf")])
+  ufs_escopo <- ufs_escopo[order(ufs_escopo$uf), ]
+  escopos <- stats::setNames(
+    c("nacional", ufs_escopo$sigla_uf),
+    c("Brasil (nacional)", paste0(ufs_escopo$uf, " (", ufs_escopo$sigla_uf, ")"))
+  )
+
+  # Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
   htmltools::tags$section(
     id = "onde",
     class = "secao-painel",
@@ -58,7 +68,7 @@ mod_onde_ui <- function(id) {
         htmltools::tags$span(class = "controle-texto", "dos"),
         seletor_inline(ns("nivel"), niveis, selected = "municipio", busca = FALSE),
         htmltools::tags$span(class = "controle-texto", "em"),
-        seletor_inline(ns("ano"), anos, selected = max(anos_disponiveis()))
+        seletor_inline(ns("ano"), anos, selected = max(dados_ibisma()$anos))
       ),
       # Organizando mapa e ranking lado a lado no desktop
       bslib::layout_columns(
@@ -107,7 +117,7 @@ mod_onde_ui <- function(id) {
           htmltools::tags$div(
             class = "controles-inline",
             htmltools::tags$span(class = "controle-texto", "Ranking para"),
-            seletor_inline(ns("escopo"), opcoes_escopo_ranking(), selected = "nacional")
+            seletor_inline(ns("escopo"), escopos, selected = "nacional")
           ),
           # Explicando o clique na tabela logo acima dela, com leve respiro
           htmltools::tags$p(

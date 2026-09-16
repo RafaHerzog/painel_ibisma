@@ -26,8 +26,19 @@ medir("tabela_ano(2015) (ano novo)", tabela_ano(dados, 2015L))
 # Município padrão e recortes usados nos controles e no perfil
 medir("municipio_padrao()", municipio_padrao(dados))
 medir("series_municipio() de um município", series_municipio(dados, 1302405L))
-medir("opcoes_municipios()", opcoes_municipios(dados))
-medir("opcoes_escopo_ranking()", opcoes_escopo_ranking(dados))
+# Opções montadas dentro dos módulos (controles de município e de escopo)
+medir("opções de municípios (mod_como)", {
+  municipios <- dados$municipios[order(dados$municipios$municipio, dados$municipios$sigla_uf), ]
+  stats::setNames(municipios$codmunres, paste0(municipios$municipio, " (", municipios$sigla_uf, ")"))
+})
+medir("opções de escopo do ranking (mod_onde)", {
+  ufs_escopo <- unique(dados$municipios[, c("sigla_uf", "uf")])
+  ufs_escopo <- ufs_escopo[order(ufs_escopo$uf), ]
+  stats::setNames(
+    c("nacional", ufs_escopo$sigla_uf),
+    c("Brasil (nacional)", paste0(ufs_escopo$uf, " (", ufs_escopo$sigla_uf, ")"))
+  )
+})
 medir("nome_uf(\"SP\")", nome_uf("SP"))
 
 # Junção da malha com os dados do ano
