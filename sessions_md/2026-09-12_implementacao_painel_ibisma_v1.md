@@ -1713,4 +1713,83 @@ data-raw/
 - `a657e4e` Reorganiza os auxiliares e centraliza as definições de medidas e cores
 - `e85e625` Documenta as convenções de comentários das funções auxiliares
 
+---
 
+# Sessão 18 — Refatoração do fct_dados (15/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** continuar a refatoração para leitura aplicada na Sessão 17, agora focada no
+  `fct_dados`: explicar o papel de cada auxiliar, localizar seus usos e mover para cada dono o
+  que tem um único consumidor.
+
+## 1. Diagnóstico e princípio
+
+- Levantando definições × usos: das 17 funções do `fct_dados`, 9 eram usadas por um único dono
+  (módulo ou auxiliar de seção) e 8 eram compartilhadas.
+- Princípio mantido (Sessão 17): cada arquivo é dono do que só ele usa; só sobe para arquivo
+  compartilhado o que tem mais de um usuário. As funções foram ajustadas uma a uma, com a suíte
+  verde entre as etapas.
+
+## 2. O que mudou de lugar
+
+- `resumo_municipio` virou função local do `mod_como_server`, logo antes do bloco de palcos que a
+  consome; como `dados` está no escopo do server, a assinatura passou a `(codmunres, ano)`.
+- `opcoes_municipios` foi inlinada na `mod_como_ui` (ordenação + `setNames` no próprio bloco).
+- `opcoes_medidas`, `anos_disponiveis` e `opcoes_escopo_ranking` deixaram de existir: as montagens
+  viraram três linhas diretas no bloco de controles do `mod_onde`.
+- `frase_percentil` foi para o `fct_perfil.R`, ao lado do placar que a usa.
+- `TEXTO_PETALAS` deixou de existir; o texto está inline no `petalas-caption` do `mod_como`.
+- `NIVEIS_ANALISE` saiu do `mod_onde` para o `fct_config`, junto do dicionário (é configuração,
+  não componente).
+
+## 3. Constantes de geração com fonte única
+
+- `CORTES_PERCENTIS` entrou no `fct_config` e o `data-raw/cria_rda.R` passou a ler `MEDIDAS`,
+  `CATEGORIAS` e `CORTES_PERCENTIS` dali — o script não depende mais de cópias manuais.
+- Leitura via `sys.source("R/fct_config.R", envir = config)`, em ambiente próprio, sem mexer no
+  global e sem exigir o pacote carregado; as funções de cor exigem o caminho do `grDevices`
+  (suprido no ambiente de leitura). O script continua linear e rodável passo a passo.
+- Um teste novo confere que as medidas da config cobrem exatamente as colunas do CSV de entrada —
+  o passo que garante o alinhamento entre config e geração.
+
+## 4. Correção de rota no meio da sessão
+
+- A geometria das pétalas (`ANGULOS_PETALAS`, `PETALAS_CX/CY/RAIO/COMPRIMENTO/VIEWBOX`) chegou a
+  ser movida para o `fct_config` sem pedido explícito e foi **revertida** para o `fct_petalas.R`,
+  com os demais ajustes da sessão mantidos. A lição fica como o princípio da Sessão 17: sem dois
+  usuários reais, não sobe.
+
+## 5. Testes reescritos
+
+- Os testes que chamavam `resumo_municipio` diretamente passaram a exercitá-la pelo caminho
+  público: renderizando o palco no `testServer` e conferindo, contra as tabelas anuais, valor,
+  categoria, rankings, os seis blocos e o estado vazio (Borá/2023).
+- O teste do palco comparado foi incluído e **pegou um bug real**: a chamada ainda passava `dados`
+  como primeiro argumento depois de a função virar local do server. O caminho de comparação não
+  tinha cobertura antes.
+- O teste das opções passou a ler o JSON que o próprio `mod_onde_ui` serve ao slimSelect
+  (Brasil + 27 UFs = 28 opções); `nome_uf` ganhou teste próprio depois de ter sido removida por
+  engano num edit e restaurada.
+- `dev/bench_inicializacao.R` foi ajustado para medir os blocos inline equivalentes.
+
+## 6. Testes e validação
+
+- `devtools::test()`: **374 asserções verdes** no estado final.
+- `cria_rda.R` rodado de ponta a ponta em cópia isolada do repositório: 13 arquivos / 4,72 MB,
+  55.700 linhas de séries, cobertura de 100% da malha.
+- Smoke headless: `#onde-mapa` renderizou sem erros de JavaScript com o app completo.
+
+## 7. Próximos passos
+
+- Continuar a refatoração nos demais auxiliares (`fct_esqueleto`, `fct_graficos`, `fct_mapa`,
+  `fct_perfil` e `fct_petalas`), aplicando a mesma régua de um dono por função.
+- Decisão registrada: constantes globais **não** vão para RDA; permanecem no `fct_config`, com o
+  `cria_rda` lendo de lá.
+
+## 8. Commits da sessão
+
+- `22e79ff` Centraliza as constantes da geração no fct_config
+- `02b2d24` Leva o resumo do município para dentro do módulo Como
+- `081158a` Remove os auxiliares de um só dono do fct_dados
+- `9ef4126` Inlina as opções dos controles nos módulos
+- `680be48` Atualiza o cabeçalho do fct_config
