@@ -36,6 +36,10 @@ usadas, no formato "Usada em: {arquivos e contextos}".
 - Ao usar funções auxiliares em um módulo, registrar no início de cada bloco de código de quais arquivos auxiliares
 ele usa, no formato `## Obs.: este bloco usa funções auxiliares de {arquivos}.` Ex.:
 `## Obs.: este bloco usa funções auxiliares de fct_graficos_evolucao e fct_dados.`
+- Nunca usar escapes unicode (ex.: `\u00e7`, `\u00e3`, `\u00ed`) para representar acentos, ç ou outros
+caracteres especiais: escrever sempre o caractere literal (`ç`, `ã`, `í`, `º`, `—`), para que os textos do
+painel possam ser encontrados por busca manual. Exceção: intervalos de expressões regulares que dependem
+do código unicode (ex.: `[\\u0300-\\u036f]` na busca sem acento).
 - Deve-se prezar por códigos simples, sem over-engeneering, que sejam fáceis de entender mesmo para pessoas que não estejam
 habituadas com a codebase.
 
