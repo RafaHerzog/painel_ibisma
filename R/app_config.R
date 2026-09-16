@@ -9,7 +9,7 @@
 #'
 #' @noRd
 app_sys <- function(...) {
-  system.file(..., package = "painel_ibisma_v4")
+  system.file(..., package = "painel_ibisma")
 }
 
 

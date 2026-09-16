@@ -59,7 +59,7 @@ processo <- callr::r_bg(
   function(pacote, porta) {
     setwd(pacote)
     pkgload::load_all(pacote, quiet = TRUE)
-    print(painel_ibisma_v4::run_app(
+    print(painel_ibisma::run_app(
       options = list(port = porta, host = "127.0.0.1", launch.browser = FALSE)
     ))
   },

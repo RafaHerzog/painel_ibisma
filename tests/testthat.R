@@ -1,4 +1,4 @@
 library(testthat)
-library(painel_ibisma_v4)
+library(painel_ibisma)
 
-test_check("painel_ibisma_v4")
+test_check("painel_ibisma")

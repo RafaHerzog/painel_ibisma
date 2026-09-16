@@ -1,4 +1,4 @@
-#' painel_ibisma_v4: Painel do Indice Brasileiro de Inseguranca em Saude Materna
+#' painel_ibisma: Painel do Indice Brasileiro de Inseguranca em Saude Materna
 #'
 #' Pacote que implementa o painel interativo do IBISMA com Shiny e golem.
 #'

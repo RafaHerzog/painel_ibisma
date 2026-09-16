@@ -286,7 +286,7 @@ body {
   border-bottom-color: rgb(var(--cor-azul-claro-rgb) / 0.6);
 }
 
-/* Marcando a seção visível mantendo o indicador inferior da v4 */
+/* Marcando a seção visível com o indicador inferior do painel */
 .navbar-ibisma .nav-link.active {
   color: var(--cor-branco);
   border-bottom-color: var(--cor-azul-claro);

@@ -157,26 +157,32 @@
       "description": {
         "Package": "Rcpp",
         "Title": "Seamless R and C++ Integration",
-        "Version": "1.0.14",
-        "Date": "2025-01-11",
+        "Version": "1.1.2",
+        "Date": "2026-07-01",
         "Authors@R": "c(person(\"Dirk\", \"Eddelbuettel\", role = c(\"aut\", \"cre\"), email = \"edd@debian.org\",\n                    comment = c(ORCID = \"0000-0001-6419-907X\")),\n             person(\"Romain\", \"Francois\", role = \"aut\",\n                    comment = c(ORCID = \"0000-0002-2444-4226\")),\n             person(\"JJ\", \"Allaire\", role = \"aut\",\n                    comment = c(ORCID = \"0000-0003-0174-9868\")),\n             person(\"Kevin\", \"Ushey\", role = \"aut\",\n                    comment = c(ORCID = \"0000-0003-2880-7407\")),\n             person(\"Qiang\", \"Kou\", role = \"aut\",\n                    comment = c(ORCID = \"0000-0001-6786-5453\")),\n             person(\"Nathan\", \"Russell\", role = \"aut\"),\n             person(\"Iñaki\", \"Ucar\", role = \"aut\",\n                    comment = c(ORCID = \"0000-0001-6403-5550\")),\n             person(\"Doug\", \"Bates\", role = \"aut\",\n                    comment = c(ORCID = \"0000-0001-8316-9503\")),\n             person(\"John\", \"Chambers\", role = \"aut\"))",
         "Description": "The 'Rcpp' package provides R functions as well as C++ classes which\n offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about 'Rcpp' is provided by several vignettes included in this package, via the\n 'Rcpp Gallery' site at <https://gallery.rcpp.org>, the paper by Eddelbuettel and\n Francois (2011, <doi:10.18637/jss.v040.i08>), the book by Eddelbuettel (2013,\n <doi:10.1007/978-1-4614-6868-4>) and the paper by Eddelbuettel and Balamuta (2018,\n <doi:10.1080/00031305.2017.1375990>); see 'citation(\"Rcpp\")' for details.",
+        "Depends": "R (>= 3.5.0)",
         "Imports": "methods, utils",
         "Suggests": "tinytest, inline, rbenchmark, pkgKitten (>= 0.1.2)",
         "URL": "https://www.rcpp.org,\nhttps://dirk.eddelbuettel.com/code/rcpp.html,\nhttps://github.com/RcppCore/Rcpp",
         "License": "GPL (>= 2)",
         "BugReports": "https://github.com/RcppCore/Rcpp/issues",
-        "MailingList": "rcpp-devel@lists.r-forge.r-project.org",
         "RoxygenNote": "6.1.1",
         "Encoding": "UTF-8",
+        "VignetteBuilder": "Rcpp",
         "NeedsCompilation": "yes",
-        "Packaged": "2025-01-11 20:21:25 UTC; edd",
-        "Author": "Dirk Eddelbuettel [aut, cre] (<https://orcid.org/0000-0001-6419-907X>),\n  Romain Francois [aut] (<https://orcid.org/0000-0002-2444-4226>),\n  JJ Allaire [aut] (<https://orcid.org/0000-0003-0174-9868>),\n  Kevin Ushey [aut] (<https://orcid.org/0000-0003-2880-7407>),\n  Qiang Kou [aut] (<https://orcid.org/0000-0001-6786-5453>),\n  Nathan Russell [aut],\n  Iñaki Ucar [aut] (<https://orcid.org/0000-0001-6403-5550>),\n  Doug Bates [aut] (<https://orcid.org/0000-0001-8316-9503>),\n  John Chambers [aut]",
+        "Packaged": "2026-07-01 11:00:56 UTC; edd",
+        "Author": "Dirk Eddelbuettel [aut, cre] (ORCID:\n    <https://orcid.org/0000-0001-6419-907X>),\n  Romain Francois [aut] (ORCID: <https://orcid.org/0000-0002-2444-4226>),\n  JJ Allaire [aut] (ORCID: <https://orcid.org/0000-0003-0174-9868>),\n  Kevin Ushey [aut] (ORCID: <https://orcid.org/0000-0003-2880-7407>),\n  Qiang Kou [aut] (ORCID: <https://orcid.org/0000-0001-6786-5453>),\n  Nathan Russell [aut],\n  Iñaki Ucar [aut] (ORCID: <https://orcid.org/0000-0001-6403-5550>),\n  Doug Bates [aut] (ORCID: <https://orcid.org/0000-0001-8316-9503>),\n  John Chambers [aut]",
         "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
         "Repository": "CRAN",
-        "Date/Publication": "2025-01-12 16:10:02 UTC",
-        "Built": "R 4.4.3; x86_64-w64-mingw32; 2025-03-11 01:34:23 UTC; windows",
-        "Archs": "x64"
+        "Date/Publication": "2026-07-05 08:30:08 UTC",
+        "Built": "R 4.4.3; x86_64-w64-mingw32; 2026-09-15 18:44:47 UTC; windows",
+        "Archs": "x64",
+        "RemoteType": "standard",
+        "RemotePkgRef": "Rcpp",
+        "RemoteRef": "Rcpp",
+        "RemoteRepos": "http://vps.fmvz.usp.br/CRAN",
+        "RemoteSha": "1.1.2"
       }
     },
     "attempt": {
@@ -2203,12 +2209,12 @@
       }
     },
     "scales": {
-      "Source": "CRAN",
-      "Repository": "https://cloud.r-project.org",
+      "Source": "github",
+      "Repository": null,
       "description": {
         "Package": "scales",
         "Title": "Scale Functions for Visualization",
-        "Version": "1.4.0",
+        "Version": "1.4.0.9000",
         "Authors@R": "c(\n    person(\"Hadley\", \"Wickham\", , \"hadley@posit.co\", role = \"aut\"),\n    person(\"Thomas Lin\", \"Pedersen\", , \"thomas.pedersen@posit.co\", role = c(\"cre\", \"aut\"),\n           comment = c(ORCID = \"0000-0002-5147-4711\")),\n    person(\"Dana\", \"Seidel\", role = \"aut\"),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"),\n           comment = c(ROR = \"03wc8by49\"))\n  )",
         "Description": "Graphical scales map data to aesthetics, and provide methods\n    for automatically determining breaks and labels for axes and legends.",
         "License": "MIT + file LICENSE",
@@ -2222,14 +2228,24 @@
         "Config/usethis/last-upkeep": "2025-04-23",
         "Encoding": "UTF-8",
         "LazyLoad": "yes",
+        "Roxygen": "list(markdown = TRUE, r6 = FALSE)",
         "RoxygenNote": "7.3.2",
+        "RemoteType": "github",
+        "RemoteHost": "api.github.com",
+        "RemoteRepo": "scales",
+        "RemoteUsername": "r-lib",
+        "RemotePkgRef": "r-lib/scales",
+        "RemoteRef": "HEAD",
+        "RemoteSha": "04fc3331af14da0d5ca1919f37c6c35d6fc512bb",
+        "GithubRepo": "scales",
+        "GithubUsername": "r-lib",
+        "GithubRef": "HEAD",
+        "GithubSHA1": "04fc3331af14da0d5ca1919f37c6c35d6fc512bb",
         "NeedsCompilation": "no",
-        "Packaged": "2025-04-23 18:27:04 UTC; thomas",
+        "Packaged": "2025-09-30 19:24:26 UTC; Pichau",
         "Author": "Hadley Wickham [aut],\n  Thomas Lin Pedersen [cre, aut]\n    (<https://orcid.org/0000-0002-5147-4711>),\n  Dana Seidel [aut],\n  Posit Software, PBC [cph, fnd] (03wc8by49)",
         "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
-        "Repository": "CRAN",
-        "Date/Publication": "2025-04-24 11:00:02 UTC",
-        "Built": "R 4.4.3; ; 2026-04-22 02:07:05 UTC; windows"
+        "Built": "R 4.4.3; ; 2025-09-30 19:24:28 UTC; windows"
       }
     },
     "sf": {
@@ -2859,31 +2875,64 @@
       "checksum": "1bd0c82832b02d7986a9f5f923ee5828"
     },
     "AGENTS.md": {
-      "checksum": "03ba4a65a403f582d6a8b868c1e8bcab"
+      "checksum": "44d6e24633dc1c82d55d94e9643bdd37"
     },
     "app.R": {
-      "checksum": "565d8b4f626d239fe23be39848ee05aa"
-    },
-    "data/df_ibisma.rda": {
-      "checksum": "b66f5f0c8deea2a309e32479b6ef0bf4"
+      "checksum": "8796f966692d08163311a9494ad2d1a5"
     },
     "DESCRIPTION": {
-      "checksum": "11179c7504d2a9ab37eb02844809500c"
+      "checksum": "54d3b3a4f770453aa74f43e85653d26a"
+    },
+    "inst/app/data/dados_ibisma.rds": {
+      "checksum": "75b4cd8169f51c01d6b3324dc61b41fa"
+    },
+    "inst/app/data/malha_mapa.rds": {
+      "checksum": "4444b631e1498111ebed50de3154ed0e"
     },
     "inst/app/data/malha_municipios.rds": {
-      "checksum": "03b7a57a9a76d39a0821b5a16f595473"
+      "checksum": "3663123e7ca4894d06c647f0d51ba9c9"
     },
     "inst/app/data/malha_ufs.rds": {
-      "checksum": "e2e6a290161ae24648b7db0fafdcf2b9"
+      "checksum": "5380c5fdf0e4bf7756fa922b36fb4fb8"
+    },
+    "inst/app/data/tabela_ano_2015.rds": {
+      "checksum": "eddf9a4a24c1511345468c9c4df2801e"
+    },
+    "inst/app/data/tabela_ano_2016.rds": {
+      "checksum": "12ccd5e8c8d6897f8b51a87d27757bc1"
+    },
+    "inst/app/data/tabela_ano_2017.rds": {
+      "checksum": "2f24f086c0cb27d380f8d16be3a60647"
+    },
+    "inst/app/data/tabela_ano_2018.rds": {
+      "checksum": "e8d70787399e0afe98946805bf49e16e"
+    },
+    "inst/app/data/tabela_ano_2019.rds": {
+      "checksum": "85105e00e5d90d2b8b5af27fc75b9483"
+    },
+    "inst/app/data/tabela_ano_2020.rds": {
+      "checksum": "6ca32d5a21a30eeed27f9b8e48eb02a1"
+    },
+    "inst/app/data/tabela_ano_2021.rds": {
+      "checksum": "1363803c2f4a191bc4592f85b3c55f7b"
+    },
+    "inst/app/data/tabela_ano_2022.rds": {
+      "checksum": "0ef0a861adc0de2730d28dd7a7767ded"
+    },
+    "inst/app/data/tabela_ano_2023.rds": {
+      "checksum": "a7a6dc20d53109c771f5a31fa847f679"
+    },
+    "inst/app/data/tabela_ano_2024.rds": {
+      "checksum": "9782e88e52be34a21492f75a65002a1b"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
     },
     "inst/app/www/global/custom.css": {
-      "checksum": "df4c9a0e9f304a664ff371fc0106c3ee"
+      "checksum": "8c9a10f582fa95ed9424c6cb82213e0c"
     },
     "inst/app/www/global/funcoes_javascript.js": {
-      "checksum": "df58bd47b1e6f51edac2a4c8f1bb11b5"
+      "checksum": "eb4cfaa323b70f86d655cf2f10542886"
     },
     "inst/app/www/logos/favicon.ico": {
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
@@ -2955,58 +3004,58 @@
       "checksum": "03f03d8e7ef5401510d8ab449a95cd36"
     },
     "inst/golem-config.yml": {
-      "checksum": "fc6c9be5678e39df8a4ebe15d0a72602"
+      "checksum": "c11225ec8d69606045402193aee7261c"
     },
     "NAMESPACE": {
-      "checksum": "a754293ff97f75b5b5b62395988cdfe1"
+      "checksum": "dd6755b7ac18ba4c09cd056f082d529d"
     },
     "R/app_config.R": {
-      "checksum": "3a0fee60e2b4f817be7f8d904fa5a600"
+      "checksum": "b6f6603562e6a5052c2c3b05acd85d8d"
     },
     "R/app_server.R": {
       "checksum": "a9fec2cc9e02def384af7697f555a7ff"
     },
     "R/app_ui.R": {
-      "checksum": "44d57a9576effac83ba98fc1d0be6ee3"
+      "checksum": "df35ad4a6444bcda06d8fb301efc11e8"
     },
-    "R/fct_config.R": {
-      "checksum": "3b96be409f48913563362f8801b057c6"
+    "R/constantes.R": {
+      "checksum": "e73408842fe78af6c9290301a0c68215"
     },
     "R/fct_cores.R": {
-      "checksum": "7aa2dca1a20fb467776c99d653e040bf"
+      "checksum": "22b566bb17f87d200abf6e7aec94dc0b"
     },
     "R/fct_dados.R": {
-      "checksum": "f872919066b292bfa9f439e9a96bea0e"
+      "checksum": "29e97053b88a22e8ab1a8d44a2d7e9db"
     },
     "R/fct_esqueleto.R": {
-      "checksum": "ea53fa00250330f49eb5ac2f9dd90d75"
+      "checksum": "facf966876115336dff5c1ed713136aa"
     },
-    "R/fct_graficos.R": {
-      "checksum": "8de71511c7bf35383ebc0f81d4c83692"
+    "R/fct_graficos_evolucao.R": {
+      "checksum": "840c307ab627d9a043df30e69b61ce0c"
     },
     "R/fct_mapa.R": {
-      "checksum": "a4371bebf613737c5254952ab81f272e"
+      "checksum": "4a6859ee55f40fe5b85b70b72f158120"
     },
     "R/fct_perfil.R": {
-      "checksum": "99409980270e7d0db8eb64a713fea481"
+      "checksum": "39157a2dcc7eaaddb3dcbad4ee84ebde"
     },
     "R/fct_petalas.R": {
-      "checksum": "c4aebdb77fe64b2dc222e8050bd6711a"
+      "checksum": "96005f809059a69a366c6242e5ced555"
+    },
+    "R/fct_ui.R": {
+      "checksum": "2d8cd0a65eb70df2565b6c2a3378bc1e"
     },
     "R/mod_como.R": {
-      "checksum": "461fe13c9d425547988dc97058dbaa1a"
+      "checksum": "8cd1d7a134648f785c7b7190fcc0bcef"
     },
     "R/mod_onde.R": {
-      "checksum": "e51526a11f234ecc5a15c5296784fbc7"
+      "checksum": "6360c7d5d662b3e19bfcbd99686964a7"
     },
-    "R/painel_ibisma_v4-package.R": {
-      "checksum": "c200cb4a10646543951d39dc5cd26a18"
+    "R/painel_ibisma-package.R": {
+      "checksum": "3071f23bb815b0bcaee29a97ba422ea1"
     },
     "R/run_app.R": {
       "checksum": "4d19509f058abc65cfd23c7353a7c94c"
-    },
-    "R/utils_ui.R": {
-      "checksum": "7c279974ee4a45e60ff5c28e18e1c8bb"
     }
   },
   "users": null
