@@ -14,9 +14,15 @@ mod_como_ui <- function(id) {
   ns <- shiny::NS(id)
 
   ## Obs.: este bloco usa funções auxiliares de fct_dados, utils_ui e fct_esqueleto.
-  # Montando as opções de municípios e de anos usadas nos controles
-  municipios <- opcoes_municipios(dados_ibisma())
-  anos_ordem <- rev(anos_disponiveis())
+  # Montando as opções de municípios em ordem alfabética, com a UF no rótulo
+  municipios <- dados_ibisma()$municipios
+  municipios <- municipios[order(municipios$municipio, municipios$sigla_uf), ]
+  municipios <- stats::setNames(
+    municipios$codmunres,
+    paste0(municipios$municipio, " (", municipios$sigla_uf, ")")
+  )
+  # Montando as opções de ano em ordem decrescente
+  anos_ordem <- rev(dados_ibisma()$anos)
   anos <- stats::setNames(anos_ordem, anos_ordem)
   # Incluindo a opção de não comparar com nenhum município
   opcoes_comparacao <- c("Nenhum" = "nenhum", municipios)
@@ -42,12 +48,18 @@ mod_como_ui <- function(id) {
         htmltools::tags$span(class = "controle-texto", "Ver"),
         seletor_inline(ns("municipio"), municipios, selected = municipio_padrao(), largura = "320px"),
         htmltools::tags$span(class = "controle-texto", "em"),
-        seletor_inline(ns("ano"), anos, selected = max(anos_disponiveis())),
+        seletor_inline(ns("ano"), anos, selected = max(dados_ibisma()$anos)),
         htmltools::tags$span(class = "controle-texto", "e comparar com"),
         seletor_inline(ns("comparar"), opcoes_comparacao, selected = "nenhum", largura = "320px")
       ),
       # Explicando as pétalas uma única vez, acima dos palcos
-      htmltools::tags$p(class = "petalas-caption", TEXTO_PETALAS),
+      htmltools::tags$p(
+        class = "petalas-caption",
+        paste(
+          "Cada pétala representa um bloco do IBISMA: quanto maior a pétala,",
+          "maior a insegurança naquele bloco."
+        )
+      ),
       # Palcos do município principal e do comparado, exibidos lado a lado
       htmltools::tags$div(
         class = "dupla dupla--palcos",
@@ -139,10 +151,49 @@ mod_como_server <- function(id, dados, municipio) {
       dados$municipios[dados$municipios$codmunres == municipio(), ][1, ]
     })
 
+    # Definindo uma função que monta o resumo completo de um município em um ano
+    # Usada em: mod_como.R (palcos principal e comparado).
+    resumo_municipio <- function(codmunres, ano) {
+      ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_config.
+      # Reunindo as linhas do município em todas as medidas do ano
+      tabela <- tabela_ano(dados, ano)
+      linhas <- tabela[tabela$codmunres == codmunres, ]
+
+      # Identificando o município a partir das próprias linhas
+      info <- dados$municipios[dados$municipios$codmunres == codmunres, ]
+      if (nrow(info) == 0 || nrow(linhas) == 0) {
+        return(NULL)
+      }
+
+      # Separando a linha do índice final e a dos seis blocos na ordem configurada
+      linha_indice <- linhas[linhas$medida == "indice_final", ]
+      blocos <- linhas[match(BLOCOS$medida, linhas$medida), ]
+      blocos$nome <- nome_medida(blocos$medida)
+      blocos$cor <- cor_medida(blocos$medida)
+
+      # Montando a lista final consumida pelo componente de perfil
+      list(
+        codmunres = codmunres,
+        municipio = info$municipio,
+        sigla_uf = info$sigla_uf,
+        uf = info$uf,
+        regiao = info$regiao,
+        r_saude = info$r_saude,
+        macro_r_saude = info$macro_r_saude,
+        valor = linha_indice$valor,
+        categoria = as.character(linha_indice$categoria),
+        pos_nac = linha_indice$pos_nac,
+        total_nac = linha_indice$total_nac,
+        pos_uf = linha_indice$pos_uf,
+        total_uf = linha_indice$total_uf,
+        blocos = blocos
+      )
+    }
+
     ## Obs.: este bloco usa funções auxiliares de fct_dados.
     # Montando o resumo do município no ano escolhido
     resumo <- shiny::reactive({
-      resumo_municipio(dados, municipio(), ano())
+      resumo_municipio(municipio(), ano())
     })
 
     # ----- Município de comparação -----
@@ -173,7 +224,7 @@ mod_como_server <- function(id, dados, municipio) {
     resumo_comparacao <- shiny::reactive({
       cod <- cod_comparacao()
       if (is.null(cod)) return(NULL)
-      resumo_municipio(dados, cod, ano())
+      resumo_municipio(cod, ano())
     })
 
     # ----- Palcos -----

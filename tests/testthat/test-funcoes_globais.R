@@ -113,40 +113,69 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
   }
 })
 
-test_that("resumo_municipio reúne índice, categoria, rankings e blocos", {
+test_that("o resumo do município alimenta o palco com índice, rankings e blocos", {
   dados <- dados_ibisma()
-  ano <- max(dados$anos)
+  ano_ref <- max(dados$anos)
   cod <- municipio_padrao(dados)
-  resumo <- resumo_municipio(dados, cod, ano)
 
-  # Conferindo os dados do índice final contra a tabela do ano
-  linha <- valores_ano(dados, ano, "indice_final")
+  # Conferindo o que o palco exibe contra a tabela do ano
+  linha <- valores_ano(dados, ano_ref, "indice_final")
   linha <- linha[linha$codmunres == cod, ]
-  expect_equal(resumo$codmunres, cod)
-  expect_equal(resumo$valor, linha$valor)
-  expect_equal(resumo$categoria, as.character(linha$categoria))
-  expect_equal(resumo$pos_nac, linha$pos_nac)
-  expect_equal(resumo$pos_uf, linha$pos_uf)
-
   # O município padrão é o mais vulnerável do último ano
-  expect_equal(resumo$pos_nac, 1)
-  expect_equal(resumo$valor, max(valores_ano(dados, ano, "indice_final")$valor))
+  expect_equal(linha$pos_nac, 1)
 
-  # Os seis blocos vêm na ordem configurada, com nome e cor
-  expect_equal(nrow(resumo$blocos), 6)
-  expect_equal(resumo$blocos$nome, BLOCOS$nome)
-  expect_type(resumo$blocos$cor, "character")
+  municipio <- shiny::reactiveVal(cod)
+  shiny::testServer(
+    mod_como_server,
+    args = list(dados = dados, municipio = municipio),
+    {
+      session$setInputs(ano = as.character(ano_ref))
+      # Convertendo a árvore de tags do palco em um texto único para conferir
+      palco <- paste(as.character(output$palco_principal$html), collapse = "\n")
+
+      # O placar mostra o valor e a categoria do índice final
+      expect_true(grepl(formatar_numero(linha$valor), palco, fixed = TRUE))
+      expect_true(grepl(as.character(linha$categoria), palco, fixed = TRUE))
+      expect_true(grepl(rotulo_posicao(linha$pos_nac, linha$total_nac), palco, fixed = TRUE))
+
+      # Os seis blocos da pétala vêm na ordem configurada e com o valor real
+      for (i in seq_len(nrow(BLOCOS))) {
+        base_bloco <- valores_ano(dados, ano_ref, BLOCOS$medida[i])
+        base_bloco <- base_bloco[base_bloco$codmunres == cod, ]
+        expect_true(grepl(BLOCOS$nome[i], palco, fixed = TRUE))
+        expect_true(grepl(formatar_numero(base_bloco$valor), palco, fixed = TRUE))
+      }
+
+      # Ativando a comparação, o segundo palco mostra o valor do comparado
+      comparado <- dados$municipios$codmunres[dados$municipios$codmunres != cod][1]
+      linha_comp <- valores_ano(dados, ano_ref, "indice_final")
+      linha_comp <- linha_comp[linha_comp$codmunres == comparado, ]
+      session$setInputs(comparar = as.character(comparado))
+      palco_comp <- paste(as.character(output$palco_comparado$html), collapse = "\n")
+      expect_true(grepl(formatar_numero(linha_comp$valor), palco_comp, fixed = TRUE))
+      expect_true(grepl("Município comparado", palco_comp, fixed = TRUE))
+    }
+  )
 })
 
-test_that("resumo_municipio devolve NULL quando não há dado no ano", {
+test_that("o palco fica vazio quando o município não tem dado no ano", {
   dados <- dados_ibisma()
-
-  # Código que não existe na base
-  expect_null(resumo_municipio(dados, 999999, max(dados$anos)))
 
   # Município com ano faltante (Borá em 2023)
   lacuna <- dados$series[is.na(dados$series$indice_final), c("codmunres", "ano")][1, ]
-  expect_null(resumo_municipio(dados, lacuna$codmunres, lacuna$ano))
+
+  municipio <- shiny::reactiveVal(lacuna$codmunres)
+  shiny::testServer(
+    mod_como_server,
+    args = list(dados = dados, municipio = municipio),
+    {
+      session$setInputs(ano = as.character(lacuna$ano))
+      # Sem resumo no ano, o palco cai no estado vazio no lugar do placar
+      palco <- paste(as.character(output$palco_principal$html), collapse = "\n")
+      expect_true(grepl("não possui dados no ano selecionado", palco, fixed = TRUE))
+      expect_false(grepl("perfil-placar", palco, fixed = TRUE))
+    }
+  )
 })
 
 test_that("series_municipio monta as sete medidas em colunas", {
@@ -870,7 +899,29 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
   dados <- dados_ibisma()
   ano <- max(dados$anos)
   cod <- municipio_padrao(dados)
-  resumo <- resumo_municipio(dados, cod, ano)
+
+  # Montando um resumo de referência para o componente exibir
+  linha <- valores_ano(dados, ano, "indice_final")
+  linha <- linha[linha$codmunres == cod, ]
+  blocos <- do.call(rbind, lapply(BLOCOS$medida, function(medida) {
+    valores_ano(dados, ano, medida)[valores_ano(dados, ano, medida)$codmunres == cod, ]
+  }))
+  blocos$medida <- BLOCOS$medida
+  blocos$nome <- BLOCOS$nome
+  blocos$cor <- BLOCOS$cor
+  resumo <- list(
+    codmunres = cod,
+    municipio = linha$municipio,
+    sigla_uf = linha$sigla_uf,
+    valor = linha$valor,
+    categoria = as.character(linha$categoria),
+    pos_nac = linha$pos_nac,
+    total_nac = linha$total_nac,
+    pos_uf = linha$pos_uf,
+    total_uf = linha$total_uf,
+    blocos = blocos
+  )
+
   municipio <- dados$municipios[dados$municipios$codmunres == cod, ]
   html <- as.character(perfil_palco(
     municipio, resumo, ano = ano,

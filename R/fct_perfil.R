@@ -5,12 +5,6 @@
 #   o município de comparação.
 # =============================================================================
 
-# Definindo o texto que explica as pétalas e é exibido uma vez acima dos palcos
-TEXTO_PETALAS <- paste(
-  "Cada pétala representa um bloco do IBISMA: quanto maior a pétala,",
-  "maior a insegurança naquele bloco."
-)
-
 #' Definindo uma função que cria uma métrica do cabeçalho do perfil
 #'
 #' @param rotulo Rótulo da métrica.
@@ -40,6 +34,78 @@ metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
     if (!is.null(detalhe)) {
       htmltools::tags$span(class = "metrica-detalhe", detalhe)
     }
+  )
+}
+
+#' Definindo uma função que produz a frase de leitura do percentil do IBISMA
+#'
+#' @param valor Valor do índice na escala 0 a 100.
+#' @return Texto explicando o percentil de vulnerabilidade.
+#' Usada em: perfil_placar().
+#' @noRd
+frase_percentil <- function(valor) {
+  ## Obs.: este bloco usa funções auxiliares de fct_dados.
+  if (is.na(valor)) {
+    return("Sem dado disponível para este ano.")
+  }
+  # Limitando a 99,9% para o município mais vulnerável não chegar a "100%"
+  percentil <- min(valor, 99.9)
+  # Usando a mesma casa decimal dos demais valores do painel
+  paste0(
+    "acima de ", formatar_numero(percentil),
+    "% dos municípios em insegurança em saúde materna"
+  )
+}
+
+#' Definindo uma função que monta o placar do IBISMA de um município
+#'
+#' @param resumo Lista retornada por resumo_municipio().
+#' @param ano Ano de referência exibido no rótulo do valor.
+#' @return Elemento HTML com valor, categoria e rankings.
+#' Usada em: perfil_palco().
+#' @noRd
+perfil_placar <- function(resumo, ano) {
+  ## Obs.: este bloco usa funções auxiliares de utils_ui, fct_dados e fct_perfil.
+  htmltools::tags$div(
+    class = "perfil-placar",
+    # Valor do IBISMA nomeado, com categoria e leitura do percentil
+    htmltools::tags$div(
+      class = "perfil-placar__indice",
+      htmltools::tags$span(
+        class = "perfil-placar__rotulo",
+        paste0("IBISMA em ", ano)
+      ),
+      htmltools::tags$div(
+        class = "perfil-indice__linha perfil-indice__linha--centro",
+        htmltools::tags$span(
+          class = "perfil-indice__valor",
+          # Todos os valores do painel são exibidos com uma casa decimal
+          formatar_numero(resumo$valor)
+        ),
+        htmltools::tags$span(class = "perfil-indice__escala", "de 100"),
+        badge_categoria(resumo$categoria)
+      ),
+      htmltools::tags$p(
+        class = "perfil-indice__frase",
+        frase_percentil(resumo$valor)
+      )
+    ),
+    # Ranking nacional à esquerda do placar
+    htmltools::tags$div(
+      class = "perfil-placar__ranking perfil-placar__ranking--brasil",
+      metrica_hero(
+        "Ranking Brasil",
+        rotulo_posicao(resumo$pos_nac, resumo$total_nac)
+      )
+    ),
+    # Ranking estadual à direita do placar
+    htmltools::tags$div(
+      class = "perfil-placar__ranking perfil-placar__ranking--uf",
+      metrica_hero(
+        "Ranking na UF",
+        rotulo_posicao(resumo$pos_uf, resumo$total_uf)
+      )
+    )
   )
 }
 

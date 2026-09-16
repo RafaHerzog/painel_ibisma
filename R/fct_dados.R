@@ -23,25 +23,12 @@ dados_ibisma <- function() {
   .ibisma_cache$dados
 }
 
-#' Definindo uma função que descobre o município padrão de abertura do painel
-#'
-#' @param dados Lista lida por dados_ibisma().
-#' @return Código do município mais vulnerável do ano mais recente.
-#' Usada em: app_server.R (município de abertura) e mod_como.R (valor inicial do seletor).
-#' @noRd
-municipio_padrao <- function(dados = dados_ibisma()) {
-  # Buscando o município com o maior IBISMA no último ano disponível
-  ano <- max(dados$anos)
-  base <- valores_ano(dados, ano, "indice_final")
-  base$codmunres[which.max(base$valor)]
-}
-
 #' Definindo uma função que lê a tabela anual em cache
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param ano Ano de referência.
 #' @return Data frame com uma linha por município e medida.
-#' Usada em: fct_dados.R (valores_ano e resumo_municipio).
+#' Usada em: fct_dados.R (valores_ano) e mod_como.R (resumo_municipio).
 #' @noRd
 tabela_ano <- function(dados, ano) {
   # Guardando em memória a tabela de cada ano já lida
