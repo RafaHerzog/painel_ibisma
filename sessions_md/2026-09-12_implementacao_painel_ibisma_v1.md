@@ -2056,3 +2056,79 @@ sessão, repetidas para cada usuário.
 - `9882020` Envia a geometria do mapa por mensagem e compacta os dados dos tooltips
 - `34d36a2` Restaura os contornos das UFs em painel acima dos municípios
 
+---
+
+# Sessão 23 — Tooltip única e dinâmica no mapa (16/09/2026)
+
+- **Pacote:** `painel_ibisma_v4`.
+- **Objetivo:** substituir as 5.570 tooltips individuais dos municípios por um
+  único tooltip dinâmico, atualizado pelo hover, para testar empiricamente o
+  ganho de desempenho e de usabilidade sem mexer em mais nada no painel.
+
+## 1. Diagnóstico da implementação anterior
+
+- As tooltips nasciam no JavaScript (`aplicarDados`): na primeira passagem,
+  `bindTooltip` com `sticky: true`; nas atualizações, `setTooltipContent`
+  camada a camada.
+- O `sticky` registra cerca de 5 listeners por camada no leaflet
+  (`mouseover`, `mouseout`, `mousemove`, `move` e `remove`) — ~27,8 mil
+  registros —, além de guardar 5.570 objetos `Tooltip` com o HTML de cada
+  município (a "ligação" de ~2 s medida na Sessão 22).
+- Cada troca de ano ou de medida chamava `setTooltipContent` 5.570 vezes, só
+  para trocar o texto de tooltips que estavam ocultas.
+
+## 2. Tooltip única
+
+- `prepararTooltip()` cria **um único `L.tooltip` por mapa** e registra três
+  listeners no mapa: `mouseover` (monta o HTML do município e mostra),
+  `mousemove` (acompanha o cursor) e `mouseout` (esconde).
+- Os dados continuam vindo da mensagem compacta (Sessão 22); ela passou a
+  ficar guardada em `dadosPorMapa[id]` e o HTML do tooltip é montado sob
+  demanda, sem duplicar conteúdo por camada.
+- `aplicarDados()` só repinta `fillColor`, anota `camada._ibisma_indice`
+  (acesso O(1) ao índice do município na mensagem) e chama
+  `camada.addEventParent(mapa)`.
+- **Achado:** neste leaflet, os eventos de hover do canvas chegam ao mapa
+  **sem** `e.layer` (o `mouseover` do mapa é disparado pelo próprio mapa; a
+  camada não propaga os eventos). O `addEventParent(mapa)` — o mesmo
+  mecanismo do `FeatureGroup` — faz os eventos da camada subirem ao mapa com
+  `e.layer`, sem listener por camada e de forma idempotente (cada camada
+  segue com um único pai depois das trocas de medida).
+- `montarTooltip()` e o CSS `.leaflet-tooltip.tooltip-ibisma` foram mantidos:
+  sem mudança visual. O `sticky` saiu das opções (era do binding antigo), sem
+  alterar o posicionamento (`direction: "auto"`).
+- A mensagem do servidor, o ETL e todo o lado R continuaram iguais.
+
+## 3. Preservado
+
+- Realce de hover e contorno de seleção, clique no mapa (`shape_click`),
+  contornos das UFs, painéis do mapa, esqueleto, filtros e sincronizações do
+  painel — tudo intacto; o clique continua levando o município ao perfil.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **392 asserções verdes** (nenhuma mudança no R).
+- Smoke headless com hover real e sintético: `camadas=5570 | comTooltip=0`
+  (nenhuma tooltip individual), tooltip mostra `Altamira (PA) | 91,6 |
+  Muito alto` no município correto, some ao sair, reaparece reaproveitando o
+  mesmo nó do DOM e segue o cursor; troca de medida pelo servidor reflete no
+  rótulo ("Pré-natal"); clique mantém a seleção (`Altamira, PA` e um contorno
+  no painel de destaque); sem erros de JavaScript.
+- Evidências em temporários fora do git (`smoke_tooltip/`).
+
+## 5. Limitações e observações
+
+- Touch: a tooltip depende de hover; o toque segue selecionando o município
+  normalmente, mas a tooltip pode não aparecer como antes — observar no uso.
+- Efeito colateral do bubbling: eventos de camada agora sobem ao mapa, então
+  inputs não usados pelo painel (`onde-mapa_click` etc.) podem ser enviados em
+  duplicidade; os usados (`shape_click`, `shape_mouseover`) seguem únicos.
+- Com o mouse parado sobre o município, a tooltip visível só reflete troca de
+  ano/medida no próximo hover.
+- A medição empírica do ganho fica com o usuário; a mudança foi isolada de
+  propósito para permitir o antes/depois.
+
+## 6. Commits da sessão
+
+- `ab0b932` Troca as 5.570 tooltips do mapa por um tooltip único dinâmico
+
