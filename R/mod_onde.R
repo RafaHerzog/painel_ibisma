@@ -237,7 +237,7 @@ mod_onde_server <- function(id, dados, municipio) {
     })
 
     # ----- Legenda -----
-    ## Obs.: este bloco usa funções auxiliares de fct_mapa e fct_config.
+    ## Obs.: este bloco usa funções auxiliares de fct_mapa e constantes.
 
     # Recriando a legenda sempre que a medida exibida mudar
     output$legenda <- shiny::renderUI({
@@ -248,7 +248,7 @@ mod_onde_server <- function(id, dados, municipio) {
     })
 
     # ----- Ranking -----
-    ## Obs.: este bloco usa funções auxiliares de fct_dados, fct_config e utils_ui.
+    ## Obs.: este bloco usa funções auxiliares de fct_dados, constantes, fct_cores e utils_ui.
 
     # Montando a tabela do ranking conforme medida, ano e escopo escolhidos
     tabela_ranking <- shiny::reactive({
@@ -436,7 +436,7 @@ busca_sem_acento <- reactable::JS(
 #' @return Objeto reactableTheme com as cores do projeto.
 #' @noRd
 tema_reactable <- function(medida = "indice_final") {
-  ## Obs.: este bloco usa funções auxiliares de fct_config.
+  ## Obs.: este bloco usa funções auxiliares de fct_cores.
   # Obtendo a cor de identificação da medida exibida no ranking
   base <- cor_medida(medida)[1]
   # Derivando os tons suaves da cor da medida usados nos destaques da tabela

@@ -154,7 +154,7 @@ mod_como_server <- function(id, dados, municipio) {
     # Definindo uma função que monta o resumo completo de um município em um ano
     # Usada em: mod_como.R (palcos principal e comparado).
     resumo_municipio <- function(codmunres, ano) {
-      ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_config.
+      ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_cores.
       # Reunindo as linhas do município em todas as medidas do ano
       tabela <- tabela_ano(dados, ano)
       linhas <- tabela[tabela$codmunres == codmunres, ]
