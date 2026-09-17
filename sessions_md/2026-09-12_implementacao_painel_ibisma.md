@@ -2392,3 +2392,66 @@ sessão, repetidas para cada usuário.
 
 - `3bb99c7` Desenha o canvas do mapa na resolução real da tela
 
+---
+
+# Sessão 29 — Linhas claras no hover do mapa (17/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** corrigir as linhas retas claras que apareciam ao redor dos
+  municípios em hover (e se acumulavam a cada município visitado), surgidas
+  depois do canvas na resolução real da tela (Sessão 28).
+
+## 1. Diagnóstico
+
+- **Sintoma:** cada município visitado pelo mouse deixava linhas ou retângulos
+  claros no mapa, que se acumulavam; ocorria no Chrome e no Firefox, mas não na
+  janela do VS Code (diferença compatível com DPR fracionário numa janela e
+  inteiro na outra).
+- **Caminho do código:** o binding do leaflet aplica o `highlightOptions` no
+  hover (`setStyle` + `bringToFront`), o que dispara o redesenho **parcial** do
+  canvas: `_clear` faz `clearRect` e `_draw` recorta (`clip`) o retângulo do
+  bounding box do município (`Path._pxBounds` estendido por `weight + 1`).
+- **Causa:** as bordas desse retângulo são antialiasadas. Com o canvas na DPR
+  real (commit `3bb99c7`), em escalas fracionárias (125%/150% do Windows e zoom
+  do navegador) as bordas caem no meio de um pixel: a limpeza e o recorte
+  deixam uma linha clara de 1 px no perímetro, e o `fillOpacity` de 0,95 deixa
+  o fundo atravessar. Em DPR inteiro (1 ou 2 — o VS Code e o código anterior,
+  que usava fator fixo 2) as bordas caem em pixels inteiros e nada aparece.
+- **Reprodução:** smoke headless com hovers reais em grade sobre Ulianópolis
+  (PA, zoom 8): em DPR 1,25 e 1,5 as linhas aparecem e se acumulam; em DPR 1
+  não aparecem.
+- **Caso-limite encontrado:** com escala menor que 1 (zoom out do navegador), a
+  limpeza **total** do canvas (`clearRect(0, 0, width, height)`, nas
+  coordenadas do desenho) não alcançava as bordas direita e de baixo: 36% do
+  canvas ficava sujo (79.676 de 221.741 pixels medidos com escala 0,8).
+
+## 2. Correção (`inst/app/www/global/funcoes_javascript.js`)
+
+- `_redraw` foi reescrito: o recorte é levado para pixels da tela com
+  `getTransform()`, arredondado para fora (`floor`/`ceil`) e devolvido às
+  coordenadas do desenho, de modo que a limpeza e o `clip` caiam em pixels
+  inteiros.
+- `_clear` foi reescrito: sem recorte, a limpeza usa `setTransform` de
+  identidade e `clearRect` com o tamanho real do canvas, em pixels da tela.
+- **Alternativa avaliada e descartada:** forçar o redesenho completo (recorte
+  nulo). Também elimina as linhas, mas custa 17–25 ms por hover no
+  enquadramento do Brasil (5.570 camadas), contra ~1 ms com o recorte alinhado.
+
+## 3. Testes e validação
+
+- `devtools::test()`: **392 asserções verdes** (a suíte não cobre JavaScript).
+- Smoke headless em DPR 1,25 e 1,5, com 24 hovers reais em grade: imagens antes
+  e depois sem as linhas, com hover, contorno de destaque e tooltip intactos e
+  sem erros de JavaScript ou de servidor.
+- Limpeza com escala 0,8: 0 pixels não limpos depois da correção (eram 79.676).
+- Evidências em temporários fora do git (`hover_corrigido/` e `hover_final/`).
+
+## 4. Limitações
+
+- Restam os traços brancos das fendas da malha (Sessão 28), que não dependem do
+  hover e seguem em aberto.
+
+## 5. Commits da sessão
+
+- `bc68ebd` Alinha o redesenho do canvas do mapa aos pixels da tela
+
