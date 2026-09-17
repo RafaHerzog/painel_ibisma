@@ -51,6 +51,9 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
      alta densidade; em telas com DPR maior (celulares 3x) o desenho é ampliado e
      fica borrado. O ajuste abaixo usa o devicePixelRatio real; o Leaflet refaz o
      canvas a cada resize, o que cobre o zoom do navegador e a troca de monitor.
+     Em escalas fracionárias (125%/150% do Windows e zoom do navegador), o
+     redesenho parcial do hover também precisa alinhar o recorte aos pixels da
+     tela, senão uma linha clara fica na borda do retângulo recortado.
      ============================================================================= */
   (function () {
     if (!window.L || !L.Canvas || !L.Renderer) return;
@@ -74,6 +77,48 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
         this._ctx.scale(largura / tamanho.x, altura / tamanho.y);
         this._ctx.translate(-caixa.min.x, -caixa.min.y);
         this.fire("update");
+      },
+
+      /* Alinhando o recorte do redesenho parcial aos pixels da tela */
+      _redraw: function () {
+        this._redrawRequest = null;
+        if (this._redrawBounds) {
+          this._redrawBounds.min._floor();
+          this._redrawBounds.max._ceil();
+          /* Levando o recorte para pixels da tela e arredondando para fora */
+          var matriz = this._ctx.getTransform();
+          var min = this._redrawBounds.min;
+          var max = this._redrawBounds.max;
+          var x0 = Math.floor(matriz.a * min.x + matriz.e);
+          var y0 = Math.floor(matriz.d * min.y + matriz.f);
+          var x1 = Math.ceil(matriz.a * max.x + matriz.e);
+          var y1 = Math.ceil(matriz.d * max.y + matriz.f);
+          /* Voltando o recorte já alinhado para as coordenadas do desenho */
+          min.x = (x0 - matriz.e) / matriz.a;
+          min.y = (y0 - matriz.f) / matriz.d;
+          max.x = (x1 - matriz.e) / matriz.a;
+          max.y = (y1 - matriz.f) / matriz.d;
+        }
+        this._clear();
+        this._draw();
+        this._redrawBounds = null;
+      },
+
+      /* Limpando o canvas inteiro em pixels da tela quando não há recorte */
+      _clear: function () {
+        var recorte = this._redrawBounds;
+        if (recorte) {
+          var tamanho = recorte.getSize();
+          this._ctx.clearRect(recorte.min.x, recorte.min.y, tamanho.x, tamanho.y);
+          return;
+        }
+        /* Com escala menor que 1 (zoom out do navegador), a limpeza nas
+           coordenadas do desenho não alcançaria a borda direita e a de baixo */
+        var ctx = this._ctx;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, this._container.width, this._container.height);
+        ctx.restore();
       }
     });
   })();
