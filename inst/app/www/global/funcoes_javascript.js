@@ -1,8 +1,8 @@
 /* =============================================================================
    FUNÇÕES JAVASCRIPT DO PAINEL IBISMA
-   Reúne os handlers do mapa (desenho e atualização de cores e tooltips), a
-   abertura animada das duas colunas de comparação e a marcação da seção visível
-   na barra de navegação.
+   Reúne os handlers do mapa (desenho, atualização de cores e tooltips e ajuste
+   do canvas à resolução da tela), a abertura animada das duas colunas de
+   comparação e a marcação da seção visível na barra de navegação.
    ============================================================================= */
 
 /* Abrindo e fechando as duas colunas quando a comparação é ligada ou desligada */
@@ -44,6 +44,39 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   /* Guardando a ordem das camadas e os dados de cada mapa do painel */
   var camadasPorMapa = {};
   var dadosPorMapa = {};
+
+  /* =============================================================================
+     CANVAS NA RESOLUÇÃO DA TELA
+     O Leaflet multiplica o canvas por um fator fixo de 2 quando detecta tela de
+     alta densidade; em telas com DPR maior (celulares 3x) o desenho é ampliado e
+     fica borrado. O ajuste abaixo usa o devicePixelRatio real; o Leaflet refaz o
+     canvas a cada resize, o que cobre o zoom do navegador e a troca de monitor.
+     ============================================================================= */
+  (function () {
+    if (!window.L || !L.Canvas || !L.Renderer) return;
+
+    /* Redefinindo a atualização do canvas com a escala real da tela */
+    L.Canvas.include({
+      _update: function () {
+        if (this._map._animatingZoom && this._bounds) return;
+        this._drawnLayers = {};
+        L.Renderer.prototype._update.call(this);
+        var caixa = this._bounds;
+        var tamanho = caixa.getSize();
+        var dpr = window.devicePixelRatio || 1;
+        var largura = Math.round(dpr * tamanho.x);
+        var altura = Math.round(dpr * tamanho.y);
+        L.DomUtil.setPosition(this._container, caixa.min);
+        this._container.width = largura;
+        this._container.height = altura;
+        this._container.style.width = tamanho.x + "px";
+        this._container.style.height = tamanho.y + "px";
+        this._ctx.scale(largura / tamanho.x, altura / tamanho.y);
+        this._ctx.translate(-caixa.min.x, -caixa.min.y);
+        this.fire("update");
+      }
+    });
+  })();
 
   /* Montando o HTML do tooltip de um município a partir da mensagem compacta */
   function montarTooltip(mensagem, i) {
