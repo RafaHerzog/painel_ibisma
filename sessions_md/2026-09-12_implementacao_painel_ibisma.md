@@ -2262,3 +2262,63 @@ sessão, repetidas para cada usuário.
 
 - `99185ec` Corrige o realce da busca sem acento nos seletores
 
+---
+
+# Sessão 27 — Tooltip do mapa por toque (17/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** fazer a tooltip do mapa responder ao toque no mobile, sem
+  regredir o hover no desktop, e validar com toques reais no smoke headless.
+
+## 1. Diagnóstico
+
+- A tooltip única (Sessão 23) escutava apenas `mouseover`, `mousemove` e
+  `mouseout`: no toque o município era selecionado, mas o valor e a categoria
+  não apareciam.
+- **Achado:** o `Tooltip.getEvents` do Leaflet registra o `preclick` para
+  fechar tooltips quando `Browser.touch` é verdadeiro; o Chrome do Windows
+  reporta touch mesmo com mouse, então clicar em um município já escondia a
+  tooltip no desktop até o próximo hover (comportamento pré-existente).
+
+## 2. Comportamento no cliente
+
+- Novo `PODE_HOVER` (`matchMedia("(hover: hover) and (pointer: fine)")`)
+  separa mouse de toque; nos dispositivos de toque os handlers de hover ficam
+  inertes.
+- `mostrar()`/`esconder()` centralizam o balão; o `click` do mapa reexibe a
+  tooltip do município tocado (o mesmo caminho conserta o clique no desktop,
+  fechado pelo `preclick`) e o clique sem município fecha o balão (o evento
+  propagado da camada é distinguido pelo `propagatedFrom`).
+- Arrastar o mapa no toque (`movestart`) fecha a tooltip fixada; no mouse o
+  comportamento de hover segue igual.
+- No toque o lado do balão (`top`/`bottom`) segue a metade visível da janela: o
+  mapa continua abaixo da dobra e o `direction: "auto"` do Leaflet, que olha o
+  contêiner, nascia abaixo do ponto e cortava o balão.
+
+## 3. Ferramenta de smoke
+
+- `dev/headless_smoke.R` ganhou `--tap=x,y` e `--tap2=x,y`: toque real via
+  `Input.dispatchTouchEvent` (touchStart e touchEnd com o mesmo ponto — a lista
+  vazia no fim do toque é rejeitada pelo CDP com `-32602` e sem o ponto o
+  navegador não gera o clique de compatibilidade).
+- `AGENTS.md` documenta as duas opções.
+- **Armadilha de ambiente:** chamando o smoke por `Start-Job`/PowerShell, o
+  argumento `--tap=x,y` precisa estar entre aspas — fora delas a vírgula
+  divide o argumento e o `y` chega como `NA`.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **392 asserções verdes** (rodada com `rlang` 1.3.0 de
+  biblioteca temporária, como nas sessões anteriores).
+- Smoke desktop (1600×900, `hover=true`): o hover mostra a tooltip e o clique
+  em um município não a esconde mais.
+- Smoke mobile (390×844, `hover=false`): o toque em Vila Boa (GO) mostrou
+  "Vila Boa (GO) | IBISMA 85,1 | Muito alto" acima do ponto; o segundo toque
+  no oceano fechou o balão.
+- Evidências em temporários fora do git (`smoke_touch/`).
+
+## 5. Commits da sessão
+
+- `a9df2d7` Adiciona tooltip por toque no mapa
+- `df9482c` Testa o toque do mapa no smoke headless
+
