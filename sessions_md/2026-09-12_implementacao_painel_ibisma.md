@@ -2454,4 +2454,67 @@ sessão, repetidas para cada usuário.
 ## 5. Commits da sessão
 
 - `bc68ebd` Alinha o redesenho do canvas do mapa aos pixels da tela
+- `95876a6` Regerados os arquivos tabela_ano do painel (fechamento da sessão;
+  conteúdo idêntico ao anterior, mudou só a serialização)
+
+---
+
+# Sessão 30 — Fluidez do tooltip da evolução temporal (17/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** investigar a sensação de tooltip lento e pesado nos gráficos de
+  evolução (echarts) e ajustar a transição do balão.
+
+## 1. Diagnóstico (medido no app)
+
+- O echarts 6.0.0 embutido aplica ao tooltip, por padrão,
+  `transitionDuration: 0.4` e `displayTransition: true`, que viram CSS inline
+  no balão: `transition: opacity 0.2s, visibility 0.2s, transform 0.4s
+  cubic-bezier(0.23, 1, 0.32, 1)`.
+- Além disso, com `transitionDuration > 0` o `TooltipView.render` troca o
+  listener de posição por `createOrUpdate(this, "_updatePosition", 50,
+  "fixRate")`: a posição do balão passa a ser recalculada no máximo a cada
+  50 ms (20 Hz), qualquer que seja a taxa do mouse.
+- Medição com varredura real do mouse sobre o gráfico do IBISMA (1600×950,
+  DPR 2), amostrando por quadro a posição-alvo (transform inline) e a posição
+  visível (transform computada) do balão:
+
+| | 0,4 s (padrão) | 0,3 s (escolhido) | 0,2 s | 0 (sem transição) |
+| --- | --- | --- | --- | --- |
+| Intervalo entre atualizações | 50 ms | 51 ms | 50 ms | por evento |
+| Atraso do desenho vs. cursor (mediana / máx.) | 47 / 85 px | 29 / 86 px | 17 / 99 px | 0 / 0 px |
+| Deslize depois do cursor parar | 285 ms | 200 ms | 101 ms | nenhum |
+| Tarefas longas de CPU | 0 | 0 | 0 | 0 |
+
+- O peso não é cálculo: nenhuma tarefa longa do navegador apareceu nas
+  medições; a lentidão vem da transição CSS e do *throttle* interno.
+
+## 2. Iterações e decisão
+
+- Primeira correção: `transitionDuration = 0`, que remove a transição e o
+  *throttle* (balão colado no cursor; medido com atraso 0 px e nenhum
+  deslize).
+- A preferência passou por 0,2 s, voltou ao padrão (0,4 s) e ficou em
+  **0,3 s**: meio-termo entre o deslize do padrão e a resposta imediata do 0.
+- Qualquer valor maior que 0 reativa o *throttle* de 50 ms do echarts — a
+  cadência de 20 Hz é comportamento interno da biblioteca.
+
+## 3. Correção
+
+- `tooltip_echarts()` (`R/fct_graficos_evolucao.R`) ganhou
+  `transitionDuration = 0.3`, valendo para os sete gráficos da evolução
+  (IBISMA e blocos).
+
+## 4. Testes e validação
+
+- `devtools::test()`: **394 asserções verdes**, com as novas asserções de
+  `transitionDuration` e do acionamento por eixo do tooltip.
+- Medições em smoke headless com varredura real do mouse (temporários fora do
+  git, `mede_tooltip.R` e `sonda_cadencia.R`), com e sem a transição.
+- Observação: a sensação de Hz baixo que ainda restava no computador do usuário
+  vinha de um jogo aberto disputando a máquina, não do painel.
+
+## 5. Commits da sessão
+
+- `316084a` Encurta a transicao do tooltip da evolucao temporal
 
