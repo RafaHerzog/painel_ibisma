@@ -69,14 +69,16 @@ habituadas com a codebase.
   [--outdir=<dir>] [--wait-for=<seletor CSS>] [--shot=<nome.png>]
   [--eval="<JS>"] [--pre-eval="<JS>"] [--eval-file=arq.js]
   [--pre-eval-file=arq.js] [--width=1600] [--height=900] [--scroll=<px>]
-  [--mouse=x,y] [--click=x,y]` — sobe o app em background, abre no Chrome
-  headless, espera o seletor, salva o screenshot, avalia o JS (deve retornar
-  STRING; o resultado vai ao console) e derruba o servidor. O `--eval` aceita
-  promises (ex.: IIFE assíncrona com `await`), `--mouse`/`--click` disparam
-  mouse real para validar hover e clique, e a captura sem `--full` registra
-  apenas a área visível (funciona em qualquer rolagem). O `--pre-eval` roda
-  antes do screenshot para preparar um estado (ex.: trocar a medida e abrir
-  uma tooltip) e então capturá-lo.
+  [--mouse=x,y] [--click=x,y] [--tap=x,y] [--tap2=x,y]` — sobe o app em
+  background, abre no Chrome headless, espera o seletor, salva o screenshot,
+  avalia o JS (deve retornar STRING; o resultado vai ao console) e derruba o
+  servidor. O `--eval` aceita promises (ex.: IIFE assíncrona com `await`),
+  `--mouse`/`--click` disparam mouse real para validar hover e clique,
+  `--tap`/`--tap2` disparam toques reais (com `--mobile`) para validar o
+  comportamento de toque, e a captura sem `--full` registra apenas a área
+  visível (funciona em qualquer rolagem). O `--pre-eval` roda antes do
+  screenshot para preparar um estado (ex.: trocar a medida e abrir uma tooltip)
+  e então capturá-lo.
   Rodar com working directory na raiz do pacote.
 - Armadilhas (custo de uma sessão de debug cada):
   - `run_app()` NÃO aceita `port=` direto — a porta vai em

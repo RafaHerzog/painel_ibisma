@@ -10,7 +10,7 @@
 #       [--wait-for=".seletor"] [--shot=nome.png] [--eval="<JS>"]
 #       [--pre-eval="<JS>"] [--eval-file=arq.js] [--pre-eval-file=arq.js]
 #       [--width=1600] [--height=900] [--scroll=0] [--mobile] [--dpr=1.25]
-#       [--motion] [--reduce]
+#       [--motion] [--reduce] [--tap=x,y] [--tap2=x,y]
 #
 #   O JavaScript passado em --eval deve retornar uma STRING; o valor é
 #   impresso no console pelo script.
@@ -246,6 +246,26 @@ if (nzchar(click)) {
   )
   Sys.sleep(1.5)
 }
+
+# Tocando de verdade na tela quando as coordenadas forem dadas
+tocar <- function(coordenadas) {
+  xy <- as.numeric(strsplit(coordenadas, ",")[[1]])
+  ponto <- list(list(x = xy[1], y = xy[2]))
+  sessao$Page$bringToFront()
+  sessao$Input$dispatchTouchEvent(type = "touchStart", touchPoints = ponto)
+  Sys.sleep(0.1)
+  # O fim do toque leva o ponto liberado para o navegador gerar o clique
+  sessao$Input$dispatchTouchEvent(type = "touchEnd", touchPoints = ponto)
+  Sys.sleep(1.5)
+}
+
+# Dando o primeiro toque, útil para testar os comportamentos de toque no mobile
+tap <- pega_arg("tap", "")
+if (nzchar(tap)) tocar(tap)
+
+# Dando um segundo toque, útil para testar alternâncias (ex.: tooltip abrir e fechar)
+tap2 <- pega_arg("tap2", "")
+if (nzchar(tap2)) tocar(tap2)
 
 # Salvando o screenshot da página inteira ou apenas da janela visível
 caminho_shot <- file.path(outdir, shot)
