@@ -44,6 +44,9 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
         fontSize = 12
       ),
       extraCssText = CSS_TOOLTIP,
+      # Encurtando a transição padrão do echarts (0,4 s), que deixa o tooltip
+      # deslizando demais atrás do cursor nas varreduras do mouse
+      transitionDuration = 0.3,
       confine = TRUE
     ),
     extras

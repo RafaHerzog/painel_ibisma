@@ -259,6 +259,10 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_true(grepl("0.55", tooltip, fixed = TRUE))
   expect_false(grepl("rgba(", tooltip, fixed = TRUE))
   expect_false(grepl("IBISMA", tooltip, fixed = TRUE))
+
+  # O tooltip acompanha o cursor com transição mais curta que o padrão do echarts
+  expect_equal(grafico$x$opts$tooltip$transitionDuration, 0.3)
+  expect_equal(grafico$x$opts$tooltip$trigger, "axis")
 })
 
 test_that("grafico_evolucao destaca a comparação com traço pontilhado", {
