@@ -2322,3 +2322,73 @@ sessão, repetidas para cada usuário.
 - `a9df2d7` Adiciona tooltip por toque no mapa
 - `df9482c` Testa o toque do mapa no smoke headless
 
+---
+
+# Sessão 28 — Canvas em alta resolução e emendas do mapa (17/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** corrigir o borrão do mapa em telas de alta densidade e
+  investigar as linhas retas brancas que aparecem com o mapa aproximado.
+
+## 1. Nitidez do mapa (canvas no DPR real)
+
+- **Causa:** o `L.Canvas._update` do Leaflet 1.1.1 (embutido no pacote
+  `leaflet`) usa um fator fixo de 2 quando detecta `Browser.retina`, sem olhar o
+  `devicePixelRatio` real; em telas com DPR maior (celulares 3x) o desenho é
+  ampliado e fica borrado. O valor é decidido no carregamento e não se atualiza
+  se o DPR mudar depois — o mesmo padrão que levou os gráficos ECharts ao
+  renderizador SVG (Sessão 11).
+- **Medições antes:** DPR 3 → backing de 1508 px para 754 px CSS (ampliação de
+  1,5×); DPR 1,5 → 1508 px (redução de 2×).
+- **Correção (commit `3bb99c7`):** em `funcoes_javascript.js`, um
+  `L.Canvas.include` reescreve o `_update` com o `devicePixelRatio` real
+  (backing `round(dpr × tamanho)`, escala pelas razões arredondadas), mantendo
+  o canvas e a fluidez. As mudanças reais de DPR (zoom do navegador, troca de
+  monitor) alteram o tamanho CSS e o Leaflet refaz o canvas no `resize` —
+  validado com emulação: `backing = 2,5 × CSS` após a troca.
+- **Alternativa testada e descartada:** `preferCanvas = FALSE` (SVG) para os
+  municípios. Em 1600×950 com 5.570 municípios: +23% de nós no DOM, +2-5 MB de
+  heap, ~+120 ms no desenho inicial, hover equivalente e repintura igual ou
+  melhor; ficou no canvas para não perder a fluidez percebida.
+- **Resíduos:** durante a animação de zoom o canvas é escalado por transform
+  (borrão transitório, como antes) e a rasterização cresce com o DPR².
+- **Validação:** DPR 3 com backing 2262 = 3 × 754 (nítido); DPR 1,5 com 1131;
+  hover, clique, tooltip, toque no mobile e repintura por medida funcionando;
+  `devtools::test()` com 392 asserções verdes.
+
+## 2. As linhas retas brancas (diagnóstico)
+
+- **Reprodução:** zoom 8 sobre Ulianópolis (PA). As linhas aparecem **sem**
+  hover nenhum e também existem no código anterior ao ajuste de DPR (bisect com
+  `git stash` mostrou capturas idênticas).
+- **Não são as divisas:** pintando todos os municípios de vermelho e deixando as
+  divisas transparentes, com limpeza total do canvas e redesenho do zero, as
+  linhas continuam — não são traço, nem pixel velho, nem falha de limpeza.
+- **São emendas do mosaico:** a contagem de pixels do canvas mostra ~2.100
+  pixels com alfa baixo (o fundo claro aparecendo) nas bordas entre
+  preenchimentos vizinhos — antialiasing das bordas (com o preenchimento a 0,95)
+  somado a fendas reais da malha. Onde os limites municipais são retos (a malha
+  do PA tem limites retilíneos — conferido ao plotar a malha do IBGE), a emenda
+  fica reta e aparece como um fio claro sobre áreas da mesma cor.
+- **Tentativa de correção (revertida):** preenchimento opaco (`fillOpacity: 1`)
+  e divisa de `weight 0.5`/`opacity 0.8` para cobrir a emenda; a medição caiu de
+  ~2.081 para ~729 pixels de emenda, mas a avaliação do usuário foi de que o
+  problema não ficou resolvido. A mudança foi revertida e o tema fica em aberto.
+
+## 3. Caminhos possíveis para a próxima sessão
+
+- Corrigir as fendas na geração da malha (topologia/arredondamento no
+  `cria_rda.R`) e remedir as frestas.
+- Desenhar o contorno na própria cor do município (mosaico sem divisas) ou
+  manter as divisas em uma segunda camada por cima, cobrindo as emendas.
+- Investigar o `setStyle`/redesenho parcial do Leaflet 1.1.1 no hover: o
+  `_clear` sem limites limpa `clearRect(0, 0, width, height)` com a
+  transformação aplicada (sem `setTransform` de identidade, como nas versões
+  novas), o que merece uma checagem em redesenho completo.
+- Evidências dos testes em temporários fora do git (`smoke_touch/`), incluindo
+  as capturas do zoom sobre Ulianópolis antes e depois.
+
+## 4. Commits da sessão
+
+- `3bb99c7` Desenha o canvas do mapa na resolução real da tela
+
