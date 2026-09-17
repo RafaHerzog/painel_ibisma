@@ -88,6 +88,10 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     }
   }
 
+  /* Distinguindo dispositivos com mouse e hover dos dispositivos de toque */
+  var PODE_HOVER = !!(window.matchMedia &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+
   /* Criando um único tooltip por mapa, atualizado pelo município sob o cursor */
   function prepararTooltip(mapa, id) {
     /* Criando o tooltip apenas na primeira vez em que o mapa é desenhado */
@@ -95,27 +99,68 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     var tooltip = L.tooltip(OPCOES_TOOLTIP);
     var mostrando = false;
 
-    /* Mostrando o tooltip do município que o cursor acabou de encontrar */
-    mapa.on("mouseover", function (e) {
-      var indice = e.layer && e.layer._ibisma_indice;
+    /* Mostrando o tooltip de um município na posição indicada */
+    function mostrar(indice, latlng) {
       var dados = dadosPorMapa[id];
       if (typeof indice !== "number" || !dados) return;
+      /* No toque o lado do tooltip segue a metade visível da tela, porque o
+         mapa pode continuar abaixo da dobra e cortar o balão */
+      if (!PODE_HOVER) {
+        var ponto = mapa.latLngToContainerPoint(latlng);
+        var topoTela = mapa.getContainer().getBoundingClientRect().top + ponto.y;
+        tooltip.options.direction =
+          topoTela > window.innerHeight / 2 ? "top" : "bottom";
+      }
       tooltip.setContent(montarTooltip(dados, indice));
-      tooltip.setLatLng(e.latlng);
+      tooltip.setLatLng(latlng);
       if (!mapa.hasLayer(tooltip)) mapa.addLayer(tooltip);
       mostrando = true;
+    }
+
+    /* Escondendo o tooltip e interrompendo o acompanhamento do cursor */
+    function esconder() {
+      mostrando = false;
+      if (mapa.hasLayer(tooltip)) mapa.removeLayer(tooltip);
+    }
+
+    /* Mostrando o tooltip do município que o cursor acabou de encontrar */
+    mapa.on("mouseover", function (e) {
+      if (!PODE_HOVER) return;
+      mostrar(e.layer && e.layer._ibisma_indice, e.latlng);
     });
 
     /* Acompanhando o cursor enquanto o tooltip estiver à mostra */
     mapa.on("mousemove", function (e) {
-      if (mostrando) tooltip.setLatLng(e.latlng);
+      if (PODE_HOVER && mostrando) tooltip.setLatLng(e.latlng);
     });
 
-    /* Escondendo o tooltip ao sair do município */
+    /* Escondendo o tooltip ao sair do município com o mouse */
     mapa.on("mouseout", function (e) {
+      if (!PODE_HOVER) return;
       if (!e.layer || typeof e.layer._ibisma_indice !== "number") return;
-      mostrando = false;
-      if (mapa.hasLayer(tooltip)) mapa.removeLayer(tooltip);
+      esconder();
+    });
+
+    /* Anotando quando o clique do mapa veio de um município desenhado */
+    var cliqueEmMunicipio = false;
+
+    /* Mostrando o tooltip do município tocado, que fica fixo no ponto do toque */
+    mapa.on("click", function (e) {
+      /* O Leaflet fecha o tooltip no preclick dos dispositivos de toque, então
+         o clique reexibe o tooltip tanto no toque quanto no mouse */
+      if (e.propagatedFrom) {
+        cliqueEmMunicipio = true;
+        mostrar(e.layer && e.layer._ibisma_indice, e.latlng);
+        return;
+      }
+      /* Clicando fora de um município, o tooltip fixado se fecha */
+      if (!cliqueEmMunicipio) esconder();
+      cliqueEmMunicipio = false;
+    });
+
+    /* Fechando o tooltip fixado quando o mapa se move de posição no toque */
+    mapa.on("movestart", function () {
+      if (!PODE_HOVER) esconder();
     });
 
     /* Guardando a instância para não criar um segundo tooltip no mesmo mapa */
