@@ -2871,17 +2871,8 @@
     }
   },
   "files": {
-    ".posit/publish/deployments/deployment-BAQP.toml": {
-      "checksum": "c1d1d16116500be33dcd76f43d7576df"
-    },
-    ".posit/publish/painel_ibisma-GABA.toml": {
-      "checksum": "1728e8d26a252c4a597a9fe1103686b5"
-    },
     ".Rbuildignore": {
       "checksum": "1bd0c82832b02d7986a9f5f923ee5828"
-    },
-    "AGENTS.md": {
-      "checksum": "e7394195a3f854424814b95aedc6164e"
     },
     "app.R": {
       "checksum": "8796f966692d08163311a9494ad2d1a5"
@@ -2938,7 +2929,7 @@
       "checksum": "ba34587d2fbf7cc3fb74ea5faa25fabe"
     },
     "inst/app/www/global/funcoes_javascript.js": {
-      "checksum": "f2d3d01da351ce5e1838d2760917a47c"
+      "checksum": "b8120a7df77064487cc89f410de32c2e"
     },
     "inst/app/www/logos/favicon.ico": {
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
