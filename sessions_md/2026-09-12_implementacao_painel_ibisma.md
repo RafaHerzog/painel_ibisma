@@ -2518,3 +2518,57 @@ sessão, repetidas para cada usuário.
 
 - `316084a` Encurta a transicao do tooltip da evolucao temporal
 
+---
+
+# Sessão 31 — Canvas nítido em escalas fracionárias (18/09/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** corrigir o borrão do mapa, que ficou pior do que no canvas de
+  fator fixo 2 depois do ajuste de DPR real (Sessão 28), mantendo o
+  `preferCanvas` e o desenho sempre na densidade adequada da tela.
+
+## 1. Diagnóstico
+
+- **Sintoma:** o mapa carregado ficou mais macio do que na versão de fator fixo
+  2, mesmo sem alterar o zoom da página.
+- **Reprodução:** smoke headless com `--dpr=1.25` e `--dpr=1.5`; no recorte
+  ampliado, as divisas brancas ficam grossas e difusas na versão de DPR real,
+  contra linhas finas e firmes na de fator 2.
+- **Medição (magnitude de bordas no mesmo recorte):** DPR real 0,0430; fator 2
+  0,0499.
+- **Causa:** o bitmap na escala real (1,25) é nítido — extraído direto do canvas
+  por `toDataURL`, o desenho está limpo. O borrão nasce na composição: o
+  navegador reamostra o canvas (bitmap → tamanho CSS → pixels do dispositivo) e
+  a escala fracionária suaviza o resultado. Com um fator inteiro acima do DPR
+  (supersampling), a sobra de resolução mantém as bordas firmes, como no fator
+  fixo 2 que existia antes.
+
+## 2. Correção
+
+- `L.Canvas._update` (`inst/app/www/global/funcoes_javascript.js`) passou a
+  arredondar o `devicePixelRatio` para o próximo inteiro, com mínimo 1:
+  1 → 1, 1,25 → 2, 1,5 → 2, 2 → 2, 3 → 3.
+- O canvas usa `fator × tamanho` como bitmap e `ctx.scale(fator, fator)` no
+  desenho; a densidade é relida a cada `_update`, disparado pelo Leaflet em
+  `resize`/`moveend`, o que cobre o zoom do navegador e a troca de monitor.
+- O alinhamento do recorte do hover (Sessão 29) continua valendo: com o fator
+  inteiro o recorte cai exatamente nos pixels da tela.
+- Custo: em DPR fracionário o bitmap volta ao tamanho do fator 2 antigo; em
+  DPR 3 ele cresce de 2× para 3× (o caso que a Sessão 28 queria resolver).
+
+## 3. Testes e validação
+
+- `devtools::test()`: **394 asserções verdes**.
+- Smoke headless: fator e bitmap na proporção esperada em DPR 1 (754×648),
+  1,25 (1508×1296), 2 (mobile, 744×1176) e 3 (2262×1944), sem erros de
+  JavaScript.
+- Em DPR 1,25 a captura ficou **idêntica byte a byte** à versão de fator fixo 2
+  (a que o usuário considerava nítida), e o hover real seguiu mostrando a
+  tooltip ("Pontal do Araguaia (MT) — IBISMA 59,8 — Alto").
+- Evidências em temporários fora do git (recortes comparativos 3× e bitmap
+  extraído do canvas).
+
+## 4. Commits da sessão
+
+- `9ffe4c5` Corrige o borrao do canvas do mapa em escalas fracionarias
+
