@@ -2881,7 +2881,7 @@
       "checksum": "1bd0c82832b02d7986a9f5f923ee5828"
     },
     "AGENTS.md": {
-      "checksum": "85d76e3989e737cc90f994e9f0e467fd"
+      "checksum": "e7394195a3f854424814b95aedc6164e"
     },
     "app.R": {
       "checksum": "8796f966692d08163311a9494ad2d1a5"
@@ -2902,34 +2902,34 @@
       "checksum": "5380c5fdf0e4bf7756fa922b36fb4fb8"
     },
     "inst/app/data/tabela_ano_2015.rds": {
-      "checksum": "eddf9a4a24c1511345468c9c4df2801e"
+      "checksum": "90f1fab741f7bb73d4f4b69326b3487d"
     },
     "inst/app/data/tabela_ano_2016.rds": {
-      "checksum": "12ccd5e8c8d6897f8b51a87d27757bc1"
+      "checksum": "54acc3d17d2156be08ebf74f271cea35"
     },
     "inst/app/data/tabela_ano_2017.rds": {
-      "checksum": "2f24f086c0cb27d380f8d16be3a60647"
+      "checksum": "ba192658ed1331623e7d67cd8588c74e"
     },
     "inst/app/data/tabela_ano_2018.rds": {
-      "checksum": "e8d70787399e0afe98946805bf49e16e"
+      "checksum": "a7fe2fdf53ed527c0a636f09ff8ea92c"
     },
     "inst/app/data/tabela_ano_2019.rds": {
-      "checksum": "85105e00e5d90d2b8b5af27fc75b9483"
+      "checksum": "042326b5cb1bc2e3e6321c813bc5ff0e"
     },
     "inst/app/data/tabela_ano_2020.rds": {
-      "checksum": "6ca32d5a21a30eeed27f9b8e48eb02a1"
+      "checksum": "1606923119c339ebebc7350ce2a36a51"
     },
     "inst/app/data/tabela_ano_2021.rds": {
-      "checksum": "1363803c2f4a191bc4592f85b3c55f7b"
+      "checksum": "9b80d6be2927ae8feb0e925533eb3b67"
     },
     "inst/app/data/tabela_ano_2022.rds": {
-      "checksum": "0ef0a861adc0de2730d28dd7a7767ded"
+      "checksum": "0522610b32ecd5ca6f8ca6e7c77b8254"
     },
     "inst/app/data/tabela_ano_2023.rds": {
-      "checksum": "a7a6dc20d53109c771f5a31fa847f679"
+      "checksum": "4932586e2279d2b4b137a8860a1d4474"
     },
     "inst/app/data/tabela_ano_2024.rds": {
-      "checksum": "9782e88e52be34a21492f75a65002a1b"
+      "checksum": "91dada9c369626fe514d192bf578689b"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
@@ -2938,7 +2938,7 @@
       "checksum": "ba34587d2fbf7cc3fb74ea5faa25fabe"
     },
     "inst/app/www/global/funcoes_javascript.js": {
-      "checksum": "9ccd2f707eb4467e0cc2b43c3cf1c641"
+      "checksum": "f2d3d01da351ce5e1838d2760917a47c"
     },
     "inst/app/www/logos/favicon.ico": {
       "checksum": "e0cd22701701521af5ff038b1c01ca4e"
@@ -3037,7 +3037,7 @@
       "checksum": "facf966876115336dff5c1ed713136aa"
     },
     "R/fct_graficos_evolucao.R": {
-      "checksum": "35acc4ebf00f5f8149b635c7896e2a4f"
+      "checksum": "db88961434d602c9ab8fdef46ab23b4f"
     },
     "R/fct_mapa.R": {
       "checksum": "32ed19976ffb7639a20113def32fbbac"
@@ -3055,7 +3055,7 @@
       "checksum": "677f98a37b6b47263539cb7bd25c4c80"
     },
     "R/mod_onde.R": {
-      "checksum": "e0ca4c2552667bee8225a5432ac04ef8"
+      "checksum": "0ce9623a85397a6fa4766dcf4888bdc8"
     },
     "R/painel_ibisma-package.R": {
       "checksum": "3071f23bb815b0bcaee29a97ba422ea1"
