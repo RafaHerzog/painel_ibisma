@@ -49,16 +49,20 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
      CANVAS NA RESOLUÇÃO DA TELA
      O Leaflet multiplica o canvas por um fator fixo de 2 quando detecta tela de
      alta densidade; em telas com DPR maior (celulares 3x) o desenho é ampliado e
-     fica borrado. O ajuste abaixo usa o devicePixelRatio real; o Leaflet refaz o
-     canvas a cada resize, o que cobre o zoom do navegador e a troca de monitor.
-     Em escalas fracionárias (125%/150% do Windows e zoom do navegador), o
-     redesenho parcial do hover também precisa alinhar o recorte aos pixels da
-     tela, senão uma linha clara fica na borda do retângulo recortado.
+     fica borrado. O ajuste abaixo usa a densidade real da tela arredondada para
+     um fator inteiro: em telas com DPR fracionário (125%/150% do Windows e zoom
+     do navegador), o canvas desenhado na própria fração é reamostrado pelo
+     navegador e fica macio, enquanto um fator inteiro o mantém nítido. O Leaflet
+     refaz o canvas a cada resize, o que cobre o zoom do navegador e a troca de
+     monitor.
+     Em escalas fracionárias, o redesenho parcial do hover também precisa alinhar
+     o recorte aos pixels da tela, senão uma linha clara fica na borda do
+     retângulo recortado.
      ============================================================================= */
   (function () {
     if (!window.L || !L.Canvas || !L.Renderer) return;
 
-    /* Redefinindo a atualização do canvas com a escala real da tela */
+    /* Redefinindo a atualização do canvas com a densidade real da tela */
     L.Canvas.include({
       _update: function () {
         if (this._map._animatingZoom && this._bounds) return;
@@ -66,15 +70,16 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
         L.Renderer.prototype._update.call(this);
         var caixa = this._bounds;
         var tamanho = caixa.getSize();
-        var dpr = window.devicePixelRatio || 1;
-        var largura = Math.round(dpr * tamanho.x);
-        var altura = Math.round(dpr * tamanho.y);
+        /* Arredondando a densidade para um fator inteiro de pixels por pixel de CSS */
+        var fator = Math.max(1, Math.ceil(window.devicePixelRatio || 1));
+        var largura = fator * tamanho.x;
+        var altura = fator * tamanho.y;
         L.DomUtil.setPosition(this._container, caixa.min);
         this._container.width = largura;
         this._container.height = altura;
         this._container.style.width = tamanho.x + "px";
         this._container.style.height = tamanho.y + "px";
-        this._ctx.scale(largura / tamanho.x, altura / tamanho.y);
+        this._ctx.scale(fator, fator);
         this._ctx.translate(-caixa.min.x, -caixa.min.y);
         this.fire("update");
       },
