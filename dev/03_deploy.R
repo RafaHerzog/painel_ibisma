@@ -50,12 +50,13 @@ rsconnect::deployApp(
     # Add any additional files unique to your app here.
     "R/",
     "inst/",
-    "data/",
     "NAMESPACE",
     "DESCRIPTION",
     "app.R"
   ),
-  appId = rsconnect::deployments(".")$appID,
+  appId = rsconnect::deployments(".")$appId,
+  account = "observatorioobstetrico",
+  server = "shinyapps.io",
   lint = FALSE,
   forceUpdate = TRUE
 )
